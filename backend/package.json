@@ -1,0 +1,22 @@
+{
+  "name": "roman_talk_1.0_beta",
+  "version": "1.0_beta",
+  "description": "My messenger, called RoMan_Talk, here is code from it",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "RoMan",
+    "Talk",
+    "RoMan_Talk",
+    "Messenger"
+  ],
+  "author": "RoMan",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security"
+  }
+}

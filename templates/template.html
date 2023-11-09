@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RoMan Talk 1.0 beta</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #000000;
+      background-size: cover;
+    }
+
+    #login-screen {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    #login-form {
+      background-color: #333;
+      padding: 20px;
+      border-radius: 5px;
+    }
+
+    #login-form input[type="text"],
+    #login-form input[type="password"] {
+      width: 200px;
+      height: 30px;
+      margin-bottom: 10px;
+    }
+
+    #login-form button {
+      height: 30px;
+      padding: 0 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #chat-container {
+      flex-grow: 1;
+      display: none;
+      flex-direction: column;
+    }
+
+    #top-bar {
+      height: 70px;
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+    }
+
+    #server-dropdown {
+      background-color: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    #server-dropdown:hover {
+      text-decoration: underline;
+    }
+
+    #server-dropdown::after {
+      content: '▼';
+      margin-left: 5px;
+    }
+
+    #server-dropdown.active::after {
+      transform: rotate(180deg);
+    }
+
+    #channel-list {
+      position: absolute;
+      top: 70px;
+      right: 600px;
+      width: 200px;
+      background-color: #333;
+      border: 1px solid #ccc;
+      display: none;
+      padding: 10px;
+    }
+
+    #channel-list.active {
+      display: block;
+    }
+
+    .channel {
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    #message-list {
+      flex-grow: 1;
+      overflow: auto;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .message {
+      background-color: #333;
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+    }
+
+    #input-container {
+      display: flex;
+    }
+
+    #message-input {
+      flex-grow: 1;
+      height: 30px;
+      padding: 5px;
+      color: #fff;
+      background-color: #222;
+      border: none;
+      font-family: Verdana, sans-serif;
+    }
+
+    #send-button {
+      height: 40px;
+      padding: 5px 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 10px;
+      font-family: Verdana, sans-serif;
+    }
+
+    #channel-list {
+      position: absolute;
+      top: 70px;
+      right: 600px;
+      width: 200px;
+      background-color: #333;
+      border: 1px solid #ccc;
+      display: none;
+      padding: 10px;
+    }
+
+    #channel-list.active {
+      display: block;
+    }
+
+    #settings-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      height: 100vh;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+      padding: 20px;
+    }
+
+    #settings-screen h2 {
+      margin-bottom: 20px;
+    }
+
+    #settings-screen label {
+      margin-bottom: 10px;
+    }
+
+    #settings-screen select {
+      margin-bottom: 20px;
+    }
+
+    #settings-screen button {
+      height: 30px;
+      padding: 0 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .dark-theme {
+      background-color: #111;
+    }
+    #top-bar,
+    button,
+    #chat-container {
+      background-color: #fff; /* Світлий фон */
+      color: #000; /* Темний текст */
+    }
+
+    /* Стилі для темної теми */
+    .dark-theme #top-bar,
+    .dark-theme button,
+    .dark-theme #chat-container {
+      background-color: #000;
+      color: #000;
+    .dark-theme #body;
+    }
+    .dark-theme
+
+    #title {
+      color: #000; /* Темний текст за замовчуванням */
+    }
+
+    .dark-theme #title {
+      color: #fff; /* Світлий текст */
+      background-color: #000; /* Чорний фон */
+    }
+
+      #server-dropdown {
+      /* інші стилі */
+      color: #000; /* Чорний текст */
+    }
+
+    .dark-theme #server-dropdown {
+      color: #fff; /* Білий текст */
+    }
+
+        #chat-container {
+      flex-grow: 1;
+      display: none;
+      flex-direction: column;
+      /* інші стилі */
+    }
+
+    .light-theme #chat-container {
+      background-color: #fff; /* Світлий фон */
+      color: #000; /* Чорний текст */
+    }
+
+    .dark-theme #chat-container {
+      background-color: #000; /* Чорний фон */
+      color: #fff; /* Білий текст */
+    }
+
+      #hello-screen {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #login-screen {
+    display: none;
+  }
+  .classic {
+      color: white;
+      font-family: Verdana, sans-serif;
+    }
+    .dark-theme .channel1,
+    .dark-theme .channel2,
+    .dark-theme .channel3 {
+      color: #ffffff;
+      background-color: #000000;
+    }
+  </style>
+</head>
+<body>
+      <div id="hello-screen">
+      <h2 class="classic">Вітаємо в RoMan Talk 1.0 beta!</h2>
+      <button id="login-screen-button" onclick="showLoginFields()">Увійти</button>
+      <button id="register-screen-button" onclick="showRegisterFields()">Зареєструватись</button>
+    </div>
+    <div id="login-screen" style="display: none;">
+      <h2 class="classic">Вхід в акаунт RoMan Talk</h2>
+      <input type="text" id="username-input" placeholder="Ім'я користувача">
+      <input type="password" id="password-input" placeholder="Пароль">
+      <button id="login-button">Увійти</button>
+    </div>
+    <div id="register-screen" style="display: none;">
+      <h2 class="classic">Реєстрація акаунту RoMan Talk</h2>
+      <input type="text" id="register-username-input" placeholder="Ім'я користувача">
+      <input type="password" id="register-password-input" placeholder="Пароль">
+      <input type="password" id="dublicate-register-password-input" placeholder="Повторіть пароль">
+      <button id="register-submit-button">Зареєструватись</button>
+  </div>
+  <div id="chat-container">
+    <div id="top-bar">
+      <h1 id="title">RoMan Talk</h1>
+      <button id="server-dropdown">Сервери</button>
+      <div id="channel-list">
+        <button id="channel1">RoMan World</button>
+        <button id="channel2">Fun Land😎</button>
+        <button id="channel3">Українські жарти</button>
+      </div>
+      <button id="settings">⚙️</button>
+    </div>
+    <div id="message-list"></div>
+    <div id="input-container">
+      <input type="text" id="message-input" placeholder="Напишіть повідомлення">
+      <button id="send-button">Відправити</button>
+    </div>
+  </div>
+
+  <div id="settings-screen">
+    <h2>Налаштування</h2>
+    <label for="theme-select">Виберіть тему:</label>
+    <select id="theme-select">
+      <option value="light">Світла</option>
+      <option value="dark">Темна</option>
+    </select>
+    <button id="save-settings">Зберегти</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+  <script>
+    const loginScreen = document.getElementById('login-screen');
+const loginForm = document.getElementById('login-form');
+const usernameInput = document.getElementById('username-input');
+const passwordInput = document.getElementById('password-input');
+const loginButton = document.getElementById('login-button');
+const chatContainer = document.getElementById('chat-container');
+const messageInput = document.getElementById('message-input');
+const sendButton = document.getElementById('send-button');
+const messageList = document.getElementById('message-list');
+const serverDropdown = document.getElementById('server-dropdown');
+const channelList = document.getElementById('channel-list');
+const helloScreen = document.getElementById('hello-screen');
+const loginScreenButton = document.getElementById('login-screen-button');
+const registerScreen = document.getElementById('register-screen');
+const registerButton = document.getElementById('register-button');
+const RegisterSubmitButton = document.getElementById('register-submit-button');
+const registerUsernameInput = document.getElementById('register-username-input');
+const registerPasswordInput = document.getElementById('register-password-input');
+const enteredPasswordDuplicateInput = document.getElementById('dublicate-register-password-input');
+
+let username;
+let isDropdownActive = false;
+let usersAmount = 1;
+
+
+function newUser() {
+  const enteredUsername = registerUsernameInput.value;
+  const enteredPassword = registerPasswordInput.value;
+  const enteredPasswordDuplicate = enteredPasswordDuplicateInput.value;
+
+  if (enteredPassword !== enteredPasswordDuplicate) {
+    alert('Пароль не співпадає');
+    return;
+  }
+
+  const hashedPassword = CryptoJS.SHA256(enteredPassword).toString(); // Хешуємо пароль
+  const hashedUsername = CryptoJS.SHA256(enteredUsername).toString(); // Хешуємо логін
+
+  username = enteredUsername;
+
+  usersAmount += 1;
+  usersLogins.push(hashedUsername);
+  usersPasswords.push(hashedPassword);
+  console.log("You are " + usersAmount + " user");
+  console.log(usersLogins);
+  console.log(usersPasswords);
+}
+
+
+RegisterSubmitButton.addEventListener('click', newUser);
+
+let usersLogins = [
+  "RoMan"
+];
+
+let usersPasswords = [
+  "123"
+];
+
+function showLoginScreen() {
+  helloScreen.style.display = 'none';
+  loginScreen.style.display = 'flex';
+}
+
+loginButton.addEventListener('click', login);
+
+function login() {
+  const enteredUsername = usernameInput.value;
+  const enteredPassword = passwordInput.value;
+
+  const isValidLogin = usersLogins.includes(enteredUsername);
+  const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
+
+  if (isValidLogin && isValidPassword) {
+    username = enteredUsername;
+    helloScreen.style.display = 'none';
+    loginScreen.style.display = 'none';
+    chatContainer.style.display = 'flex';
+    displayWelcomeMessage(username);
+    } else if (isValidLogin && !isValidPassword) {
+    alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
+    } else {
+      alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+    }
+  }
+
+function displayWelcomeMessage(username) {
+  const welcomeMessage = `Ласкаво просимо, ${username}! Ви успішно увійшли до RoMan Talk.`;
+  displayMessage(welcomeMessage);
+}
+
+loginScreenButton.addEventListener('click', showLoginScreen);
+
+function showLoginFields() {
+  loginScreen.style.display = 'block';
+  helloScreen.style.display = 'none';
+}
+
+loginButton.addEventListener('click', login);
+sendButton.addEventListener('click', sendMessage);
+serverDropdown.addEventListener('click', toggleDropdown);
+channelList.addEventListener('click', handleChannelClick);
+
+function sendMessage() {
+  const message = messageInput.value;
+  displayMessage(`${username}: ${message}`);
+  messageInput.value = '';
+}
+
+function displayMessage(message) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message');
+  messageElement.textContent = message;
+  messageList.appendChild(messageElement);
+}
+
+function toggleDropdown() {
+  isDropdownActive = !isDropdownActive;
+  channelList.classList.toggle('active', isDropdownActive);
+}
+
+function handleChannelClick(event) {
+  if (event.target.matches('button')) {
+    const channelName = event.target.textContent;
+    displayMessage(`Ви перейшли до каналу: ${channelName}`);
+  }
+}
+
+const settingsScreen = document.getElementById('settings-screen');
+const themeSelect = document.getElementById('theme-select');
+const saveSettingsButton = document.getElementById('save-settings');
+
+settings.addEventListener('click', openSettings);
+saveSettingsButton.addEventListener('click', saveSettings);
+
+function openSettings() {
+  chatContainer.style.display = 'none';
+  settingsScreen.style.display = 'block';
+}
+
+function saveSettings() {
+  const selectedTheme = themeSelect.value;
+  if (selectedTheme === 'dark') {
+    chatContainer.classList.add('dark-theme');
+  } else {
+    chatContainer.classList.remove('dark-theme');
+  }
+  chatContainer.style.display = 'flex';
+  settingsScreen.style.display = 'none';
+}
+
+function showRegisterFields() {
+  registerScreen.style.display = 'block';
+  helloScreen.style.display = 'none';
+}
+
+RegisterSubmitButton.addEventListener('click', register);
+
+function register() {
+  const enteredUsername = registerUsernameInput.value;
+  const enteredPassword = registerPasswordInput.value;
+  const enteredPasswordDuplicate = enteredPasswordDuplicateInput.value;
+
+  registerScreen.style.display = 'none';
+  helloScreen.style.display = 'none';
+
+  if (enteredPassword !== enteredPasswordDuplicate) {
+    alert('Пароль не співпадає');
+  }
+
+  usersLogins.push(enteredUsername);
+  usersPasswords.push(enteredPassword);
+
+  helloScreen.style.display = 'none';
+  registerScreen.style.display = 'none';
+  chatContainer.style.display = 'flex';
+  displayWelcomeMessage(username);
+}
+
+  </script>
+</body>
+</html>

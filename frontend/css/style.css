@@ -1,0 +1,264 @@
+body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #000000;
+      background-size: cover;
+    }
+
+    #login-screen {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    #login-form {
+      background-color: #333;
+      padding: 20px;
+      border-radius: 5px;
+    }
+
+    #login-form input[type="text"],
+    #login-form input[type="password"] {
+      width: 200px;
+      height: 30px;
+      margin-bottom: 10px;
+    }
+
+    #login-form button {
+      height: 30px;
+      padding: 0 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #chat-container {
+      flex-grow: 1;
+      flex-direction: column;
+    }
+
+    #top-bar {
+      height: 70px;
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+    }
+
+    #server-dropdown {
+      background-color: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    #server-dropdown:hover {
+      text-decoration: underline;
+    }
+
+    #server-dropdown::after {
+      content: '▼';
+      margin-left: 5px;
+    }
+
+    #server-dropdown.active::after {
+      transform: rotate(180deg);
+    }
+
+    #channel-list {
+      position: absolute;
+      top: 70px;
+      right: 600px;
+      width: 200px;
+      background-color: #333;
+      border: 1px solid #ccc;
+      display: none;
+      padding: 10px;
+    }
+
+    #channel-list.active {
+      display: block;
+    }
+
+    .channel {
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    #message-list {
+      flex-grow: 1;
+      overflow: auto; /* Залиште цей рядок */
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .message {
+      background-color: #333;
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+    }
+
+    #input-container {
+      display: flex;
+      align-items: center; /* Додайте це */
+      padding: 10px; /* Замініть margin-bottom на padding */
+      background-color: #000;
+    }
+
+    #message-input {
+      flex-grow: 1;
+      height: 30px;
+      padding: 5px;
+      color: #fff;
+      background-color: #222;
+      border: none;
+      font-family: Verdana, sans-serif;
+    }
+
+    #send-button {
+      height: 40px;
+      padding: 5px 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 10px;
+      font-family: Verdana, sans-serif;
+    }
+
+    #channel-list {
+      position: absolute;
+      top: 70px;
+      right: 600px;
+      width: 200px;
+      background-color: #333;
+      border: 1px solid #ccc;
+      display: none;
+      padding: 10px;
+    }
+
+    #channel-list.active {
+      display: block;
+    }
+
+    #settings-screen {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      height: 100vh;
+      color: #fff;
+      font-family: Verdana, sans-serif;
+      padding: 20px;
+    }
+
+    #settings-screen h2 {
+      margin-bottom: 20px;
+    }
+
+    #settings-screen label {
+      margin-bottom: 10px;
+    }
+
+    #settings-screen select {
+      margin-bottom: 20px;
+    }
+
+    #settings-screen button {
+      height: 30px;
+      padding: 0 10px;
+      background-color: #808080;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .dark-theme {
+      background-color: #111;
+    }
+    #top-bar,
+    button,
+    #chat-container {
+      background-color: #fff; /* Світлий фон */
+      color: #000; /* Темний текст */
+    }
+
+    /* Стилі для темної теми */
+    .dark-theme #top-bar,
+    .dark-theme button,
+    .dark-theme #chat-container {
+      background-color: #000;
+      color: #000;
+  }
+    .dark-theme
+
+    #title {
+      color: #000; /* Темний текст за замовчуванням */
+    }
+
+    .dark-theme #title {
+      color: #fff; /* Світлий текст */
+      background-color: #000; /* Чорний фон */
+    }
+
+      #server-dropdown {
+      /* інші стилі */
+      color: #000; /* Чорний текст */
+    }
+
+    .dark-theme #server-dropdown {
+      color: #fff; /* Білий текст */
+    }
+
+        #chat-container {
+      flex-grow: 1;
+      flex-direction: column;
+      /* інші стилі */
+    }
+
+    .light-theme #chat-container {
+      background-color: #fff; /* Світлий фон */
+      color: #000; /* Чорний текст */
+    }
+
+    .dark-theme #chat-container {
+      background-color: #000; /* Чорний фон */
+      color: #fff; /* Білий текст */
+    }
+
+      #hello-screen {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .classic {
+      color: white;
+      font-family: Verdana, sans-serif;
+    }
+    .dark-theme .channel1,
+    .dark-theme .channel2,
+    .dark-theme .channel3 {
+      color: #ffffff;
+      background-color: #000000;
+    }
