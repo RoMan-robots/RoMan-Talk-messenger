@@ -17,6 +17,7 @@ app.get("/", (req, res) => {
 app.get("/login.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "login.html"));
 });
+
 app.get("/test.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "test.html"));
 })
