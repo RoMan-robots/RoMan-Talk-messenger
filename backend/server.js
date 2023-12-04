@@ -38,6 +38,6 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
-app.listen(port, '192.168.0.5', () => {
+app.listen(port, '192.168.0.2', () => {
   console.log(`Server is running on port ${port}. Test at: http://192.168.0.5:${port}/`);
 });
