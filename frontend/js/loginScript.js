@@ -12,9 +12,7 @@ let usersLogins = [
     "123"
   ];
   
-  function changeUrlToChat(url) {
-    window.location.href = url;
-  }
+  
 
   function login() {
     const enteredUsername = usernameInput.value;
@@ -22,14 +20,17 @@ let usersLogins = [
   
     const isValidLogin = usersLogins.includes(enteredUsername);
     const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
+    while (True){
+      if (isValidLogin && isValidPassword) {
+        username = enteredUsername;
+        displayWelcomeMessage(username);
+        break;
+        } else if (isValidLogin && !isValidPassword) {
+        alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
   
-    if (isValidLogin && isValidPassword) {
-      username = enteredUsername;
-      displayWelcomeMessage(username);
-      } else if (isValidLogin && !isValidPassword) {
-      alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
-      } else {
-        alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+        } else {
+          alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+        }
       }
     }
   
@@ -38,7 +39,7 @@ let usersLogins = [
     displayMessage(welcomeMessage);
   }
   
-  function changeUrlToLogin(url) {
+  function changeUrlToChat(url) {
     window.location.href = url;
   }
   
