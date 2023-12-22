@@ -4,7 +4,7 @@
 
 
 
-let isDropdownActive = false;
+
 
 
 

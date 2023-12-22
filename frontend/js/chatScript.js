@@ -6,6 +6,8 @@ const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
 
 let username;
+let isDropdownActive = false;
+import { displayWelcomeMessage } from 'chatScript.js';
 
 sendButton.addEventListener('click', sendMessage);
 serverDropdown.addEventListener('click', toggleDropdown);
@@ -36,10 +38,23 @@ function handleChannelClick(event) {
   }
 }
 
-function displayWelcomeMessage(username) {
-  const welcomeMessage = `Ласкаво просимо, ${username}! Ви успішно увійшли до RoMan Talk.`;
-  displayMessage(welcomeMessage);
+function login() {
+  const enteredUsername = document.getElementById('username-input').value;
+  const enteredPassword = document.getElementById('password-input').value;
+
+  const isValidLogin = usersLogins.includes(enteredUsername);
+  const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
+
+  if (isValidLogin && isValidPassword) {
+    username = enteredUsername;
+    displayWelcomeMessage(username);
+  } else if (isValidLogin && !isValidPassword) {
+    alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
+  } else {
+    alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+  }
 }
+
 
 function changeUrlToSettings(url) {
   window.location.href = url;
