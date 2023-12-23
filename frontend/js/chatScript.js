@@ -1,4 +1,3 @@
-const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const messageList = document.getElementById('message-list');
@@ -7,7 +6,7 @@ const channelList = document.getElementById('channel-list');
 
 let username;
 let isDropdownActive = false;
-import { displayWelcomeMessage } from 'chatScript.js';
+import { displayWelcomeMessage } from './loginScript.js';
 
 sendButton.addEventListener('click', sendMessage);
 serverDropdown.addEventListener('click', toggleDropdown);
@@ -35,23 +34,6 @@ function handleChannelClick(event) {
   if (event.target.matches('button')) {
     const channelName = event.target.textContent;
     displayMessage(`Ви перейшли до каналу: ${channelName}`);
-  }
-}
-
-function login() {
-  const enteredUsername = document.getElementById('username-input').value;
-  const enteredPassword = document.getElementById('password-input').value;
-
-  const isValidLogin = usersLogins.includes(enteredUsername);
-  const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
-
-  if (isValidLogin && isValidPassword) {
-    username = enteredUsername;
-    displayWelcomeMessage(username);
-  } else if (isValidLogin && !isValidPassword) {
-    alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
-  } else {
-    alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
   }
 }
 
