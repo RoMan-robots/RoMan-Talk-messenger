@@ -5,12 +5,7 @@ const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
 const settingsButton = document.getElementById('settings');
 
-let isDropdownActive = false;
-
-sendButton.addEventListener('click', sendMessage());
-serverDropdown.addEventListener('click', toggleDropdown());
-channelList.addEventListener('click', handleChannelClick());
-settingsButton.addEventListener('click', () => changeUrlToSettings("settings.html"));
+let isDropdownActive = true;
 
 function displayMessage(message) {
   const messageElement = document.createElement('div');
@@ -31,11 +26,13 @@ function toggleDropdown() {
 }
 
 function handleChannelClick(event) {
-  if (event.target.matches('button')) {
-    const channelName = event.target.textContent;
-    displayMessage(`Ви перейшли до каналу: ${channelName}`);
-  }
+  displayMessage('Це тестова кнопка, яка нажаль не переводить в інший чат...');
 }
+function displayWelcomeMessage() {
+  displayMessage(`Вітаємо в RoMan Talk!`);
+}
+
+displayWelcomeMessage();
 
 function changeUrlToSettings(url) {
   window.location.href = url;
