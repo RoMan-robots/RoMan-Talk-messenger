@@ -3,26 +3,27 @@ const sendButton = document.getElementById('send-button');
 const messageList = document.getElementById('message-list');
 const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
+const settingsButton = document.getElementById('settings');
 
-let username;
 let isDropdownActive = false;
-import { displayWelcomeMessage } from './loginScript.js';
+import { username } from './loginScript.js';
 
 sendButton.addEventListener('click', sendMessage);
 serverDropdown.addEventListener('click', toggleDropdown);
 channelList.addEventListener('click', handleChannelClick);
-
-function sendMessage() {
-  const message = messageInput.value;
-  displayMessage(`${username}: ${message}`);
-  messageInput.value = '';
-}
+settingsButton.addEventListener('click', () => changeUrlToSettings("settings.html"));
 
 function displayMessage(message) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('message');
   messageElement.textContent = message;
   messageList.appendChild(messageElement);
+}
+
+function sendMessage() {
+  const message = messageInput.value;
+  displayMessage(`${username}: ${message}`);
+  messageInput.value = '';
 }
 
 function toggleDropdown() {
@@ -37,7 +38,6 @@ function handleChannelClick(event) {
   }
 }
 
-
-function changeUrlToSettings(url) {
+export function changeUrlToSettings(url) {
   window.location.href = url;
 }

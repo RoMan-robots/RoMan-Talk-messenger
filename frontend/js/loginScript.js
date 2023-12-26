@@ -1,3 +1,4 @@
+export let username;
 let usersLogins = ["RoMan"];
 let usersPasswords = ["123"];
 
@@ -5,12 +6,8 @@ function changeUrlToChat(url) {
   window.location.href = url;
 }
 
-export function displayWelcomeMessage(username) {
-  const welcomeMessage = `Ласкаво просимо, ${username}! Ви успішно увійшли до RoMan Talk.`;
-  displayMessage(welcomeMessage);
-}
 
-export function login() {
+function login() {
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
 
@@ -19,14 +16,16 @@ export function login() {
 
   if (isValidLogin && isValidPassword) {
     username = enteredUsername;
-    displayWelcomeMessage(username);
+    changeUrlToChat('chat.html');
   } else if (isValidLogin && !isValidPassword) {
     alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
+    login();
   } else {
     alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+    login();
   }
 }
 
 document.getElementById('login-button').addEventListener('click', function() {
-  changeUrlToChat('chat.html');
+  login();
 });
