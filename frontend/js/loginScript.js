@@ -1,4 +1,4 @@
-export let username;
+let username;
 let usersLogins = ["RoMan"];
 let usersPasswords = ["123"];
 
@@ -19,13 +19,7 @@ function login() {
     changeUrlToChat('chat.html');
   } else if (isValidLogin && !isValidPassword) {
     alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
-    login();
   } else {
     alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
-    login();
   }
 }
-
-document.getElementById('login-button').addEventListener('click', function() {
-  login();
-});

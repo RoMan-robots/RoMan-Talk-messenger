@@ -37,6 +37,6 @@ function handleChannelClick(event) {
   }
 }
 
-export function changeUrlToSettings(url) {
+function changeUrlToSettings(url) {
   window.location.href = url;
 }
