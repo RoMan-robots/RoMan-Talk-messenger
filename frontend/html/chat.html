@@ -5,25 +5,26 @@
     <title>RoMan Talk 1.0 beta</title>
     <link rel="stylesheet" href="../css/style.css">
     <script type="module" src="../js/loginScript.js" defer></script>
+    <script type="module" src="../js/chatScript.js" defer></script>
 </head>
 <body>
     <div id="chat-container">
         <div id="top-bar">
           <h1 id="title">RoMan Talk</h1>
-          <button id="server-dropdown">Сервери</button>
+          <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
           <div id="channel-list">
-            <button id="channel1">RoMan World</button>
-            <button id="channel2">Fun Land😎</button>
-            <button id="channel3">Українські жарти</button>
+            <button id="channel1" onclick="handleChannelClick()">RoMan World</button>
+            <button id="channel2" onclick="handleChannelClick()">Fun Land😎</button>
+            <button id="channel3" onclick="handleChannelClick()">Українські жарти</button>
           </div>
-          <button id="settings">⚙️</button>
+          <button id="settings" onclick="changeUrlToSettings('settings.html')">⚙️</button>
         </div>
         <div id="message-list"></div>
         <div id="input-container">
           <input type="text" id="message-input" placeholder="Напишіть повідомлення">
-          <button id="send-button">Відправити</button>
+          <button id="send-button" onclick="sendMessage()">Відправити</button>
         </div>
     </div>
-    <script type="module" src="../js/chatScript.js" defer></script>
+    
 </body>
 </html>

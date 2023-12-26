@@ -6,11 +6,10 @@ const channelList = document.getElementById('channel-list');
 const settingsButton = document.getElementById('settings');
 
 let isDropdownActive = false;
-import { username } from './loginScript.js';
 
-sendButton.addEventListener('click', sendMessage);
-serverDropdown.addEventListener('click', toggleDropdown);
-channelList.addEventListener('click', handleChannelClick);
+sendButton.addEventListener('click', sendMessage());
+serverDropdown.addEventListener('click', toggleDropdown());
+channelList.addEventListener('click', handleChannelClick());
 settingsButton.addEventListener('click', () => changeUrlToSettings("settings.html"));
 
 function displayMessage(message) {
