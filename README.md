@@ -1,16 +1,14 @@
 ENG
 How to run messenger:
-1.download archive with code and open it in code editor;
-2.download node.js and libraries(express, fs);
-3.change IP in server's code to your internet IP;
-4.print in terminal command "node server" in folder "backend";
-5.open browser and go to: http://${your internet IP}:8080/ (or you can go to other port, just change it in code);
-6.see this messenger.
+1. Open terminal
+2. git clone git@github.com:RoMan-robots/RoMan-Talk-messenger.git
+3. If Node not installed, run npm install nodejs, express, fs
+4. navigate to backend folder and start the server node server
+5. open the browser http://127.0.0.1:8080/
 UA
 Як запустити месенжер:
-1.скачати архів з кодом і відкрити це в редакторі коду;
-2.скачати node.js та бібліотеки(express, fs);
-3.змінити IP в коді серверу на твій інтернет IP;
-4.написати в терміналі команду "node server" в папці "backend";
-5.відкрити браузер і перейти до http://${твій інтернет IP}:8080/ (або ти можеш піти на інший порт, просто змінивши це в коді);
-6.побачити месенжер
+1. Відкрийте термінал
+2. git clone git@github.com:RoMan-robots/RoMan-Talk-messenger.git
+3. Якщо Node не встановлено, запустіть npm install nodejs, express, fs
+4. перейдіть до папки "backend" та запустіть сервер командою "node server"
+5. відкрити браузер http://127.0.0.1:8080/
