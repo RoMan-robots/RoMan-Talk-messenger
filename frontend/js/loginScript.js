@@ -1,4 +1,4 @@
-let username;
+window.username = '';
 let usersLogins = ["RoMan"];
 let usersPasswords = ["123"];
 

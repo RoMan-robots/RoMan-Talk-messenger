@@ -3,7 +3,7 @@ const sendButton = document.getElementById('send-button');
 const messageList = document.getElementById('message-list');
 const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
-const settingsButton = document.getElementById('settings');
+const settingsButton = document.getElementById('settings');  
 
 let isDropdownActive = true;
 
