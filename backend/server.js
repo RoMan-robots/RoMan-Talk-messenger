@@ -9,6 +9,7 @@ const app = express();
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
+app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
 
 app.get("/", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
@@ -32,10 +33,6 @@ app.get("/chat.html", (req, res) => {
 
 app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
-});
-
-app.get('/favicon.ico', (req, res) => {
-  res.status(204).end();
 });
 
 app.listen(port, '127.0.0.1', () => {
