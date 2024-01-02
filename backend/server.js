@@ -16,8 +16,6 @@ app.use(session({
   saveUninitialized: true
 }));
 
-console.log('Сесія встановлена');
-
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
@@ -45,10 +43,8 @@ app.post('/login', async (req, res) => {
     if (user) {
       req.session.username = username;
       res.send({ success: true, redirectUrl: '/chat.html' });
-      console.log("Усе правильно")
     } else {
       res.status(401).send({ success: false, message: 'Неправильний логін або пароль.' });
-      console.log("Щось неправильно")
     }
   } catch (error) {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
