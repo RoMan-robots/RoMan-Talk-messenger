@@ -1,26 +1,24 @@
-let usersLogins = ["RoMan"];
-let usersPasswords = ["123"];
-
-function changeUrlToChat(url) {
-  window.location.href = url;
-}
-
-
-function login() {
+async function login() {
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
-  
-  window.username = '';
 
-  const isValidLogin = usersLogins.includes(enteredUsername);
-  const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username: enteredUsername, password: enteredPassword })
+    });
 
-  if (isValidLogin && isValidPassword) {
-    username = enteredUsername;
-    changeUrlToChat('chat.html');
-  } else if (isValidLogin && !isValidPassword) {
-    alert('Неправильний пароль. Будь ласка, перевірте ваш пароль та спробуйте знову.');
-  } else {
-    alert('Такого аккаунту не існує. Будь ласка, перевірте ваші дані входу.');
+    const data = await response.json();
+
+    if (data.success) {
+      window.location.href = data.redirectUrl;
+    } else {
+      alert(data.message || 'Неправильний логін або пароль.');
+    }
+  } catch (error) {
+    alert('Помилка сервера');
   }
 }

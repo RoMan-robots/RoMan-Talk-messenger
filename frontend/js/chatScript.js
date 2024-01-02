@@ -14,7 +14,21 @@ function displayMessage(message) {
   messageList.appendChild(messageElement);
 }
 
-function sendMessage() {
+async function getLoggedInUser() {
+  try {
+    const response = await fetch('/username');
+    const data = await response.json();
+    return data.username;
+  } catch (error) {
+    console.error('Помилка при отриманні імені користувача', error);
+    window.location.href = '/login.html';
+  }
+}
+
+async function sendMessage() {
+  const username = await getLoggedInUser();
+  if (!username) return;
+
   const message = messageInput.value;
   displayMessage(`${username}: ${message}`);
   messageInput.value = '';
@@ -28,8 +42,12 @@ function toggleDropdown() {
 function handleChannelClick(event) {
   displayMessage('Це тестова кнопка, яка нажаль не переводить в інший чат...');
 }
-function displayWelcomeMessage() {
-  displayMessage(`Вітаємо в RoMan Talk!`);
+
+async function displayWelcomeMessage() {
+  const username = await getLoggedInUser();
+  if (username) {
+    displayMessage(`Вітаємо в RoMan Talk, ${username}!`);
+  }
 }
 
 displayWelcomeMessage();
