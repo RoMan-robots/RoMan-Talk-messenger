@@ -1,4 +1,5 @@
-async function login() {
+async function login(event) {
+  event.preventDefault();
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
 
