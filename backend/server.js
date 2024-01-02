@@ -80,6 +80,4 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-app.listen(port, 'localhost', () => {
-  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-});
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));
