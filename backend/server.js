@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 
 const __dirname = path.resolve();
-const port = 8080 || process.env.port;
+const port = process.env.PORT || 8080;
 const app = express();
 
 app.use(express.json());
