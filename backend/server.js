@@ -1,4 +1,5 @@
 import express from 'express';
+import session from 'express-session';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
@@ -35,6 +36,6 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-app.listen(port, '127.0.0.1', () => {
-  console.log(`Server is running on port ${port}. Test at: http://127.0.0.1:${port}/`);
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
 });

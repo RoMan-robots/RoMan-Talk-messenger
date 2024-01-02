@@ -1,4 +1,3 @@
-window.username = '';
 let usersLogins = ["RoMan"];
 let usersPasswords = ["123"];
 
@@ -10,6 +9,8 @@ function changeUrlToChat(url) {
 function login() {
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
+  
+  window.username = '';
 
   const isValidLogin = usersLogins.includes(enteredUsername);
   const isValidPassword = usersPasswords[usersLogins.indexOf(enteredUsername)] === enteredPassword;
