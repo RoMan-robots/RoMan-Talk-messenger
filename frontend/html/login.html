@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <title>Вхід в RoMan Talk</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script src="../js/loginScript.js" defer></script>
 </head>
 <body>
-    <div id="login-screen">
+    <form id="login-screen">
         <h2 class="classic">Вхід в акаунт RoMan Talk</h2>
         <input type="text" id="username-input" placeholder="Ім'я користувача">
         <input type="password" id="password-input" placeholder="Пароль">
-        <button id="login-button" onclick="login()">Увійти</button>
-      </div>
+        <button id="login-button" onclick="login()" type="submit">Увійти</button>
+    </form>  
 </body>
 </html>
