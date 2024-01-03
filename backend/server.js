@@ -62,6 +62,7 @@ app.post('/login', async (req, res) => {
 
     if (user) {
       req.session.username = username;
+      req.session.userId = user.id;
       res.send({ success: true, redirectUrl: '/chat.html' });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний логін або пароль.' });
@@ -78,7 +79,11 @@ app.get('/username', (req, res) => {
   if (username) {
     getUsers().then(users => {
       const user = users.find(u => u.username === username);
-      res.send({ username: user.username, theme: user['selected theme'] });
+      if (user) {
+        res.send({ username: user.username, theme: user['selected theme'] });
+      } else {
+        res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
+      }
     }).catch(err => {
       console.error(err);
       res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -87,6 +92,7 @@ app.get('/username', (req, res) => {
     res.send({ username: null });
   }
 });
+
 
 
 app.post('/register', async (req, res) => {
@@ -124,11 +130,34 @@ app.post('/save-theme', async (req, res) => {
     if (userIndex === -1) {
       return res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
     }
-    users[userIndex]['selected theme'] = theme; // Оновлення теми користувача
+    users[userIndex]['selected theme'] = theme;
     await saveUsers(users);
     res.send({ success: true, message: 'Тема збережена.' });
   } catch (error) {
     res.status(500).send({ success: false, message: 'Помилка сервера при збереженні теми.' });
+  }
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy();
+});
+
+app.post('/delete-account', async (req, res) => {
+  const { password } = req.body;
+  let users = await getUsers();
+  const userIndex = users.findIndex(user => user.id === req.session.userId);
+
+  if (userIndex === -1) {
+    return res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
+  }
+
+  if (users[userIndex].password === password) {
+    users = users.filter(user => user.id !== req.session.userId);
+    await saveUsers(users);
+    req.session.destroy();
+    res.send({ success: true, message: 'Акаунт видалено успішно.' });
+  } else {
+    res.status(401).send({ success: false, message: 'Невірний пароль.' });
   }
 });
 

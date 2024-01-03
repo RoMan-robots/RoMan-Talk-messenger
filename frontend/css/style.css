@@ -41,10 +41,20 @@ body {
     }
 
     #chat-container {
-      flex-grow: 1;
+      display: flex;
       flex-direction: column;
+      height: 100vh;
     }
-
+    
+    #message-list {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    
+    #input-container {
+      margin-top: auto;
+    }
+    
     #top-bar {
       height: 70px;
       background-color: #000;

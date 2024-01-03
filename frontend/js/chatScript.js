@@ -15,6 +15,11 @@ function displayMessage(message) {
   messageList.appendChild(messageElement);
 }
 
+function handleChannelClick(event) {
+  displayMessage(`Це тестова кнопка, яка нажаль не переводить в інший чат...`);
+}
+
+
 async function sendMessage() {
   const username = await getLoggedInUser();
   if (!username) return;

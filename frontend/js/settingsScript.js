@@ -8,9 +8,44 @@ function changeUrlToChat(url) {
   window.location.href = url;
 }
 
-function openSettings() {
-  chatContainer.style.display = 'none';
-  settingsScreen.style.display = 'block';
+async function logout() {
+  if (!confirm('Ви впевнені, що хочете вийти? Потім зайти можна тільки за паролем.')) {
+    return;
+  }
+  try {
+    const response = await fetch('/logout', { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.href = '/login.html';
+    } else {
+      alert('Помилка при виході з акаунту.');
+    }
+  } catch (error) {
+    alert('Помилка з’єднання з сервером.');
+    console.error('Error:', error);
+  }
+}
+
+async function deleteAccount() {
+  const password = prompt('Будь ласка, введіть ваш пароль для підтвердження видалення акаунту:');
+
+  try {
+    const response = await fetch('/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      window.location.href = '/';
+    } else {
+      alert('Видалення акаунту скасовано. Пароль неправильний.');
+    }
+  } catch (error) {
+    alert('Помилка з’єднання з сервером.');
+    console.error('Error:', error);
+  }
 }
 
 async function saveSettings() {
