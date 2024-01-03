@@ -13,13 +13,23 @@ function openSettings() {
   settingsScreen.style.display = 'block';
 }
 
-function saveSettings() {
+async function saveSettings() {
   const selectedTheme = themeSelect.value;
-  if (selectedTheme === 'dark') {
-    chatContainer.classList.add('dark-theme');
-  } else {
-    chatContainer.classList.remove('dark-theme');
+  try {
+    const response = await fetch('/save-theme', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: selectedTheme })
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert('Тема успішно збережена.');
+      changeUrlToChat('chat.html');
+    } else {
+      alert('Помилка збереження теми.');
+    }
+  } catch (error) {
+    alert('Помилка збереження налаштувань.');
+    console.error('Error:', error);
   }
-  chatContainer.style.display = 'flex';
-  settingsScreen.style.display = 'none';
 }

@@ -26,8 +26,28 @@ const getUsers = () => {
       if (err) {
         reject(err);
       } else {
-        const parsedData = JSON.parse(data);
-        resolve(parsedData.users);
+        try {
+          const parsedData = JSON.parse(data);
+          if (Array.isArray(parsedData.users)) {
+            resolve(parsedData.users);
+          } else {
+            reject(new TypeError("Expected 'users' to be an array"));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      }
+    });
+  });
+};
+
+const saveUsers = (users) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path.join(__dirname, 'users.json'), JSON.stringify({ users }, null, 4), 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
       }
     });
   });
@@ -38,8 +58,8 @@ app.post('/login', async (req, res) => {
 
   try {
     const users = await getUsers();
-
     const user = users.find(u => u.username === username && u.password === password);
+
     if (user) {
       req.session.username = username;
       res.send({ success: true, redirectUrl: '/chat.html' });
@@ -47,17 +67,27 @@ app.post('/login', async (req, res) => {
       res.status(401).send({ success: false, message: 'Неправильний логін або пароль.' });
     }
   } catch (error) {
+    console.error(error);
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 
+
 app.get('/username', (req, res) => {
-  if (req.session.username) {
-    res.send({ username: req.session.username });
+  const username = req.session.username;
+  if (username) {
+    getUsers().then(users => {
+      const user = users.find(u => u.username === username);
+      res.send({ username: user.username, theme: user['selected theme'] });
+    }).catch(err => {
+      console.error(err);
+      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    });
   } else {
     res.send({ username: null });
   }
 });
+
 
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
@@ -80,19 +110,27 @@ app.post('/register', async (req, res) => {
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
 });
 
-const saveUsers = (users) => {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(path.join(__dirname, 'users.json'), JSON.stringify({ users }), 'utf8', (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-};
+app.post('/save-theme', async (req, res) => {
+  const username = req.session.username;
+  const { theme } = req.body;
 
+  if (!username) {
+    return res.status(401).send({ success: false, message: 'Необхідно ввійти в акаунт.' });
+  }
 
+  try {
+    let users = await getUsers();
+    const userIndex = users.findIndex(u => u.username === username);
+    if (userIndex === -1) {
+      return res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
+    }
+    users[userIndex]['selected theme'] = theme; // Оновлення теми користувача
+    await saveUsers(users);
+    res.send({ success: true, message: 'Тема збережена.' });
+  } catch (error) {
+    res.status(500).send({ success: false, message: 'Помилка сервера при збереженні теми.' });
+  }
+});
 
 app.get("/", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));

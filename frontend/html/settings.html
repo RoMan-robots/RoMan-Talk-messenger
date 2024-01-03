@@ -9,16 +9,20 @@
     <script src="../js/settingsScript.js" defer></script>
 </head>
 <body>
-    <div id="settings-screen">
-        <h2>Налаштування</h2>
+  <div id="settings-screen">
+    <h2>Налаштування</h2>
+    <div class="settings-row">
         <label for="theme-select">Виберіть тему:</label>
         <select id="theme-select">
-          <option value="light">Світла</option>
-          <option value="dark">Темна</option>
+            <option value="light">Світла</option>
+            <option value="dark">Темна</option>
         </select>
+    </div>
+    <div class="settings-row">
         <button id="leave-button">Вийти з акаунту</button>
         <button id="delete-button">Видалити акаунт</button>
         <button id="save-settings" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
-      </div>
+    </div>
+</div>
 </body>
 </html>

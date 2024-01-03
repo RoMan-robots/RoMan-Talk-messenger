@@ -1,1 +1,16 @@
-{"users":[{"id":1,"username":"RoMan","password":"123"},{"id":2,"username":"test","password":"0"},{"id":3,"username":"k","password":"a"}]}
+{
+    "users": [
+        {
+            "id": 1,
+            "username": "RoMan",
+            "password": "123",
+            "selected theme": "light"
+        },
+        {
+            "id": 2,
+            "username": "test",
+            "password": "0",
+            "selected theme": "light"
+        }
+    ]
+}

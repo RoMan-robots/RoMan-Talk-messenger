@@ -162,38 +162,55 @@ body {
     }
 
     #settings-screen {
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: rgba(0, 0, 0, 0.8);
       height: 100vh;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.8);
       color: #fff;
       font-family: Verdana, sans-serif;
-      padding: 20px;
-    }
-
-    #settings-screen h2 {
+  }
+  
+  #settings-title {
       margin-bottom: 20px;
-    }
-
-    #settings-screen label {
+      font-size: 2rem;
+  }
+  
+  .settings-option, .settings-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+      width: 100%;
+  }
+  
+  .settings-option {
+      margin-bottom: 40px;
+  }
+  
+  .settings-option label, 
+  .settings-option select {
       margin-bottom: 10px;
-    }
-
-    #settings-screen select {
-      margin-bottom: 20px;
-    }
-
-    #settings-screen button {
-      height: 30px;
-      padding: 0 10px;
-      background-color: #808080;
+  }
+  
+  .settings-buttons button {
+      margin: 10px 0;
+      width: auto;
+      padding: 10px 20px;
+      font-family: Verdana, sans-serif;
+  }
+  #theme-select {
+      padding: 10px;
+      background-color: #333;
       color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      font-family: Verdana, sans-serif;
+  }
+  
+    
     .dark-theme {
       background-color: #111;
     }
@@ -235,24 +252,39 @@ body {
       color: #000;
     }
 
-    .dark-theme #chat-container {
-      background-color: #000;
-      color: #fff;
-    }
-
-      #hello-screen {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .classic {
+    .classic {
       color: white;
       font-family: Verdana, sans-serif;
     }
-    .dark-theme .channel1,
-    .dark-theme .channel2,
-    .dark-theme .channel3 {
-      color: #ffffff;
-      background-color: #000000;
+
+    #hello-screen {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .dark-theme {
+      background-color: #111;
+      color: #fff;
+    }
+    
+    .dark-theme .message {
+      background-color: #333;
+    }
+    .dark-theme h1, .dark-theme h2, .dark-theme h3, .dark-theme p, .dark-theme li {
+      color: #fff;
+    }
+    .dark-theme #channel-list {
+      background-color: #222;
+      color: #fff;
+    }
+
+    .dark-theme button {
+      background-color: #333;
+      color: #fff;
+    }
+
+    .dark-theme .text-class, .dark-theme #text-id {
+      color: #fff;
     }
