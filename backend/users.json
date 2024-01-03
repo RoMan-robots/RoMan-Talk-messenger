@@ -4,12 +4,13 @@
             "id": 1,
             "username": "RoMan",
             "password": "123",
-            "selected theme": "black"
+            "selected theme": "dark"
         },
         {
             "id": 2,
             "username": "test",
-            "password": "0"
+            "password": "0",
+            "selected theme": "light"
         }
     ]
 }

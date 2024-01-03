@@ -103,18 +103,74 @@ app.post('/register', async (req, res) => {
   }
 
   const users = await getUsers();
-  const userExists = users.find(u => u.username === username);
+  const userExists = users.some(u => u.username === username);
   if (userExists) {
     return res.status(400).send({ success: false, message: 'Користувач вже існує.' });
   }
 
-  users.push({ id: users.length + 1, username, password });
+  const newUser = {
+    id: users.length + 1, 
+    username, 
+    password,
+    'selected theme': 'light'
+  };
+  users.push(newUser);
+
   await saveUsers(users);
 
   req.session.username = username;
+  req.session.userId = newUser.id;
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
 });
+
+app.get('/messages', async (req, res) => {
+  try {
+    const messages = await getMessages();
+    res.send(messages);
+  } catch (error) {
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+const getMessages = () => {
+  return new Promise((resolve, reject) => {
+    fs.readFile('messages.json', 'utf8', (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(JSON.parse(data));
+      }
+    });
+  });
+};
+
+app.post('/messages', async (req, res) => {
+  try {
+    const { author, context } = req.body;
+    const messages = await getMessages();
+    const newMessage = { id: messages.length + 1, author, context };
+    messages.push(newMessage);
+    await saveMessages(messages);
+    res.send({ success: true, message: 'Повідомлення відправлено.' });
+  } catch (error) {
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
+const saveMessages = (messages) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile('messages.json', JSON.stringify({ messages }, null, 4), 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
 
 app.post('/save-theme', async (req, res) => {
   const username = req.session.username;
@@ -140,6 +196,7 @@ app.post('/save-theme', async (req, res) => {
 
 app.post('/logout', (req, res) => {
   req.session.destroy();
+  res.send({ success: true });
 });
 
 app.post('/delete-account', async (req, res) => {

@@ -19,14 +19,35 @@ function handleChannelClick(event) {
   displayMessage(`Це тестова кнопка, яка нажаль не переводить в інший чат...`);
 }
 
+async function loadMessages() {
+  try {
+    const response = await fetch('/messages');
+    const data = await response.json();
+    data.messages.forEach(message => {
+      displayMessage(`${message.author}: ${message.context}`);
+    });
+  } catch (error) {
+    console.error('Помилка при завантаженні повідомлень:', error);
+  }
+}
+
 
 async function sendMessage() {
+  const message = messageInput.value;
   const username = await getLoggedInUser();
   if (!username) return;
 
-  const message = messageInput.value;
-  displayMessage(`${username}: ${message}`);
-  messageInput.value = '';
+  try {
+    await fetch('/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: username, context: message })
+    });
+    displayMessage(`${username}: ${message}`);
+    messageInput.value = '';
+  } catch (error) {
+    console.error('Помилка при відправленні повідомлення:', error);
+  }
 }
 
 function toggleDropdown() {
@@ -66,6 +87,7 @@ async function displayWelcomeMessage() {
 }
 
 displayWelcomeMessage();
+loadMessages();
 
 function changeUrlToSettings(url) {
   window.location.href = url;
