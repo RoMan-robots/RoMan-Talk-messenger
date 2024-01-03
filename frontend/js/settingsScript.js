@@ -23,7 +23,6 @@ async function saveSettings() {
     });
     const data = await response.json();
     if (data.success) {
-      alert('Тема успішно збережена.');
       changeUrlToChat('chat.html');
     } else {
       alert('Помилка збереження теми.');
