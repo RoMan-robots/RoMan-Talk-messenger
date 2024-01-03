@@ -16,12 +16,6 @@ body {
       background-color: rgba(0, 0, 0, 0.8);
     }
 
-    #login-form {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 5px;
-    }
-
     #login-form input[type="text"],
     #login-form input[type="password"] {
       width: 200px;
@@ -37,6 +31,13 @@ body {
       border: none;
       cursor: pointer;
       font-weight: bold;
+    }
+
+    #register-screen {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     #chat-container {
@@ -102,7 +103,7 @@ body {
 
     #message-list {
       flex-grow: 1;
-      overflow: auto; /* Залиште цей рядок */
+      overflow: auto;
       padding: 10px;
       background-color: rgba(0, 0, 0, 0.6);
     }
@@ -118,8 +119,8 @@ body {
 
     #input-container {
       display: flex;
-      align-items: center; /* Додайте це */
-      padding: 10px; /* Замініть margin-bottom на padding */
+      align-items: center;
+      padding: 10px;
       background-color: #000;
     }
 
@@ -199,11 +200,10 @@ body {
     #top-bar,
     button,
     #chat-container {
-      background-color: #fff; /* Світлий фон */
-      color: #000; /* Темний текст */
+      background-color: #fff;
+      color: #000;
     }
 
-    /* Стилі для темної теми */
     .dark-theme #top-bar,
     .dark-theme button,
     .dark-theme #chat-container {
@@ -212,38 +212,32 @@ body {
   }
     .dark-theme
 
-    #title {
-      color: #000; /* Темний текст за замовчуванням */
-    }
-
     .dark-theme #title {
-      color: #fff; /* Світлий текст */
-      background-color: #000; /* Чорний фон */
+      color: #fff;
+      background-color: #000;
     }
 
       #server-dropdown {
-      /* інші стилі */
-      color: #000; /* Чорний текст */
+      color: #000;
     }
 
     .dark-theme #server-dropdown {
-      color: #fff; /* Білий текст */
+      color: #fff;
     }
 
         #chat-container {
       flex-grow: 1;
       flex-direction: column;
-      /* інші стилі */
     }
 
     .light-theme #chat-container {
-      background-color: #fff; /* Світлий фон */
-      color: #000; /* Чорний текст */
+      background-color: #fff; 
+      color: #000;
     }
 
     .dark-theme #chat-container {
-      background-color: #000; /* Чорний фон */
-      color: #fff; /* Білий текст */
+      background-color: #000;
+      color: #fff;
     }
 
       #hello-screen {

@@ -59,6 +59,40 @@ app.get('/username', (req, res) => {
   }
 });
 
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).send({ success: false, message: 'Ім\'я користувача та пароль не можуть бути порожніми.' });
+  }
+
+  const users = await getUsers();
+  const userExists = users.find(u => u.username === username);
+  if (userExists) {
+    return res.status(400).send({ success: false, message: 'Користувач вже існує.' });
+  }
+
+  users.push({ id: users.length + 1, username, password });
+  await saveUsers(users);
+
+  req.session.username = username;
+
+  res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
+});
+
+const saveUsers = (users) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path.join(__dirname, 'users.json'), JSON.stringify({ users }), 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
+
 
 app.get("/", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
