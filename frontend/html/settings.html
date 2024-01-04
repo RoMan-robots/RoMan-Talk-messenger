@@ -9,20 +9,20 @@
     <script src="../js/settingsScript.js" defer></script>
 </head>
 <body>
-  <div id="settings-screen">
-    <h2>Налаштування</h2>
-    <div class="settings-row">
-        <label for="theme-select">Виберіть тему:</label>
-        <select id="theme-select">
-            <option value="light">Світла</option>
-            <option value="dark">Темна</option>
-        </select>
+    <div id="settings-screen" class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
+        <h2 id="settings-title" class="text-center">Налаштування</h2>
+        <div class="settings-option w-100 text-center">
+            <label for="theme-select">Виберіть тему:</label>
+            <select id="theme-select" class="form-control mb-4">
+                <option value="light">Світла</option>
+                <option value="dark">Темна</option>
+            </select>
+        </div>
+        <div class="settings-buttons w-100 text-center">
+            <button id="leave-button" class="btn btn-secondary my-2" onclick="logout()">Вийти з акаунту</button>
+            <button id="delete-button" class="btn btn-danger my-2" onclick="deleteAccount()">Видалити акаунт</button>
+            <button id="save-settings" class="btn btn-success my-2" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
+        </div>
     </div>
-    <div class="settings-row">
-        <button id="leave-button" onclick="logout()">Вийти з акаунту</button>
-        <button id="delete-button" onclick="deleteAccount()">Видалити акаунт</button>
-        <button id="save-settings" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
-    </div>
-</div>
 </body>
 </html>
