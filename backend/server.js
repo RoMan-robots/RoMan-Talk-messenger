@@ -149,7 +149,8 @@ app.post('/messages', async (req, res) => {
   try {
     const { author, context } = req.body;
     const messages = await getMessages();
-    const newMessage = { id: messages.length + 1, author, context };
+    const newMessageId = messages.length + 1;
+    const newMessage = { id: newMessageId, author, context };
     messages.push(newMessage);
     await saveMessages(messages);
     res.send({ success: true, message: 'Повідомлення відправлено.' });
@@ -157,7 +158,6 @@ app.post('/messages', async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
-
 
 const saveMessages = (messages) => {
   return new Promise((resolve, reject) => {
@@ -243,4 +243,4 @@ app.listen(port, 'localhost', () => {
   });
   
 
-// app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));
