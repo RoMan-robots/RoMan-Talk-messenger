@@ -161,7 +161,7 @@ app.post('/messages', async (req, res) => {
 
 const saveMessages = (messages) => {
   return new Promise((resolve, reject) => {
-    fs.writeFile('messages.json', JSON.stringify({ messages }, null, 4), 'utf8', (err) => {
+    fs.writeFile('messages.json', JSON.stringify(messages, null, 4), 'utf8', (err) => {
       if (err) {
         reject(err);
       } else {
@@ -238,9 +238,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));
