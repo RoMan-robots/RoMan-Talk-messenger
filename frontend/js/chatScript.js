@@ -23,7 +23,7 @@ async function loadMessages() {
   try {
     const response = await fetch('/messages');
     const data = await response.json();
-    data.messages.forEach(message => {
+    data.forEach(message => {
       displayMessage(`${message.author}: ${message.context}`);
     });
   } catch (error) {

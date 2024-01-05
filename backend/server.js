@@ -155,7 +155,7 @@ app.post('/messages', async (req, res) => {
     await saveMessages(messages);
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
-    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    res.status(500).send({ success: false, message: error });
   }
 });
 
@@ -238,9 +238,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));
