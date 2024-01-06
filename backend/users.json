@@ -11,6 +11,12 @@
             "username": "test",
             "password": "0",
             "selected theme": "light"
+        },
+        {
+            "id": 3,
+            "hashedUsername": "$2b$05$wzlJ21ofTGJb8xMqKVCOwehpKv3PtOAp6oCJakbmBkav7m3UXjFxC",
+            "hashedPassword": "$2b$05$DSSNUs3T6ubo3KASLqyEAOERtUY3nDvDAxz7DP9SbYBUeTTB5gsDG",
+            "selected theme": "light"
         }
     ]
 }

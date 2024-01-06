@@ -3,6 +3,7 @@ import session from 'express-session';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcrypt';
 
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
@@ -55,21 +56,33 @@ const saveUsers = (users) => {
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const users = await getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
+    let foundUser = null;
+    
+    for (const user of users) {
+      const isUsernameMatch = await bcrypt.compare(username, user.hashedUsername);
+      if (isUsernameMatch) {
+        foundUser = user;
+        break;
+      }
+    }
 
-    if (user) {
-      req.session.username = username;
-      req.session.userId = user.id;
+    if (!foundUser) {
+      return res.status(401).send({ success: false, message: 'Користувача не знайдено' });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, foundUser.hashedPassword);
+    if (isPasswordMatch) {
+      req.session.username = foundUser.username;
+      req.session.userId = foundUser.id;
       res.send({ success: true, redirectUrl: '/chat.html' });
     } else {
-      res.status(401).send({ success: false, message: 'Неправильний логін або пароль.' });
+      res.status(401).send({ success: false, message: 'Неправильний пароль' });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    res.status(500).send({ success: false, message: 'Помилка сервера' });
   }
 });
 
@@ -108,10 +121,13 @@ app.post('/register', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Користувач вже існує.' });
   }
 
+  const hashedPassword = await bcrypt.hash(password, 5);
+  const hashedUsername = await bcrypt.hash(username, 5);
+
   const newUser = {
     id: users.length + 1, 
-    username, 
-    password,
+    hashedUsername, 
+    hashedPassword,
     'selected theme': 'light'
   };
   users.push(newUser);
