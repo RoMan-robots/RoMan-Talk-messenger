@@ -1,6 +1,5 @@
 import express from 'express';
 import session from 'express-session';
-import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcrypt';
@@ -10,7 +9,6 @@ const port = process.env.PORT || 8080;
 const app = express();
 
 app.use(express.json());
-
 app.use(session({
   secret: '123',
   resave: false,
@@ -56,27 +54,26 @@ const saveUsers = (users) => {
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+
   try {
     const users = await getUsers();
-    let foundUser = null;
-    
-    for (const user of users) {
-      const isUsernameMatch = await bcrypt.compare(username, user.hashedUsername);
-      if (isUsernameMatch) {
-        foundUser = user;
-        break;
-      }
-    }
+    const foundUser = users.find(user => user.username === username);
 
     if (!foundUser) {
       return res.status(401).send({ success: false, message: 'Користувача не знайдено' });
     }
 
-    const isPasswordMatch = await bcrypt.compare(password, foundUser.hashedPassword);
+    const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
-      res.send({ success: true, redirectUrl: '/chat.html' });
+      req.session.save((err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
+        }
+        res.send({ success: true, redirectUrl: '/chat.html' });
+      });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
     }
@@ -121,13 +118,12 @@ app.post('/register', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Користувач вже існує.' });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 5);
-  const hashedUsername = await bcrypt.hash(username, 5);
+  password = await bcrypt.hash(password, 15);
 
   const newUser = {
     id: users.length + 1, 
-    hashedUsername, 
-    hashedPassword,
+    username, 
+    password,
     'selected theme': 'light'
   };
   users.push(newUser);
@@ -254,9 +250,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));

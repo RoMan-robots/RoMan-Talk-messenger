@@ -3,19 +3,13 @@
         {
             "id": 1,
             "username": "RoMan",
-            "password": "123",
+            "password": "$2a$15$PbSQY13NsDOFpfb9aHpD3egNlJGuPAFjO.pEUhGoTCOrkIto/efuq",
             "selected theme": "dark"
         },
         {
             "id": 2,
             "username": "test",
-            "password": "0",
-            "selected theme": "light"
-        },
-        {
-            "id": 3,
-            "hashedUsername": "$2b$05$wzlJ21ofTGJb8xMqKVCOwehpKv3PtOAp6oCJakbmBkav7m3UXjFxC",
-            "hashedPassword": "$2b$05$DSSNUs3T6ubo3KASLqyEAOERtUY3nDvDAxz7DP9SbYBUeTTB5gsDG",
+            "password": "$2a$15$G/UUsyZ6kCYf4ro5NImZCupLR7Qap8PYrZ8zLNkSMOu34C3o4RaaO",
             "selected theme": "light"
         }
     ]

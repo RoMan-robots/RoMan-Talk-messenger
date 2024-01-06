@@ -20,6 +20,7 @@ async function login(event) {
       alert(data.message || 'Неправильний логін або пароль.');
     }
   } catch (error) {
+    console.error('Помилка:', error);
     alert('Помилка сервера');
   }
 }

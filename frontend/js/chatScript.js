@@ -7,6 +7,22 @@ const settingsButton = document.getElementById('settings');
 const chatContainer = document.getElementById('chat-container');
 
 let isDropdownActive = true;
+let currentUsername;
+
+async function getCurrentUsername() {
+  try {
+    const response = await fetch('/username');
+    const data = await response.json();
+    if (data.username) {
+      currentUsername = data.username;
+      applyTheme(data.theme);
+      displayWelcomeMessage();
+      loadMessages();
+    }
+  } catch (error) {
+    console.error('Помилка при отриманні імені користувача:', error);
+  }
+}
 
 function displayMessage(message) {
   const messageElement = document.createElement('div');
@@ -31,19 +47,15 @@ async function loadMessages() {
   }
 }
 
-
 async function sendMessage() {
   const message = messageInput.value;
-  const username = await getLoggedInUser();
-  if (!username) return;
-
   try {
     await fetch('/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author: username, context: message })
+      body: JSON.stringify({ author: currentUsername, context: message })
     });
-    displayMessage(`${username}: ${message}`);
+    displayMessage(`${currentUsername}: ${message}`);
     messageInput.value = '';
   } catch (error) {
     console.error('Помилка при відправленні повідомлення:', error);
@@ -55,22 +67,6 @@ function toggleDropdown() {
   channelList.classList.toggle('active', isDropdownActive);
 }
 
-async function getLoggedInUser() {
-  try {
-    const response = await fetch('/username');
-    const data = await response.json();
-    if (data.username) {
-      applyTheme(data.theme);
-      return data.username;
-    } else {
-      window.location.href = '/login.html';
-    }
-  } catch (error) {
-    console.error('Помилка при отриманні імені користувача:', error);
-    window.location.href = '/login.html';
-  }
-}
-
 function applyTheme(theme) {
   if (theme === 'dark') {
     document.body.classList.add('dark-theme');
@@ -79,16 +75,24 @@ function applyTheme(theme) {
   }
 }
 
-async function displayWelcomeMessage() {
-  const username = await getLoggedInUser();
-  if (username) {
-    displayMessage(`Вітаємо в RoMan Talk, ${username}!`);
-  }
+function displayWelcomeMessage() {
+    displayMessage(`Вітаємо в RoMan Talk, ${currentUsername}!`);
 }
-
-displayWelcomeMessage();
-loadMessages();
 
 function changeUrlToSettings(url) {
   window.location.href = url;
 }
+
+getCurrentUsername();
+
+function sendPeriodicAdvertisement() {
+  setInterval(() => {
+    const chance = Math.random();
+    if (chance < 0.31) {
+      const adMessage = "Нудно спілкуватись? Пограй у GO:TA з друзями!";
+      displayMessage(`Реклама: ${adMessage}`);
+    }
+  }, 25000);
+}
+
+sendPeriodicAdvertisement();
