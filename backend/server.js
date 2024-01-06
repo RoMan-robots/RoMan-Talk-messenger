@@ -106,7 +106,7 @@ app.get('/username', (req, res) => {
 
 
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).send({ success: false, message: 'Ім\'я користувача та пароль не можуть бути порожніми.' });
