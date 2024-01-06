@@ -2,7 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import path from 'path';
 import fs from 'fs';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
