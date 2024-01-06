@@ -89,7 +89,7 @@ function sendPeriodicAdvertisement() {
   setInterval(() => {
     const chance = Math.random();
     if (chance < 0.31) {
-      const adMessage = "Нудно спілкуватись? Пограй у GO:TA з друзями!";
+      const adMessage = "Нудно спілкуватись? Пограй у GO:TA з друзями! Типу силка шоб скачать гру";
       displayMessage(`Реклама: ${adMessage}`);
     }
   }, 25000);
