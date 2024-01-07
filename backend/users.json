@@ -3,13 +3,13 @@
         {
             "id": 1,
             "username": "RoMan",
-            "password": "$2a$15$PbSQY13NsDOFpfb9aHpD3egNlJGuPAFjO.pEUhGoTCOrkIto/efuq",
+            "password": "$2a$10$N1GvIv.1Bxmb7wfnFFG16OJKXZfhUdmyb15Te1v1PAiVJ7HkrjZbu",
             "selected theme": "light"
         },
         {
             "id": 2,
             "username": "test",
-            "password": "$2a$15$G/UUsyZ6kCYf4ro5NImZCupLR7Qap8PYrZ8zLNkSMOu34C3o4RaaO",
+            "password": "$2a$10$4Ey/jyyaZj3op1xaV0o4a.6bSmZ26o6BXWLnm3EGemFrWiqD9PAhu",
             "selected theme": "light"
         }
     ]
