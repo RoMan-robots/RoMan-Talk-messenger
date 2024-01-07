@@ -3,6 +3,7 @@ const themeSelect = document.getElementById('theme-select');
 const saveSettingsButton = document.getElementById('save-settings');
 
 saveSettingsButton.addEventListener('click', saveSettings);
+console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 function changeUrlToChat(url) {
   window.location.href = url;
