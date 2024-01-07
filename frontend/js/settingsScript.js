@@ -1,6 +1,11 @@
 const settingsScreen = document.getElementById('settings-screen');
 const themeSelect = document.getElementById('theme-select');
 const saveSettingsButton = document.getElementById('save-settings');
+const changePasswordForm = document.getElementById('change-password-form');
+const toggleChangePasswordButton = document.getElementById('toggle-change-password-button');
+
+changePasswordForm.style.display = 'none';
+let display = false;
 
 saveSettingsButton.addEventListener('click', saveSettings);
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
@@ -8,6 +13,41 @@ console.log("Привіт! Це консоль для розробників, д
 function changeUrlToChat(url) {
   window.location.href = url;
 }
+
+function toggleChangePassword() {
+  if (!display) {
+    changePasswordForm.style.display = 'block';
+    toggleChangePasswordButton.textContent = 'Скасувати';
+    display = true;
+  } else {
+    changePasswordForm.style.display = 'none';
+    toggleChangePasswordButton.textContent = 'Змінити пароль';
+    display = false;
+  }
+}
+
+async function changePassword() {
+  const oldPassword = document.getElementById('old-password').value;
+  const newPassword = document.getElementById('new-password').value;
+
+  try {
+    const response = await fetch('/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert('Пароль успішно змінено.');
+    } else {
+      alert(data.message || 'Помилка зміни пароля.');
+    }
+  } catch (error) {
+    console.error('Помилка:', error);
+    alert('Помилка з’єднання з сервером.');
+  }
+}
+
 
 async function logout() {
   if (!confirm('Ви впевнені, що хочете вийти? Потім зайти можна тільки за паролем.')) {

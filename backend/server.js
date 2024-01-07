@@ -40,6 +40,27 @@ const getUsers = () => {
   });
 };
 
+async function checkUserExists(req, res, next) {
+  const username = req.session.username;
+
+  if (!username) {
+    return res.status(403).send({ success: false, message: 'Необхідна авторизація.' });
+  }
+
+  try {
+    const users = await getUsers();
+    const userExists = users.some(user => user.username === username);
+
+    if (!userExists) {
+      req.session.destroy();
+      return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
+    }
+
+  } catch (error) {
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+}
+
 const saveUsers = (users) => {
   return new Promise((resolve, reject) => {
     fs.writeFile(path.join(__dirname, 'users.json'), JSON.stringify({ users }, null, 4), 'utf8', (err) => {
@@ -84,9 +105,8 @@ app.post('/login', async (req, res) => {
 });
 
 
-app.get('/username', (req, res) => {
+app.get('/username', checkUserExists, (req, res) => {
   const username = req.session.username;
-  if (username) {
     getUsers().then(users => {
       const user = users.find(u => u.username === username);
       if (user) {
@@ -98,9 +118,6 @@ app.get('/username', (req, res) => {
       console.error(err);
       res.status(500).send({ success: false, message: 'Помилка сервера.' });
     });
-  } else {
-    res.send({ username: null });
-  }
 });
 
 
@@ -136,14 +153,25 @@ app.post('/register', async (req, res) => {
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
 });
 
-app.get('/messages', async (req, res) => {
+app.get('/messages', checkUserExists, async (req, res) => {
+  const username = req.session.username;
+
   try {
+    const users = await getUsers();
+    const userExists = users.some(user => user.username === username);
+
+    if (!userExists) {
+      req.session.destroy();
+      return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
+    }
+
     const messages = await getMessages();
     res.send(messages);
   } catch (error) {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
+
 
 const getMessages = () => {
   return new Promise((resolve, reject) => {
@@ -157,7 +185,7 @@ const getMessages = () => {
   });
 };
 
-app.post('/messages', async (req, res) => {
+app.post('/messages', checkUserExists, async (req, res) => {
   try {
     const { author, context } = req.body;
     const messages = await getMessages();
@@ -183,21 +211,38 @@ const saveMessages = (messages) => {
   });
 };
 
+app.post('/change-password', checkUserExists, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const username = req.session.username;
 
-app.post('/save-theme', async (req, res) => {
+  try {
+    const users = await getUsers();
+    const userIndex = users.findIndex(user => user.username === username);
+
+    const isOldPasswordMatch = await bcrypt.compare(oldPassword, users[userIndex].password);
+    if (!isOldPasswordMatch) {
+      return res.status(401).send({ success: false, message: 'Неправильний старий пароль.' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    users[userIndex].password = hashedNewPassword;
+    await saveUsers(users);
+
+    res.send({ success: true, message: 'Пароль успішно змінено.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
+app.post('/save-theme', checkUserExists, async (req, res) => {
   const username = req.session.username;
   const { theme } = req.body;
-
-  if (!username) {
-    return res.status(401).send({ success: false, message: 'Необхідно ввійти в акаунт.' });
-  }
 
   try {
     let users = await getUsers();
     const userIndex = users.findIndex(u => u.username === username);
-    if (userIndex === -1) {
-      return res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
-    }
     users[userIndex]['selected theme'] = theme;
     await saveUsers(users);
     res.send({ success: true, message: 'Тема збережена.' });
@@ -208,23 +253,20 @@ app.post('/save-theme', async (req, res) => {
 
 app.post('/logout', (req, res) => {
   req.session.destroy();
-  res.send({ success: true });
+  res.send({ success: true, redirectUrl: '/' });
 });
 
-app.post('/delete-account', async (req, res) => {
+app.post('/delete-account', checkUserExists, async (req, res) => {
   const { password } = req.body;
   let users = await getUsers();
   const userIndex = users.findIndex(user => user.id === req.session.userId);
 
-  if (userIndex === -1) {
-    return res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
-  }
-
-  if (users[userIndex].password === password) {
+  const isPasswordMatch = await bcrypt.compare(password, users[userIndex].password);
+  if (isPasswordMatch) {
     users = users.filter(user => user.id !== req.session.userId);
     await saveUsers(users);
     req.session.destroy();
-    res.send({ success: true, message: 'Акаунт видалено успішно.' });
+    res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
   } else {
     res.status(401).send({ success: false, message: 'Невірний пароль.' });
   }
@@ -250,9 +292,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));
