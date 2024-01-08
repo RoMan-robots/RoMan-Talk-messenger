@@ -3,7 +3,9 @@ import session from 'express-session';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
+
 
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;

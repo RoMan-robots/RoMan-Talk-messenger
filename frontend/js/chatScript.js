@@ -66,6 +66,13 @@ async function sendMessage() {
   }
 }
 
+messageInput.addEventListener('keypress', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
 function toggleDropdown() {
   isDropdownActive = !isDropdownActive;
   channelList.classList.toggle('active', isDropdownActive);
