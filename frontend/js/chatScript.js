@@ -12,13 +12,17 @@ let currentUsername;
 async function getCurrentUsername() {
   try {
     const response = await fetch('/username');
-    const data = await response.json();
-    if (data.username) {
-      currentUsername = data.username;
-      applyTheme(data.theme);
-      displayWelcomeMessage();
-      loadMessages();
-    }
+        const data = await response.json();
+        if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
+            return;
+        }
+        if (data.username) {
+            currentUsername = data.username;
+            applyTheme(data.theme);
+            displayWelcomeMessage();
+            loadMessages();
+        }
   } catch (error) {
     console.error('Помилка при отриманні імені користувача:', error);
   }

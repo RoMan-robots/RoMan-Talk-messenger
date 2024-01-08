@@ -3,6 +3,7 @@ import session from 'express-session';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+require('dotenv').config();
 
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
@@ -10,7 +11,7 @@ const app = express();
 
 app.use(express.json());
 app.use(session({
-  secret: '123',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true
 }));
@@ -52,14 +53,17 @@ async function checkUserExists(req, res, next) {
     const userExists = users.some(user => user.username === username);
 
     if (!userExists) {
-      req.session.destroy();
-      return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
+      req.session.destroy(() => {
+        res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
+      });
+    } else {
+      next();
     }
-
   } catch (error) {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 }
+
 
 const saveUsers = (users) => {
   return new Promise((resolve, reject) => {
@@ -292,9 +296,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+app.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+// app.listen(port, () => console.log(`App listening on port ${port}!`));

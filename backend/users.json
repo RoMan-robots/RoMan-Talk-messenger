@@ -5,12 +5,6 @@
             "username": "RoMan",
             "password": "$2a$10$N1GvIv.1Bxmb7wfnFFG16OJKXZfhUdmyb15Te1v1PAiVJ7HkrjZbu",
             "selected theme": "dark"
-        },
-        {
-            "id": 2,
-            "username": "test",
-            "password": "$2a$10$eIaKUphimiTj2XrveVc2lev5umh3drgdTimpopGt5WxFHc6trmjWS",
-            "selected theme": "light"
         }
     ]
 }
