@@ -11,20 +11,25 @@ let currentUsername;
 
 async function getCurrentUsername() {
   try {
-    const response = await fetch('/username');
-        const data = await response.json();
-        if (data.redirectUrl) {
-            window.location.href = data.redirectUrl;
-            return;
-        }
-        if (data.username) {
-            currentUsername = data.username;
-            applyTheme(data.theme);
-            displayWelcomeMessage();
-            loadMessages();
-        }
+      const response = await fetch('/username');
+      const data = await response.json();
+      
+      if (response.status === 403) {
+          window.location.href = '/';
+          return;
+      }
+
+      if (data.username) {
+          currentUsername = data.username;
+          applyTheme(data.theme);
+          displayWelcomeMessage();
+          loadMessages();
+      } else {
+          window.location.href = '/';
+      }
   } catch (error) {
-    console.error('Помилка при отриманні імені користувача:', error);
+      console.error('Помилка при отриманні імені користувача:', error);
+      window.location.href = '/';
   }
 }
 
@@ -100,7 +105,7 @@ console.log("Привіт! Це консоль для розробників, д
 function sendPeriodicAdvertisement() {
   setInterval(() => {
     const chance = Math.random();
-    if (chance < 0.31) {
+    if (chance <= 0.25) {
       const adMessage = "Нудно спілкуватись? Пограй у GO:TA з друзями! Типу силка шоб скачать гру";
       displayMessage(`Реклама: ${adMessage}`);
     }

@@ -4,6 +4,12 @@
             "id": 1,
             "username": "RoMan",
             "password": "$2a$10$N1GvIv.1Bxmb7wfnFFG16OJKXZfhUdmyb15Te1v1PAiVJ7HkrjZbu",
+            "selected theme": "dark"
+        },
+        {
+            "id": 2,
+            "username": "test",
+            "password": "$2a$10$5ifjCvckmgF4GMjrnz3hwOsdONn9jXUwVSE9D.If1TcBQfUrbLfIK",
             "selected theme": "light"
         }
     ]

@@ -1,5 +1,8 @@
 import express from 'express';
 import session from 'express-session';
+import { createServer } from 'http';
+import { Server as SocketIO } from 'socket.io';
+import sharedsession from 'express-socket.io-session';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
@@ -10,14 +13,19 @@ dotenv.config();
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
 const app = express();
+const httpServer = createServer(app);
+const io = new SocketIO(httpServer);
 
-app.use(express.json());
-app.use(session({
+const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true
-}));
+});
 
+app.use(sessionMiddleware);
+
+
+app.use(express.json());
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
@@ -42,6 +50,19 @@ const getUsers = () => {
     });
   });
 };
+
+const addedUserMessage = async (eventMessage) => {
+  try {
+    const messages = await getMessages();
+    const newMessageId = messages.length + 1;
+    const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
+    messages.push(newMessage);
+    await saveMessages(messages);
+  } catch (error) {
+    console.error('Помилка при додаванні події:', error);
+  }
+};
+
 
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
@@ -79,6 +100,34 @@ const saveUsers = (users) => {
   });
 };
 
+io.on('connection', (socket) => {
+  console.log('Користувач підключився');
+
+  socket.on('new message', async (messageData) => {
+    try {
+      const { author, context } = req.body;
+      const messages = getMessages();
+      const newMessageId = messages.length + 1;
+      const newMessage = {
+        id: newMessageId,
+        author: socket.handshake.session.username,
+        context: messageData.context
+      };
+      messages.push(newMessage);
+      await saveMessages(messages);
+      res.send({ success: true, message: 'Повідомлення відправлено.' });
+    } catch (error) {
+      res.status(500).send({ success: false, message: error });
+    }
+    io.emit('chat message', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Користувач відключився');
+  });
+});
+
+
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -92,6 +141,9 @@ app.post('/login', async (req, res) => {
 
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
+      console.log("Session object:", req.session);
+      console.log("Is session undefined?", req.session === undefined);
+
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
       req.session.save((err) => {
@@ -100,6 +152,7 @@ app.post('/login', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
         }
         res.send({ success: true, redirectUrl: '/chat.html' });
+        addedUserMessage(`${username} залогінився в RoMan Talk.`);
       });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -157,6 +210,7 @@ app.post('/register', async (req, res) => {
   req.session.userId = newUser.id;
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
+  await addedUserMessage(`${username} зареєструвався в RoMan Talk.`);
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -298,9 +352,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// app.listen(port, 'localhost', () => {
+// httpServer.listen(port, 'localhost', () => {
 //   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
 //   });
   
 
-app.listen(port, () => console.log(`App listening on port ${port}!`));
+httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
