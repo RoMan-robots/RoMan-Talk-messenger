@@ -18,5 +18,20 @@
         "id": 4,
         "author": "test",
         "context": "Привіт"
+    },
+    {
+        "id": 5,
+        "author": "Привітання",
+        "context": "RoMan залогінився в RoMan Talk."
+    },
+    {
+        "id": 6,
+        "author": "Привітання",
+        "context": "test залогінився в RoMan Talk."
+    },
+    {
+        "id": 7,
+        "author": "test",
+        "context": "о всім привіт"
     }
 ]
