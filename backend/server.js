@@ -9,7 +9,6 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
-
 const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
 const app = express();
@@ -17,12 +16,16 @@ const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true
 });
 
 app.use(sessionMiddleware);
+
+io.use(sharedsession(sessionMiddleware, {
+    autoSave: true
+}));
 
 
 app.use(express.json());
@@ -46,6 +49,50 @@ const getUsers = () => {
         } catch (error) {
           reject(error);
         }
+      }
+    });
+  });
+};
+
+const saveUsers = (users) => {
+  return new Promise((resolve, reject) => {
+    const dataToSave = JSON.stringify({ users }, null, 4);
+    fs.writeFile(path.join(__dirname, 'users.json'), dataToSave, 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
+
+const getMessages = () => {
+  return new Promise((resolve, reject) => {
+    fs.readFile('messages.json', 'utf8', (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        try {
+          const obj = JSON.parse(data);
+          resolve(obj.messages || []);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    });
+  });
+};
+
+const saveMessages = (messages) => {
+  return new Promise((resolve, reject) => {
+    const dataToSave = JSON.stringify({ messages }, null, 4);
+    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
       }
     });
   });
@@ -87,46 +134,11 @@ async function checkUserExists(req, res, next) {
   }
 }
 
-
-const saveUsers = (users) => {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(path.join(__dirname, 'users.json'), JSON.stringify({ users }, null, 4), 'utf8', (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-};
-
 io.on('connection', (socket) => {
-  console.log('Користувач підключився');
-
   socket.on('new message', async (messageData) => {
-    try {
-      const { author, context } = req.body;
-      const messages = getMessages();
-      const newMessageId = messages.length + 1;
-      const newMessage = {
-        id: newMessageId,
-        author: socket.handshake.session.username,
-        context: messageData.context
-      };
-      messages.push(newMessage);
-      await saveMessages(messages);
-      res.send({ success: true, message: 'Повідомлення відправлено.' });
-    } catch (error) {
-      res.status(500).send({ success: false, message: error });
-    }
-    io.emit('chat message', message);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Користувач відключився');
+    io.emit('chat message', messageData);
   });
 });
-
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -141,9 +153,6 @@ app.post('/login', async (req, res) => {
 
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
-      console.log("Session object:", req.session);
-      console.log("Is session undefined?", req.session === undefined);
-
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
       req.session.save((err) => {
@@ -152,7 +161,7 @@ app.post('/login', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
         }
         res.send({ success: true, redirectUrl: '/chat.html' });
-        addedUserMessage(`${username} залогінився в RoMan Talk.`);
+        addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -210,7 +219,7 @@ app.post('/register', async (req, res) => {
   req.session.userId = newUser.id;
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
-  await addedUserMessage(`${username} зареєструвався в RoMan Talk.`);
+  await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -232,19 +241,6 @@ app.get('/messages', checkUserExists, async (req, res) => {
   }
 });
 
-
-const getMessages = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile('messages.json', 'utf8', (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(JSON.parse(data));
-      }
-    });
-  });
-};
-
 app.post('/messages', checkUserExists, async (req, res) => {
   try {
     const { author, context } = req.body;
@@ -253,23 +249,12 @@ app.post('/messages', checkUserExists, async (req, res) => {
     const newMessage = { id: newMessageId, author, context };
     messages.push(newMessage);
     await saveMessages(messages);
+    io.emit('chat message', newMessage)
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
   }
 });
-
-const saveMessages = (messages) => {
-  return new Promise((resolve, reject) => {
-    fs.writeFile('messages.json', JSON.stringify(messages, null, 4), 'utf8', (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-};
 
 app.post('/change-password', checkUserExists, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
@@ -352,8 +337,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, '192.168.74.174', () => {
-  console.log(`Server is running on port ${port}. Test at: http://192.168.74.174:${port}/`);
+httpServer.listen(port, '192.168.0.5', () => {
+  console.log(`Server is running on port ${port}. Test at: http://192.168.0.5:${port}/`);
   });
   
 
