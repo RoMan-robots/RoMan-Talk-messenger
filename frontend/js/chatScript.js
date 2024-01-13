@@ -66,7 +66,6 @@ async function sendMessage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(messageObject)
         });
-        socket.emit('new message', messageObject);
         messageInput.value = '';
       } catch (error) {
         console.error('Помилка при відправленні повідомлення:', error);

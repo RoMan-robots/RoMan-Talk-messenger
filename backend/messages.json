@@ -3,12 +3,32 @@
         {
             "id": 1,
             "author": "Привітання",
-            "context": "test залогінився в RoMan Talk."
+            "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
         },
         {
             "id": 2,
+            "author": "RoMan",
+            "context": "pencil"
+        },
+        {
+            "id": 3,
+            "author": "RoMan",
+            "context": "?"
+        },
+        {
+            "id": 4,
             "author": "Привітання",
-            "context": "test залогінився в RoMan Talk."
+            "context": "test залогінився в RoMan Talk. Вітаємо!"
+        },
+        {
+            "id": 5,
+            "author": "RoMan",
+            "context": "ok?"
+        },
+        {
+            "id": 6,
+            "author": "test",
+            "context": "pon"
         }
     ]
 }
