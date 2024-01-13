@@ -1,7 +1,7 @@
 {
   "name": "roman_talk_1.0_beta",
   "version": "1.0_beta",
-  "description": "My messenger, called RoMan_Talk, here is code from it",
+  "description": "My messenger, called RoMan Talk, here is code from it",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   "keywords": [
     "RoMan",
     "Talk",
-    "RoMan_Talk",
+    "RoMan Talk",
     "Messenger"
   ],
   "author": "RoMan",
@@ -24,6 +24,6 @@
     "express-socket.io-session": "^1.3.5",
     "fs": "^0.0.1-security",
     "socket.io": "^4.7.4",
-    "socket.io-client": "^4.7.3"
+    "socket.io-client": "^4.7.4"
   }
 }
