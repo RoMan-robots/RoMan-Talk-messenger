@@ -104,13 +104,15 @@ const addedUserMessage = async (eventMessage) => {
     const messages = await getMessages();
     const newMessageId = messages.length + 1;
     const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
+
     messages.push(newMessage);
     await saveMessages(messages);
-  } catch (error) {
-    console.error('Помилка при додаванні події:', error);
-  }
-};
 
+    io.emit('chat message', newMessage);
+    } catch (error) {
+    console.error('Помилка при додаванні події:', error);
+    }
+    };
 
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
@@ -156,18 +158,20 @@ app.post('/login', async (req, res) => {
     if (isPasswordMatch) {
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
-      req.session.save((err) => {
+      req.session.save(async (err) => {
         if (err) {
           console.error(err);
           return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
         }
         res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
         res.send({ success: true, redirectUrl: '/chat.html' });
-        addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+
+        await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
     }
+    
   } catch (error) {
     console.error(error);
     res.status(500).send({ success: false, message: 'Помилка сервера' });
@@ -343,9 +347,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
-  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-  });
+// httpServer.listen(port, 'localhost', () => {
+//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+//   });
   
 
-// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
