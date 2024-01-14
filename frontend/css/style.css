@@ -220,6 +220,15 @@ body {
       font-family: Verdana, sans-serif;
   }
   
+  .footer {
+    color: #fff;
+    display: flex;
+    justify-content: center;
+  }
+
+  .footer-a {
+    color: #adadad;
+  }
     
     .dark-theme {
       background-color: #111;

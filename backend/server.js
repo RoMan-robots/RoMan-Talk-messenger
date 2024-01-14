@@ -3,6 +3,7 @@ import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import sharedsession from 'express-socket.io-session';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
@@ -22,13 +23,13 @@ const sessionMiddleware = session({
 });
 
 app.use(sessionMiddleware);
+app.use(express.json());
+app.use(cookieParser());
 
 io.use(sharedsession(sessionMiddleware, {
     autoSave: true
 }));
 
-
-app.use(express.json());
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
@@ -160,6 +161,7 @@ app.post('/login', async (req, res) => {
           console.error(err);
           return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
         }
+        res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
         res.send({ success: true, redirectUrl: '/chat.html' });
         addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
@@ -217,6 +219,8 @@ app.post('/register', async (req, res) => {
 
   req.session.username = username;
   req.session.userId = newUser.id;
+
+  res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
   await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
@@ -297,6 +301,7 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
+  res.clearCookie('isLoggedIn');
   req.session.destroy();
   res.send({ success: true, redirectUrl: '/' });
 });
@@ -310,6 +315,7 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
   if (isPasswordMatch) {
     users = users.filter(user => user.id !== req.session.userId);
     await saveUsers(users);
+    res.clearCookie('isLoggedIn');
     req.session.destroy();
     res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
   } else {
@@ -337,9 +343,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
 
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
