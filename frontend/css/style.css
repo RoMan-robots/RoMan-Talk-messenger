@@ -276,6 +276,10 @@ body {
       font-family: Verdana, sans-serif;
     }
 
+    .tos-screen {
+      background-color: #000;
+    }
+
     #hello-screen {
       flex-grow: 1;
       display: flex;
