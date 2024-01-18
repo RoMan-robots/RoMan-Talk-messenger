@@ -264,6 +264,15 @@ app.post('/messages', checkUserExists, async (req, res) => {
   }
 });
 
+app.get('/check-session', (req, res) => {
+  if (req.session.username) {
+    res.send({ isLoggedIn: true });
+  } else {
+    res.send({ isLoggedIn: false });
+  }
+});
+
+
 app.post('/change-password', checkUserExists, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const username = req.session.username;
@@ -287,7 +296,6 @@ app.post('/change-password', checkUserExists, async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
-
 
 app.post('/save-theme', checkUserExists, async (req, res) => {
   const username = req.session.username;
@@ -351,9 +359,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
-  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-  });
+// httpServer.listen(port, 'localhost', () => {
+//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+//   });
   
 
-// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
