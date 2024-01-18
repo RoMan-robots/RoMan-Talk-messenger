@@ -2,7 +2,9 @@ const settingsScreen = document.getElementById('settings-screen');
 const themeSelect = document.getElementById('theme-select');
 const saveSettingsButton = document.getElementById('save-settings');
 const changePasswordForm = document.getElementById('change-password-form');
+const changeUsernameForm = document.getElementById('change-username-form');
 const toggleChangePasswordButton = document.getElementById('toggle-change-password-button');
+const toggleChangeUsernameButton = document.getElementById('toggle-change-username-button');
 
 changePasswordForm.style.display = 'none';
 let display = false;
@@ -47,7 +49,6 @@ async function changePassword() {
     alert('Помилка з’єднання з сервером.');
   }
 }
-
 
 async function logout() {
   if (!confirm('Ви впевнені, що хочете вийти? Потім зайти можна тільки за паролем.')) {

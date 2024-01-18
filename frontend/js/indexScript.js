@@ -10,4 +10,19 @@ function changeUrlToLogin(url) {
   function changeUrlToRegister(url) {
     window.location.href = url;
   }
-    
+
+  async function checkSessionAndRedirect() {
+    try {
+      const response = await fetch('/check-session');
+      const data = await response.json();
+  
+      if (data.isLoggedIn && ['/', '/login', '/register'].includes(window.location.pathname)) {
+        window.location.href = '/chat.html';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+  
+  document.addEventListener("DOMContentLoaded", checkSessionAndRedirect);
+  

@@ -37,3 +37,9 @@ async function register(event) {
     alert('Помилка сервера при реєстрації');
   }
 }
+
+if (document.cookie.indexOf('isLoggedIn=true') !== -1) {
+  if (['/', '/login', '/register'].includes(window.location.pathname)) {
+    window.location.href = '/chat.html';
+  }
+}
