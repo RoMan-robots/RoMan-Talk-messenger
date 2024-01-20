@@ -106,15 +106,3 @@ socket.on('chat message', (msg) => {
       displayMessage(`${msg.author}: ${msg.context}`);
     }
   });
-
-function sendPeriodicAdvertisement() {
-  setInterval(() => {
-    const chance = Math.random();
-    if (chance <= 0.25) {
-      const adMessage = "Нудно спілкуватись? Пограй у GO:TA з друзями! Типу силка шоб скачать гру";
-      displayMessage(`Реклама: ${adMessage}`);
-    }
-  }, 25000);
-}
-
-sendPeriodicAdvertisement();
