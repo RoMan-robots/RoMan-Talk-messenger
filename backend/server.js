@@ -68,8 +68,7 @@ const saveUsers = (users) => {
   });
 };
 
-
-const getMessages = () => {
+const getMessages = (channel) => {
   return new Promise((resolve, reject) => {
     fs.readFile('messages.json', 'utf8', (err, data) => {
       if (err) {
@@ -77,7 +76,8 @@ const getMessages = () => {
       } else {
         try {
           const obj = JSON.parse(data);
-          resolve(obj.messages || []);
+          const channelData = obj.channels.find(c => c.name === channel);
+          resolve(channelData ? channelData.messages : []);
         } catch (error) {
           reject(error);
         }
@@ -86,33 +86,43 @@ const getMessages = () => {
   });
 };
 
-const saveMessages = (messages) => {
-  return new Promise((resolve, reject) => {
-    const dataToSave = JSON.stringify({ messages }, null, 4);
-    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+const saveMessages = async (channelName, newMessage) => {
+  try {
+    const data = await fs.promises.readFile('messages.json', 'utf8');
+    let obj = JSON.parse(data);
+
+    let channel = obj.channels.find(c => c.name === channelName);
+
+    if (channel) {
+      channel.messages.push(newMessage);
+    } else {
+      obj.channels.push({
+        name: channelName,
+        messages: [newMessage]
+      });
+    }
+
+    const dataToSave = JSON.stringify(obj, null, 4);
+    await fs.promises.writeFile('messages.json', dataToSave, 'utf8');
+  } catch (error) {
+    console.error('Помилка при збереженні повідомлень:', error);
+    throw error;
+  }
 };
 
 const addedUserMessage = async (eventMessage) => {
   try {
-    const messages = await getMessages();
-    const newMessageId = messages.length + 1;
+    const newMessageId = await getMessages("RoMan World Official").then(messages => messages.length + 1);
     const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
 
-    messages.push(newMessage);
-    await saveMessages(messages);
+    await saveMessages("RoMan World Official", newMessage);
 
     io.emit('chat message', newMessage);
-    } catch (error) {
+  } catch (error) {
     console.error('Помилка при додаванні події:', error);
-    }
-    };
+  }
+};
+
 
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
@@ -215,7 +225,8 @@ app.post('/register', async (req, res) => {
     id: users.length + 1, 
     username, 
     password,
-    'selected theme': 'light'
+    'selected theme': 'light',
+    channels: ['RoMan World Official']
   };
   users.push(newUser);
 
@@ -261,6 +272,29 @@ app.post('/messages', checkUserExists, async (req, res) => {
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
+  }
+});
+
+app.get('/user-channels', checkUserExists, async (req, res) => {
+  const username = req.session.username;
+  const users = await getUsers();
+  const user = users.find(u => u.username === username);
+
+  if (user) {
+    res.send({ channels: user.channels });
+  } else {
+    res.status(404).send({ success: false, message: 'Користувача не знайдено.' });
+  }
+});
+
+app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
+  const { channelName } = req.params;
+  try {
+    const messages = await getMessages(channelName);
+    res.send({ channels: [{ name: channelName, messages }] });
+  } catch (error) {
+    console.error('Помилка при відправленні повідомлень:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 

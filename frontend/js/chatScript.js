@@ -23,7 +23,8 @@ async function getCurrentUsername() {
         if (data.username) {
             currentUsername = data.username;
             applyTheme(data.theme);
-            loadMessages();
+            loadMessages("RoMan World Official");
+            loadUserChannels();
         } else {
             window.location.href = '/';
         }
@@ -40,21 +41,24 @@ function displayMessage(message) {
     messageList.appendChild(messageElement);
 }
 
-function handleChannelClick(event) {
-    displayMessage(`Це тестова кнопка, яка на жаль не переводить в інший чат...`);
+async function loadMessages(channelName) {
+  try {
+      const response = await fetch(`/channel-messages/${channelName}`);
+      const data = await response.json();
+
+      const channel = data.channels.find(c => c.name === channelName);
+      if (channel && Array.isArray(channel.messages)) {
+          channel.messages.forEach(message => {
+              displayMessage(`${message.author}: ${message.context}`);
+          });
+      } else {
+          console.error('Немає повідомлень для відображення в каналі', channelName);
+      }
+  } catch (error) {
+      console.error('Помилка при завантаженні повідомлень для каналу', channelName, ':', error);
+  }
 }
 
-async function loadMessages() {
-    try {
-        const response = await fetch('/messages');
-        const data = await response.json();
-        data.forEach(message => {
-            displayMessage(`${message.author}: ${message.context}`);
-        });
-    } catch (error) {
-        console.error('Помилка при завантаженні повідомлень:', error);
-    }
-}
 
 async function sendMessage() {
     const message = messageInput.value.trim();
@@ -84,6 +88,28 @@ messageInput.addEventListener('keypress', (event) => {
 function toggleDropdown() {
     isDropdownActive = !isDropdownActive;
     channelList.classList.toggle('active', isDropdownActive);
+}
+
+async function loadUserChannels() {
+  try {
+    const response = await fetch('/user-channels');
+    const data = await response.json();
+    if (response.ok) {
+      const channelListElement = document.getElementById('channel-list');
+      data.channels.forEach(channel => {
+        const channelButton = document.createElement('button');
+        channelButton.textContent = channel;
+        channelButton.onclick = () => {
+          loadMessages(channel);
+        };
+        channelListElement.appendChild(channelButton);
+      });
+    } else {
+      console.error(data.message);
+    }
+  } catch (error) {
+    console.error('Помилка при завантаженні каналів:', error);
+  }
 }
 
 function applyTheme(theme) {

@@ -5,14 +5,18 @@
             "username": "RoMan",
             "password": "$2a$10$N1GvIv.1Bxmb7wfnFFG16OJKXZfhUdmyb15Te1v1PAiVJ7HkrjZbu",
             "selected theme": "dark",
-            "channels": ["RoMan World Official"]
+            "channels": [
+                "RoMan World Official"
+            ]
         },
         {
             "id": 2,
             "username": "111",
             "password": "$2a$10$x3WxhRQoVcTyd0axi.XC.uRhxR5DqH71ilntEow2KjOq3mxWs/eMO",
             "selected theme": "light",
-            "channels": ["RoMan World Official"]
+            "channels": [
+                "RoMan World Official"
+            ]
         }
     ]
 }

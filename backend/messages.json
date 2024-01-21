@@ -1,14 +1,14 @@
 {
-    "messages": [
+    "channels": [
         {
-            "id": 1,
-            "author": "Привітання",
-            "context": "111 залогінився в RoMan Talk. Вітаємо!"
-        },
-        {
-            "id": 2,
-            "author": "Привітання",
-            "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+            "name": "RoMan World Official",
+            "messages": [
+                {
+                    "id": 1,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                }
+            ]
         }
     ]
 }
