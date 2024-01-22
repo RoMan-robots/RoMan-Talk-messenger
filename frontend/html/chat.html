@@ -12,10 +12,10 @@
 <body>
     <div id="chat-container">
         <div id="top-bar">
-          <h1 id="title">RoMan Talk</h1>
+          <h1 class="title">RoMan Talk</h1>
           <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
           <div id="channel-list">
-            <button id="create-channel-button" onclick="createChannel">Створити канал</button>
+            <button id="create-channel-button" onclick="createChannel()">Створити канал</button>
           </div>
           <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
         </div>
@@ -24,6 +24,14 @@
         <div id="input-container">
           <input type="text" id="message-input" placeholder="Напишіть повідомлення">
           <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">Відправити</button>
+        </div>
+        <div id="create-channel-modal" class="modal">
+          <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2 class="title">Створити новий канал</h2>
+            <input type="text" id="new-channel-name" placeholder="Назва каналу">
+            <button onclick="createNewChannel()">Створити</button>
+          </div>
         </div>
     </div>
     

@@ -68,6 +68,53 @@ const saveUsers = (users) => {
   });
 };
 
+const getChannels = () => {
+  return new Promise((resolve, reject) => {
+    fs.readFile('messages.json', 'utf8', (err, data) => {
+      if (err) reject(err);
+      else {
+        const obj = JSON.parse(data);
+        resolve(obj.channels);
+      }
+    });
+  });
+};
+
+
+const saveChannels = (channels) => {
+  return new Promise((resolve, reject) => {
+    const dataToSave = JSON.stringify({ channels }, null, 4);
+    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
+      if (err) {
+        console.error('Помилка при збереженні каналів:', err);
+        reject(err);
+      } else {
+        console.log('Канали успішно збережені');
+        resolve();
+      }
+    });
+  });
+};
+
+const updateUserChannels = async (username, channelName) => {
+  try {
+    const users = await getUsers();
+    const userIndex = users.findIndex(user => user.username === username);
+
+    if (userIndex === -1) {
+      throw new Error('User not found.');
+    }
+
+    if (!users[userIndex].channels.includes(channelName)) {
+      users[userIndex].channels.push(channelName);
+      await saveUsers(users);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 const getMessages = (channel) => {
   return new Promise((resolve, reject) => {
     fs.readFile('messages.json', 'utf8', (err, data) => {
@@ -77,7 +124,12 @@ const getMessages = (channel) => {
         try {
           const obj = JSON.parse(data);
           const channelData = obj.channels.find(c => c.name === channel);
-          resolve(channelData ? channelData.messages : []);
+
+          if (!channelData) {
+            resolve([]);
+          } else {
+            resolve(channelData.messages);
+          }
         } catch (error) {
           reject(error);
         }
@@ -86,19 +138,19 @@ const getMessages = (channel) => {
   });
 };
 
-const saveMessages = async (channelName, newMessage) => {
+const saveMessages = async (messageObject) => {
   try {
     const data = await fs.promises.readFile('messages.json', 'utf8');
     let obj = JSON.parse(data);
 
-    let channel = obj.channels.find(c => c.name === channelName);
+    let channel = obj.channels.find(c => c.name === messageObject.channel);
 
     if (channel) {
-      channel.messages.push(newMessage);
+      channel.messages.push({id: channel.messages.length + 1, author: messageObject.author, context: messageObject.context});
     } else {
       obj.channels.push({
-        name: channelName,
-        messages: [newMessage]
+        name: messageObject.channel,
+        messages: [{id: 1, author: messageObject.author, context: messageObject.context}]
       });
     }
 
@@ -109,6 +161,7 @@ const saveMessages = async (channelName, newMessage) => {
     throw error;
   }
 };
+
 
 const addedUserMessage = async (eventMessage) => {
   try {
@@ -262,18 +315,15 @@ app.get('/messages', checkUserExists, async (req, res) => {
 
 app.post('/messages', checkUserExists, async (req, res) => {
   try {
-    const { author, context } = req.body;
-    const messages = await getMessages();
-    const newMessageId = messages.length + 1;
-    const newMessage = { id: newMessageId, author, context };
-    messages.push(newMessage);
-    await saveMessages(messages);
-    io.emit('chat message', newMessage)
+    const messageObject = req.body;
+    await saveMessages(messageObject);
+    io.emit('chat message', messageObject);
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
   }
 });
+
 
 app.get('/user-channels', checkUserExists, async (req, res) => {
   const username = req.session.username;
@@ -298,6 +348,33 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
   }
 });
 
+app.post('/create-channel', checkUserExists, async (req, res) => {
+  const { channelName } = req.body;
+  const username = req.session.username;
+
+  try {
+    const channels = await getChannels();
+    console.log(channels);
+    const channelExists = channels.some(channel => channel.name === channelName);
+    
+    if (channelExists) {
+      return res.status(400).send({ success: false, message: 'Канал вже існує.' });
+    }
+
+    const newChannel = { name: channelName, messages: [] };
+    channels.push(newChannel);
+    await saveChannels(channels);
+    await updateUserChannels(username, channelName);
+
+    io.emit('new channel', newChannel);
+    res.send({ success: true, message: `Канал ${channelName}` });
+  } catch (error) {
+    console.error('Помилка при створенні каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
 app.get('/check-session', (req, res) => {
   if (req.session.username) {
     res.send({ isLoggedIn: true });
@@ -305,7 +382,6 @@ app.get('/check-session', (req, res) => {
     res.send({ isLoggedIn: false });
   }
 });
-
 
 app.post('/change-password', checkUserExists, async (req, res) => {
   const { oldPassword, newPassword } = req.body;

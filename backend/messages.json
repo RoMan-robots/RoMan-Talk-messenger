@@ -9,6 +9,16 @@
                     "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 }
             ]
+        },
+        {
+            "name": "q",
+            "messages": [
+                {
+                    "id": 1,
+                    "author": "RoMan",
+                    "context": "працює?"
+                }
+            ]
         }
     ]
 }

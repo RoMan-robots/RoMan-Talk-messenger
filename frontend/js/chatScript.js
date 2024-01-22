@@ -9,6 +9,7 @@ const socket = io();
 
 let isDropdownActive = true;
 let currentUsername;
+let selectedChannel = 'RoMan World Official';
 
 async function getCurrentUsername() {
     try {
@@ -23,7 +24,7 @@ async function getCurrentUsername() {
         if (data.username) {
             currentUsername = data.username;
             applyTheme(data.theme);
-            loadMessages("RoMan World Official");
+            loadMessages(selectedChannel);
             loadUserChannels();
         } else {
             window.location.href = '/';
@@ -46,6 +47,8 @@ async function loadMessages(channelName) {
       const response = await fetch(`/channel-messages/${channelName}`);
       const data = await response.json();
 
+      messageList.innerHTML = '';
+
       const channel = data.channels.find(c => c.name === channelName);
       if (channel && Array.isArray(channel.messages)) {
           channel.messages.forEach(message => {
@@ -61,21 +64,22 @@ async function loadMessages(channelName) {
 
 
 async function sendMessage() {
-    const message = messageInput.value.trim();
-    if (message) {
-      try {
-        const messageObject = { author: currentUsername, context: message };
-        await fetch('/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(messageObject)
-        });
-        messageInput.value = '';
-      } catch (error) {
-        console.error('Помилка при відправленні повідомлення:', error);
-      }
+  const message = messageInput.value.trim();
+  if (message) {
+    try {
+      const messageObject = { author: currentUsername, context: message, channel: selectedChannel };
+      await fetch('/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messageObject)
+      });
+      messageInput.value = '';
+    } catch (error) {
+      console.error('Помилка при відправленні повідомлення:', error);
     }
   }
+}
+
   
 
 messageInput.addEventListener('keypress', (event) => {
@@ -94,12 +98,23 @@ async function loadUserChannels() {
   try {
     const response = await fetch('/user-channels');
     const data = await response.json();
+
     if (response.ok) {
       const channelListElement = document.getElementById('channel-list');
+      channelListElement.innerHTML = '';
+
+      const createChannelButton = document.createElement('button');
+      createChannelButton.id = 'create-channel-button';
+      createChannelButton.textContent = 'Створити канал';
+      createChannelButton.onclick = createChannel;
+      channelListElement.appendChild(createChannelButton);
+
+      // Додати нові канали
       data.channels.forEach(channel => {
         const channelButton = document.createElement('button');
         channelButton.textContent = channel;
         channelButton.onclick = () => {
+          selectedChannel = channel;
           loadMessages(channel);
         };
         channelListElement.appendChild(channelButton);
@@ -110,6 +125,38 @@ async function loadUserChannels() {
   } catch (error) {
     console.error('Помилка при завантаженні каналів:', error);
   }
+}
+
+
+function createChannel() {
+  document.getElementById("create-channel-modal").style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById("create-channel-modal").style.display = "none";
+}
+
+function createNewChannel() {
+  const channelName = document.getElementById("new-channel-name").value;
+
+  fetch('/create-channel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelName: channelName })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadUserChannels();
+    } else {
+      console.error(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Помилка при створенні каналу:', error);
+  });
+
+  closeModal();
 }
 
 function applyTheme(theme) {
