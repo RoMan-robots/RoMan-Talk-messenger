@@ -26,6 +26,7 @@ async function getCurrentUsername() {
             applyTheme(data.theme);
             loadMessages(selectedChannel);
             loadUserChannels();
+            loadChannelButtons();
         } else {
             window.location.href = '/';
         }
@@ -44,24 +45,22 @@ function displayMessage(message) {
 
 async function loadMessages(channelName) {
   try {
-      const response = await fetch(`/channel-messages/${channelName}`);
-      const data = await response.json();
-
-      messageList.innerHTML = '';
-
-      const channel = data.channels.find(c => c.name === channelName);
-      if (channel && Array.isArray(channel.messages)) {
-          channel.messages.forEach(message => {
-              displayMessage(`${message.author}: ${message.context}`);
-          });
-      } else {
-          console.error('Немає повідомлень для відображення в каналі', channelName);
-      }
+    const response = await fetch(`/channel-messages/${channelName}`);
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const data = await response.json();
+    messageList.innerHTML = '';
+    const channel = data.channels.find(c => c.name === channelName);
+    if (channel && Array.isArray(channel.messages)) {
+      channel.messages.forEach(message => {
+        displayMessage(`${message.author}: ${message.context}`);
+      });
+    }
   } catch (error) {
-      console.error('Помилка при завантаженні повідомлень для каналу', channelName, ':', error);
+    alert(`Канал ${channelName} не знайдено`);
   }
 }
-
 
 async function sendMessage() {
   const message = messageInput.value.trim();
@@ -79,9 +78,7 @@ async function sendMessage() {
     }
   }
 }
-
   
-
 messageInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
         event.preventDefault();
@@ -106,10 +103,15 @@ async function loadUserChannels() {
       const createChannelButton = document.createElement('button');
       createChannelButton.id = 'create-channel-button';
       createChannelButton.textContent = 'Створити канал';
-      createChannelButton.onclick = createChannel;
+      createChannelButton.onclick = createChannelModal;
       channelListElement.appendChild(createChannelButton);
 
-      // Додати нові канали
+      const exploreChannelButton = document.createElement('button');
+      exploreChannelButton.id = 'explore-channels-button';
+      exploreChannelButton.textContent = 'Досліджувати канали';
+      exploreChannelButton.onclick = openExploreChannelsModal;
+      channelListElement.appendChild(exploreChannelButton);
+
       data.channels.forEach(channel => {
         const channelButton = document.createElement('button');
         channelButton.textContent = channel;
@@ -128,12 +130,21 @@ async function loadUserChannels() {
 }
 
 
-function createChannel() {
+function createChannelModal() {
   document.getElementById("create-channel-modal").style.display = "block";
 }
 
 function closeModal() {
   document.getElementById("create-channel-modal").style.display = "none";
+}
+
+function openExploreChannelsModal() {
+  document.getElementById("explore-channels-modal").style.display = "block";
+  loadChannelButtons();
+}
+
+function closeExploreModal() {
+  document.getElementById("explore-channels-modal").style.display = "none";
 }
 
 function createNewChannel() {
@@ -155,8 +166,35 @@ function createNewChannel() {
   .catch(error => {
     console.error('Помилка при створенні каналу:', error);
   });
-
   closeModal();
+}
+
+async function loadChannelButtons() {
+  try {
+    const response = await fetch('/get-channels');
+    const data = await response.json();
+    if (response.ok) {
+      const channelButtonsContainer = document.getElementById('channel-buttons');
+      channelButtonsContainer.innerHTML = '';
+      data.channels.forEach(channel => {
+        const channelButton = document.createElement('button');
+        channelButton.textContent = channel.name;
+        channelButton.classList.add('channel-button');
+        channelButton.onclick = () => joinChannel(channel.name);
+        channelButtonsContainer.appendChild(channelButton);
+      });
+    } else {
+      console.error('Помилка при завантаженні каналів:', data.message);
+    }
+  } catch (error) {
+    console.error('Помилка при завантаженні каналів:', error);
+  }
+}
+
+function joinChannel(channel) {
+  console.log(`Вступаємо в канал: ${channel}, тип каналу ${typeof channel}`);
+  selectedChannel = channel;
+  loadMessages(channel); 
 }
 
 function applyTheme(theme) {

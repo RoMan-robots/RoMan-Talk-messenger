@@ -15,7 +15,8 @@
           <h1 class="title">RoMan Talk</h1>
           <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
           <div id="channel-list">
-            <button id="create-channel-button" onclick="createChannel()">Створити канал</button>
+            <button id="explore-channels-button" onclick="openExploreChannelsModal()">Досліджувати канали</button>
+            <button id="create-channel-button" onclick="createChannelModal()">Створити канал</button>
           </div>
           <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
         </div>
@@ -30,10 +31,18 @@
             <span class="close-button" onclick="closeModal()">&times;</span>
             <h2 class="title">Створити новий канал</h2>
             <input type="text" id="new-channel-name" placeholder="Назва каналу">
+            <p class="classic">Зауважте, створений канал з'явиться лише після перезавантаження сторінки</p>
             <button onclick="createNewChannel()">Створити</button>
           </div>
         </div>
-    </div>
-    
+        <div id="explore-channels-modal" class="modal" style="display: none;">
+          <div class="modal-content">
+              <span class="close-button" onclick="closeExploreModal()">&times;</span>
+              <h2>Доступні канали</h2>
+              <div id="channel-buttons">
+              </div>
+          </div>
+      </div>
+        </div>
 </body>
 </html>
