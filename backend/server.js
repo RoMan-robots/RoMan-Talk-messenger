@@ -296,6 +296,7 @@ app.post('/register', async (req, res) => {
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
   await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
+  console.log(newUser);
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -501,8 +502,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
-  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-  });
+// httpServer.listen(port, 'localhost', () => {
+//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+//   });
   
-// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
