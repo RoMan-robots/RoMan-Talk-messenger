@@ -320,7 +320,8 @@ app.get('/messages', checkUserExists, async (req, res) => {
 app.post('/messages', checkUserExists, async (req, res) => {
   try {
     const messageObject = req.body;
-    await saveMessages(messageObject);
+    const channelName = messageObject.channel
+    await saveMessages(channelName, messageObject);
     io.emit('chat message', messageObject);
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
@@ -374,6 +375,8 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
     await saveChannels(channels);
     await updateUserChannels(username, channelName);
 
+    res.send({ success: true, message: 'Канал створено успішно.' });
+    
   } catch (error) {
     console.error('Помилка при створенні каналу:', error);
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -389,6 +392,20 @@ app.get('/get-channels', async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера при отриманні каналів.' });
   }
 });
+
+app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
+  const { channelName } = req.body;
+  const username = req.session.username;
+
+  try {
+    await updateUserChannels(username, channelName);
+    res.send({ success: true, message: 'Канал додано до списку користувача.' });
+  } catch (error) {
+    console.error('Помилка при додаванні каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
 
 app.get('/check-session', (req, res) => {
   if (req.session.username) {
@@ -488,5 +505,4 @@ httpServer.listen(port, 'localhost', () => {
   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
   });
   
-
 // httpServer.listen(port, () => console.log(`App listening on port ${port}!`));

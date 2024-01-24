@@ -66,7 +66,10 @@ async function sendMessage() {
   const message = messageInput.value.trim();
   if (message) {
     try {
-      const messageObject = { author: currentUsername, context: message, channel: selectedChannel };
+      const messageObject = 
+      { author: currentUsername, 
+        context: message, 
+        channel: selectedChannel };
       await fetch('/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,10 +194,22 @@ async function loadChannelButtons() {
   }
 }
 
-function joinChannel(channel) {
-  console.log(`Вступаємо в канал: ${channel}, тип каналу ${typeof channel}`);
-  selectedChannel = channel;
-  loadMessages(channel); 
+async function joinChannel(channelName) {
+  try {
+    const response = await fetch('/add-channel-to-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelName: channelName })
+    });
+    const data = await response.json();
+    if (data.success) {
+      loadUserChannels();
+    } else {
+      console.error('Помилка при додаванні каналу:', data.message);
+    }
+  } catch (error) {
+    console.error('Помилка при спробі додати канал:', error);
+  }
 }
 
 function applyTheme(theme) {
