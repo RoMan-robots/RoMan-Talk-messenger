@@ -204,6 +204,8 @@ async function joinChannel(channelName) {
     const data = await response.json();
     if (data.success) {
       loadUserChannels();
+      closeExploreModal();
+      loadMessages(channelName )
     } else {
       console.error('Помилка при додаванні каналу:', data.message);
     }
