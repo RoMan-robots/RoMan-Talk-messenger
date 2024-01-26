@@ -68,54 +68,8 @@ const saveUsers = (users) => {
   });
 };
 
-const getChannels = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile('messages.json', 'utf8', (err, data) => {
-      if (err) reject(err);
-      else {
-        const obj = JSON.parse(data);
-        resolve(obj.channels);
-      }
-    });
-  });
-};
 
-
-const saveChannels = (channels) => {
-  return new Promise((resolve, reject) => {
-    const dataToSave = JSON.stringify({ channels }, null, 4);
-    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
-      if (err) {
-        console.error('Помилка при збереженні каналів:', err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-};
-
-const updateUserChannels = async (username, channelName) => {
-  try {
-    const users = await getUsers();
-    const userIndex = users.findIndex(user => user.username === username);
-
-    if (userIndex === -1) {
-      throw new Error('User not found.');
-    }
-
-    if (!users[userIndex].channels.includes(channelName)) {
-      users[userIndex].channels.push(channelName);
-      await saveUsers(users);
-    }
-  } catch (error) {
-    console.error('Error in updateUserChannels:', error);
-    throw error;
-  }
-};
-
-
-const getMessages = (channel) => {
+const getMessages = () => {
   return new Promise((resolve, reject) => {
     fs.readFile('messages.json', 'utf8', (err, data) => {
       if (err) {
@@ -123,12 +77,7 @@ const getMessages = (channel) => {
       } else {
         try {
           const obj = JSON.parse(data);
-          const channelData = obj.channels.find(c => c.name === channel);
-          if (!channelData) {
-            reject(new Error('Канал не знайдено.'));
-          } else {
-            resolve(channelData.messages);
-          }
+          resolve(obj.messages || []);
         } catch (error) {
           reject(error);
         }
@@ -137,49 +86,33 @@ const getMessages = (channel) => {
   });
 };
 
-
-const saveMessages = async (channelName, messageObject) => {
-  try {
-    const data = await fs.promises.readFile('messages.json', 'utf8');
-    let obj = JSON.parse(data);
-
-    let channelIndex = obj.channels.findIndex(c => c.name === channelName);
-
-    if (channelIndex !== -1) {
-      obj.channels[channelIndex].messages.push({
-        id: obj.channels[channelIndex].messages.length + 1,
-        author: messageObject.author,
-        context: messageObject.context
-      });
-    } else {
-      throw new Error(`Канал "${channelName}" з типом ${typeof channelName} не знайдено.`);
-    }
-
-    const dataToSave = JSON.stringify(obj, null, 4);
-    await fs.promises.writeFile('messages.json', dataToSave, 'utf8');
-  } catch (error) {
-    console.error('Помилка при збереженні повідомлень:', error);
-    throw error;
-  }
+const saveMessages = (messages) => {
+  return new Promise((resolve, reject) => {
+    const dataToSave = JSON.stringify({ messages }, null, 4);
+    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 };
-
-
 
 const addedUserMessage = async (eventMessage) => {
   try {
-    const newMessageId = await getMessages("RoMan World Official")
-      .then(messages => messages.length + 1)
-      .catch(error => { throw error; });
+    const messages = await getMessages();
+    const newMessageId = messages.length + 1;
     const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
 
-    await saveMessages("RoMan World Official", newMessage).catch(error => { throw error; });
+    messages.push(newMessage);
+    await saveMessages(messages);
 
     io.emit('chat message', newMessage);
-  } catch (error) {
+    } catch (error) {
     console.error('Помилка при додаванні події:', error);
-  }
-};
-
+    }
+    };
 
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
@@ -282,8 +215,7 @@ app.post('/register', async (req, res) => {
     id: users.length + 1, 
     username, 
     password,
-    'selected theme': 'light',
-    channels: ['RoMan World Official']
+    'selected theme': 'light'
   };
   users.push(newUser);
 
@@ -296,7 +228,6 @@ app.post('/register', async (req, res) => {
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
   await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
-  console.log(newUser);
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -320,93 +251,18 @@ app.get('/messages', checkUserExists, async (req, res) => {
 
 app.post('/messages', checkUserExists, async (req, res) => {
   try {
-    const messageObject = req.body;
-    const channelName = messageObject.channel
-    await saveMessages(channelName, messageObject);
-    io.emit('chat message', messageObject);
+    const { author, context } = req.body;
+    const messages = await getMessages();
+    const newMessageId = messages.length + 1;
+    const newMessage = { id: newMessageId, author, context };
+    messages.push(newMessage);
+    await saveMessages(messages);
+    io.emit('chat message', newMessage)
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
   }
 });
-
-
-app.get('/user-channels', checkUserExists, async (req, res) => {
-  const username = req.session.username;
-  const users = await getUsers();
-  const user = users.find(u => u.username === username);
-
-  if (user) {
-    res.send({ channels: user.channels });
-  } else {
-    res.status(404).send({ success: false, message: 'Користувача не знайдено.' });
-  }
-});
-
-app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
-  const { channelName } = req.params;
-  try {
-    const messages = await getMessages(channelName);
-    res.send({ channels: [{ name: channelName, messages }] });
-  } catch (error) {
-    if (error.message === 'Канал не знайдено.') {
-      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-    } else {
-      console.error('Помилка при отриманні повідомлень:', error);
-      res.status(500).send({ success: false, message: 'Помилка сервера.' });
-    }
-  }
-});
-
-
-app.post('/create-channel', checkUserExists, async (req, res) => {
-  const { channelName } = req.body;
-  const username = req.session.username;
-
-  try {
-    const channels = await getChannels();
-    const channelExists = channels.some(channel => channel.name === channelName);
-    
-    if (channelExists) {
-      return res.status(400).send({ success: false, message: 'Канал вже існує.' });
-    }
-
-    const newChannel = { name: channelName, messages: [] };
-    channels.push(newChannel);
-    await saveChannels(channels);
-    await updateUserChannels(username, channelName);
-
-    res.send({ success: true, message: 'Канал створено успішно.' });
-    
-  } catch (error) {
-    console.error('Помилка при створенні каналу:', error);
-    res.status(500).send({ success: false, message: 'Помилка сервера.' });
-  }
-});
-
-app.get('/get-channels', async (req, res) => {
-  try {
-    const channels = await getChannels();
-    res.send({ success: true, channels });
-  } catch (error) {
-    console.error('Помилка при отриманні списку каналів:', error);
-    res.status(500).send({ success: false, message: 'Помилка сервера при отриманні каналів.' });
-  }
-});
-
-app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
-  const { channelName } = req.body;
-  const username = req.session.username;
-
-  try {
-    await updateUserChannels(username, channelName);
-    res.send({ success: true, message: 'Канал додано до списку користувача.' });
-  } catch (error) {
-    console.error('Помилка при додаванні каналу:', error);
-    res.status(500).send({ success: false, message: 'Помилка сервера.' });
-  }
-});
-
 
 app.get('/check-session', (req, res) => {
   if (req.session.username) {
@@ -415,6 +271,7 @@ app.get('/check-session', (req, res) => {
     res.send({ isLoggedIn: false });
   }
 });
+
 
 app.post('/change-password', checkUserExists, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
@@ -505,5 +362,5 @@ app.get("/settings.html", (req, res) => {
 httpServer.listen(port, 'localhost', () => {
   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
   });
-  
+
 // httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
