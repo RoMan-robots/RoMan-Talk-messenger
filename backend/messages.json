@@ -3,12 +3,26 @@
         {
             "name": "RoMan World Official",
             "messages": [
+                {
+                    "id": 1,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 2,
+                    "author": "Привітання",
+                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 3,
+                    "author": "111",
+                    "context": "бе"
+                }
             ]
         },
         {
-            "name": "w",
-            "messages": [
-            ]
+            "name": "hi",
+            "messages": []
         }
     ]
 }
