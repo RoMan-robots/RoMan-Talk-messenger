@@ -1,15 +1,14 @@
 {
-    "messages": [
+  "channels": [
       {
-        "id": 1,
-        "author": "RoMan",
-        "context": "Hi"
+          "name": "RoMan World Official",
+          "messages": [
+          ]
       },
-  
       {
-        "id": 2,
-        "author": "RoMan",
-        "context": "Bye"
+          "name": "w",
+          "messages": [
+          ]
       }
-    ]
-  }
+  ]
+}

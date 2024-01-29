@@ -1,4 +1,4 @@
-const messageInput = document.getElementById('message-input');
+const messageInput = document.getElementById('message-input');   
 const sendButton = document.getElementById('send-button');
 const messageList = document.getElementById('message-list');
 const serverDropdown = document.getElementById('server-dropdown');
