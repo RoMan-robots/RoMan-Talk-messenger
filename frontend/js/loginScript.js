@@ -1,4 +1,7 @@
-async function login() {
+console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
+
+async function login(event) {
+  event.preventDefault();
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
 
@@ -19,6 +22,8 @@ async function login() {
       alert(data.message || 'Неправильний логін або пароль.');
     }
   } catch (error) {
+    console.error('Помилка:', error);
     alert('Помилка сервера');
   }
 }
+ 

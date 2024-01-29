@@ -1,23 +1,31 @@
 {
   "name": "roman_talk_1.0_beta",
   "version": "1.0_beta",
-  "description": "My messenger, called RoMan_Talk, here is code from it",
+  "description": "My messenger, called RoMan Talk, here is code from it",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-install": "npm install && node server.js"
   },
   "keywords": [
     "RoMan",
     "Talk",
-    "RoMan_Talk",
+    "RoMan Talk",
     "Messenger"
   ],
   "author": "RoMan",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "fs": "^0.0.1-security"
+    "express-socket.io-session": "^1.3.5",
+    "fs": "^0.0.1-security",
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.7.4"
   }
 }
