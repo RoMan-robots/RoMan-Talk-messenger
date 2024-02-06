@@ -13,7 +13,9 @@ let selectedChannel = 'RoMan World Official';
 
 async function getCurrentUsername() {
     try {
-        const response = await fetch('/username');
+        const response = await fetch('/username', {
+          credentials: 'include'
+        });
         const data = await response.json();
 
         if (response.status === 403) {
@@ -203,9 +205,11 @@ async function joinChannel(channelName) {
     });
     const data = await response.json();
     if (data.success) {
+      selectedChannel = channelName;
+      socket.emit('join channel', channelName);
       loadUserChannels();
       closeExploreModal();
-      loadMessages(channelName )
+      loadMessages(channelName);
     } else {
       console.error('Помилка при додаванні каналу:', data.message);
     }
@@ -213,6 +217,7 @@ async function joinChannel(channelName) {
     console.error('Помилка при спробі додати канал:', error);
   }
 }
+
 
 function applyTheme(theme) {
     if (theme === 'dark') {
@@ -229,8 +234,8 @@ function changeUrlToSettings(url) {
 getCurrentUsername();
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.");
 
-socket.on('chat message', (msg) => {
-    if (msg.author && msg.context) {
+socket.on('chat message', (channel, msg) => {
+  if (msg.author && msg.context && channel === selectedChannel) {
       displayMessage(`${msg.author}: ${msg.context}`);
-    }
-  });
+  }
+});

@@ -10,6 +10,7 @@ async function login(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+      credentials: 'include'
       },
       body: JSON.stringify({ username: enteredUsername, password: enteredPassword })
     });
@@ -26,4 +27,17 @@ async function login(event) {
     alert('Помилка сервера');
   }
 }
- 
+
+async function checkSessionStatus() {
+  try {
+    const response = await fetch('/session-status');
+    const data = await response.json();
+
+    if (data.loggedIn) {
+      window.location.href = '/chat.html';
+    }
+  } catch (error) {
+    console.error('Помилка при перевірці статусу сесії:', error);
+  }
+}
+document.addEventListener('DOMContentLoaded', checkSessionStatus);

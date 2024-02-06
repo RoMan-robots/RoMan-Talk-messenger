@@ -17,9 +17,10 @@ const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true }
 });
 
 app.use(sessionMiddleware);
@@ -205,8 +206,9 @@ async function checkUserExists(req, res, next) {
 }
 
 io.on('connection', (socket) => {
-  socket.on('new message', async (messageData) => {
-    io.emit('chat message', messageData);
+
+  socket.on('new message', (channel, messageData) => {
+    io.emit('chat message', channel, messageData);
   });
 });
 
@@ -225,15 +227,15 @@ app.post('/login', async (req, res) => {
     if (isPasswordMatch) {
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
-      req.session.save(async (err) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
-        }
-        res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-        res.send({ success: true, redirectUrl: '/chat.html' });
+      req.session.save(async (err) =>{
+          if (err) {
+              console.error(err);
+              return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
+          }
+          res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
+          res.send({ success: true, redirectUrl: '/chat.html' });
 
-        await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+          await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -330,6 +332,14 @@ app.post('/messages', checkUserExists, async (req, res) => {
   }
 });
 
+app.get("/session-status", async (req, res) => {
+  if (req.session.username) {
+    await addedUserMessage(`${req.session.username} залогінився в RoMan Talk. Вітаємо!`);
+    res.send({ loggedIn: true });
+  } else {
+    res.send({ loggedIn: false });
+  }
+});
 
 app.get('/user-channels', checkUserExists, async (req, res) => {
   const username = req.session.username;

@@ -24,5 +24,17 @@ function changeUrlToLogin(url) {
     }
   }
   
-  document.addEventListener("DOMContentLoaded", checkSessionAndRedirect);
+  async function checkSessionStatus() {
+    try {
+      const response = await fetch('/session-status');
+      const data = await response.json();
+  
+      if (data.loggedIn) {
+        window.location.href = '/chat.html';
+      }
+    } catch (error) {
+      console.error('Помилка при перевірці статусу сесії:', error);
+    }}
+
+  document.addEventListener("DOMContentLoaded", checkSessionAndRedirect, checkSessionStatus);
   
