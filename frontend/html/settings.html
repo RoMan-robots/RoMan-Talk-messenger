@@ -20,6 +20,7 @@
             </select>
         </div>
         <div class="settings-buttons w-100 text-center">
+            <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
             <button id="toggle-change-password-button" class="btn btn-danger my-2" onclick="toggleChangePassword()">Змінити пароль</button>
             <div id="change-password-form">
                 <input type="password" id="old-password" placeholder="Старий пароль">
@@ -30,6 +31,29 @@
             <button id="delete-button" class="btn btn-danger my-2" onclick="deleteAccount()">Видалити акаунт</button>
             <button id="save-settings" class="btn btn-success my-2" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
         </div>
+        <div id="channels-modal" class="modal2" style="display:none;">
+            <div class="modal-content2">
+                <span id="close-modal2" class="close" onclick="closeMyChannelsModal()">&times;</span>
+                <h2>Мої канали</h2>
+                <ul id="channels-list"></ul>
+            </div>
+        </div>
+        <div id="channel-settings-modal" class="modal2">
+            <div class="modal-content2">
+              <span class="close" onclick="closeMyChannelsModal()">&times;</span>
+              <h3 id="title">Налаштування каналу <span id="channel-name-placeholder"></span></h3>
+              <p>Оберіть приватність:</p>
+              <button id="set-public-privacy-button" class="btn-light">Публічна</button>
+              <button id="set-private-privacy-button" class="btn-light" style="margin-bottom: 25px;">Приватна</button>
+              <div id="subscribers-list-container" style="display: none;">
+                <h3>Додати підписника:</h3>
+                <input type="text" id="subscriber-id" placeholder="ID Користувача">
+                <button onclick="addSubscriber()" id="add-subscriber-button">Додати</button>
+                <ol id="subscribers-list"></ol>
+              </div>
+            </div>
+          </div>
+          
     </div>
     <p class="footer">RoMan Talk 1.1 beta. Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
 </body>

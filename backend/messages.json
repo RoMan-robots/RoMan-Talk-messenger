@@ -2,6 +2,8 @@
     "channels": [
         {
             "name": "RoMan World Official",
+            "owner": "RoMan",
+            "isPrivate": true,
             "messages": [
                 {
                     "id": 1,
@@ -16,7 +18,7 @@
                 {
                     "id": 3,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 },
                 {
                     "id": 4,
@@ -26,7 +28,7 @@
                 {
                     "id": 5,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 },
                 {
                     "id": 6,
@@ -36,7 +38,7 @@
                 {
                     "id": 7,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 },
                 {
                     "id": 8,
@@ -46,7 +48,7 @@
                 {
                     "id": 9,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 },
                 {
                     "id": 10,
@@ -56,7 +58,7 @@
                 {
                     "id": 11,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 },
                 {
                     "id": 12,
@@ -66,44 +68,17 @@
                 {
                     "id": 13,
                     "author": "Привітання",
-                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 }
-            ]
+            ],
+            "subs": []
         },
         {
             "name": "w",
-            "messages": [
-                {
-                    "id": 1,
-                    "author": "RoMan",
-                    "context": "б"
-                },
-                {
-                    "id": 2,
-                    "author": "RoMan",
-                    "context": "f"
-                },
-                {
-                    "id": 3,
-                    "author": "RoMan",
-                    "context": "d"
-                },
-                {
-                    "id": 4,
-                    "author": "RoMan",
-                    "context": ",j"
-                },
-                {
-                    "id": 5,
-                    "author": "111",
-                    "context": "b"
-                },
-                {
-                    "id": 6,
-                    "author": "111",
-                    "context": ","
-                }
-            ]
+            "owner": "RoMan",
+            "isPrivate": false,
+            "messages": [],
+            "subs": []
         }
     ]
 }

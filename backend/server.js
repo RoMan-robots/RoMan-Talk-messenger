@@ -175,7 +175,7 @@ const addedUserMessage = async (eventMessage) => {
 
     await saveMessages("RoMan World Official", newMessage).catch(error => { throw error; });
 
-    io.emit('chat message', newMessage);
+    io.emit('chat message', "RoMan World Official", newMessage);
   } catch (error) {
     console.error('Помилка при додаванні події:', error);
   }
@@ -206,7 +206,6 @@ async function checkUserExists(req, res, next) {
 }
 
 io.on('connection', (socket) => {
-
   socket.on('new message', (channel, messageData) => {
     io.emit('chat message', channel, messageData);
   });
@@ -262,8 +261,6 @@ app.get('/username', checkUserExists, (req, res) => {
       res.status(500).send({ success: false, message: 'Помилка сервера.' });
     });
 });
-
-
 
 app.post('/register', async (req, res) => {
   let { username, password } = req.body;
@@ -325,7 +322,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
     const messageObject = req.body;
     const channelName = messageObject.channel
     await saveMessages(channelName, messageObject);
-    io.emit('chat message', messageObject);
+    io.emit('chat message', channelName, messageObject);
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
@@ -381,7 +378,15 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
       return res.status(400).send({ success: false, message: 'Канал вже існує.' });
     }
 
-    const newChannel = { name: channelName, messages: [] };
+    const newChannel = { 
+      name: channelName, 
+      messages: [
+        {
+          id: 1,
+          author: Системне,
+          context: `Канал ${channelName} створено`
+        }], 
+      isPrivate: false};
     channels.push(newChannel);
     await saveChannels(channels);
     await updateUserChannels(username, channelName);
@@ -396,7 +401,9 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
 
 app.get('/get-channels', async (req, res) => {
   try {
-    const channels = await getChannels();
+    let channels = await getChannels();
+    channels = channels.filter(channel => !channel.isPrivate);
+
     res.send({ success: true, channels });
   } catch (error) {
     console.error('Помилка при отриманні списку каналів:', error);
@@ -413,6 +420,142 @@ app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
     res.send({ success: true, message: 'Канал додано до списку користувача.' });
   } catch (error) {
     console.error('Помилка при додаванні каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
+  const { channelName, isPrivate } = req.body;
+  try {
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(channel => channel.name === channelName);
+    if (channelIndex !== -1) {
+      channels[channelIndex].isPrivate = isPrivate;
+      await saveChannels(channels);
+      res.send({ success: true, message: 'Приватність каналу оновлено.' });
+    } else {
+      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
+  } catch (error) {
+    console.error('Помилка при встановленні приватності каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+app.get('/user-info/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const users = await getUsers();
+    const user = users.find(user => user.id === parseInt(userId));
+
+    if (user) {
+      res.json({ username: user.username });
+    } else {
+      res.status(404).send({ message: 'Користувача не знайдено.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Помилка сервера.' });
+  }
+});
+
+
+
+app.post('/add-subscriber', checkUserExists, async (req, res) => {
+  const { userId, channelName } = req.body;
+  
+  try {
+      const channels = await getChannels();
+      const channelIndex = channels.findIndex(channel => channel.name === channelName);
+
+      if (channelIndex === -1) {
+          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+      }
+
+      const channel = channels[channelIndex];
+
+      if (!channel.isPrivate) {
+          return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
+      }
+
+      if (channel.subs.includes(userId)) {
+          return res.status(409).send({ success: false, message: 'Користувач вже є у цьому каналі.' });
+      }
+
+      channel.subs.push(userId);
+      await saveChannels(channels);
+
+      res.send({ success: true, message: 'Користувача додано до каналу.' });
+  } catch (error) {
+      console.error('Помилка при додаванні користувача до каналу:', error);
+      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+app.post('/remove-subscriber', checkUserExists, async (req, res) => {
+  const { userId, channelName } = req.body;
+
+  try {
+      const channels = await getChannels();
+      const channelIndex = channels.findIndex(channel => channel.name === channelName);
+      
+      if (channelIndex === -1) {
+          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+      }
+
+      const channel = channels[channelIndex];
+      const subscriberIndex = channel.subs.indexOf(userId);
+      if (subscriberIndex !== -1) {
+          channel.subs.splice(subscriberIndex, 1);
+          await saveChannels(channels);
+          res.send({ success: true, message: 'Користувача видалено з каналу.' });
+      } else {
+          res.status(404).send({ success: false, message: 'Підписника не знайдено в каналі.' });
+      }
+  } catch (error) {
+      console.error('Помилка при видаленні підписника:', error);
+      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
+app.get('/channel-subscribers/:channelName', checkUserExists, async (req, res) => {
+  const { channelName } = req.params;
+
+  try {
+      const channels = await getChannels();
+      const channel = channels.find(c => c.name === channelName);
+
+      if (!channel) {
+          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+      }
+
+      if (!channel.isPrivate) {
+          return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
+      }
+
+      res.json({ subscribers: channel.subs });
+  } catch (error) {
+      console.error('Помилка при отриманні підписників каналу:', error);
+      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
+app.post('/channel/delete', checkUserExists, async (req, res) => {
+  const { channelName } = req.body;
+  try {
+    let channels = await getChannels();
+    const channelIndex = channels.findIndex(channel => channel.name === channelName);
+    if (channelIndex !== -1) {
+      channels = channels.filter(channel => channel.name !== channelName);
+      await saveChannels(channels);
+      res.send({ success: true, message: 'Канал видалено.' });
+    } else {
+      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
+  } catch (error) {
+    console.error('Помилка при видаленні каналу:', error);
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
@@ -512,8 +655,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
