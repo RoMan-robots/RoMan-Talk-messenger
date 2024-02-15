@@ -115,6 +115,29 @@ const updateUserChannels = async (username, channelName) => {
   }
 };
 
+const updateUserChannelList = async (username) => {
+  try {
+    const users = await getUsers();
+    const channels = await getChannels();
+    const user = users.find(u => u.username === username);
+    if (!user) throw new Error('Користувача не знайдено.');
+
+    const userChannels = user.channels;
+
+    const updatedChannels = userChannels.filter(channelName => {
+      const channel = channels.find(c => c.name === channelName);
+      return channel && (!channel.isPrivate || (channel.isPrivate && channel.subs.includes(user.id.toString())));
+    });
+
+    if (updatedChannels.length !== userChannels.length) {
+      user.channels = updatedChannels;
+      await saveUsers(users);
+    }
+  } catch (error) {
+    console.error(`Помилка при оновленні списку каналів для ${username}:`, error);
+  }
+};
+
 
 const getMessages = (channel) => {
   return new Promise((resolve, reject) => {
@@ -137,7 +160,6 @@ const getMessages = (channel) => {
     });
   });
 };
-
 
 const saveMessages = async (channelName, messageObject) => {
   try {
@@ -163,8 +185,6 @@ const saveMessages = async (channelName, messageObject) => {
     throw error;
   }
 };
-
-
 
 const addedUserMessage = async (eventMessage) => {
   try {
@@ -340,6 +360,7 @@ app.get("/session-status", async (req, res) => {
 
 app.get('/user-channels', checkUserExists, async (req, res) => {
   const username = req.session.username;
+  await updateUserChannelList(username);
   const users = await getUsers();
   const user = users.find(u => u.username === username);
 
@@ -347,6 +368,18 @@ app.get('/user-channels', checkUserExists, async (req, res) => {
     res.send({ channels: user.channels });
   } else {
     res.status(404).send({ success: false, message: 'Користувача не знайдено.' });
+  }
+});
+
+app.get('/my-channels', checkUserExists, async (req, res) => {
+  const username = req.session.username;
+  try {
+    const channels = await getChannels();
+    const myChannels = channels.filter(channel => channel.owner === username);
+    res.json({ myChannels });
+  } catch (error) {
+    console.error('Помилка при отриманні "моїх каналів":', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 
@@ -401,8 +434,13 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
 
 app.get('/get-channels', async (req, res) => {
   try {
+    const username = req.session.username;
+    const users = await getUsers();
+    const user = users.find(u => u.username === username);
+    const userId = user.id;
+
     let channels = await getChannels();
-    channels = channels.filter(channel => !channel.isPrivate);
+    channels = channels.filter(channel => !channel.isPrivate || (channel.isPrivate && channel.subs.includes(userId.toString())));
 
     res.send({ success: true, channels });
   } catch (error) {
@@ -458,8 +496,6 @@ app.get('/user-info/:userId', async (req, res) => {
     res.status(500).send({ message: 'Помилка сервера.' });
   }
 });
-
-
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {
   const { userId, channelName } = req.body;
@@ -523,21 +559,75 @@ app.get('/channel-subscribers/:channelName', checkUserExists, async (req, res) =
   const { channelName } = req.params;
 
   try {
-      const channels = await getChannels();
-      const channel = channels.find(c => c.name === channelName);
+    const channels = await getChannels();
+    const channel = channels.find(c => c.name === channelName);
 
-      if (!channel) {
-          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-      }
+    if (!channel) {
+      return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
 
-      if (!channel.isPrivate) {
-          return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
-      }
+    if (!channel.isPrivate) {
+      return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
+    }
 
-      res.json({ subscribers: channel.subs });
+    const subscribers = Array.isArray(channel.subs) ? channel.subs : [];
+    res.json({ subscribers });
   } catch (error) {
-      console.error('Помилка при отриманні підписників каналу:', error);
-      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    console.error('Помилка при отриманні підписників каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+app.get('/get-channel-privacy/:channelName', checkUserExists, async (req, res) => {
+  const { channelName } = req.params;
+  try {
+    const channels = await getChannels();
+    const channel = channels.find(c => c.name === channelName);
+    if (channel) {
+      res.json({ isPrivate: channel.isPrivate });
+    } else {
+      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
+  } catch (error) {
+    console.error('Помилка при отриманні приватності каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+app.post('/update-user-channels', checkUserExists, async (req, res) => {
+  const { subscribers, channelName } = req.body;
+  try {
+    const users = await getUsers();
+    subscribers.forEach((userId) => {
+      const userIndex = users.findIndex(user => user.id === userId);
+      if (userIndex !== -1 && !users[userIndex].channels.includes(channelName)) {
+        users[userIndex].channels.push(channelName);
+      }
+    });
+    await saveUsers(users);
+    res.send({ success: true, message: 'Канали користувачів оновлено.' });
+  } catch (error) {
+    console.error('Помилка при оновленні каналів користувачів:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  }
+});
+
+
+app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
+  const { channelName } = req.body;
+  try {
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(channel => channel.name === channelName);
+    if (channelIndex !== -1) {
+      channels[channelIndex].subs = [];
+      await saveChannels(channels);
+      res.send({ success: true, message: 'Список підписників каналу очищено.' });
+    } else {
+      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
+  } catch (error) {
+    console.error('Помилка при очищенні підписників каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 

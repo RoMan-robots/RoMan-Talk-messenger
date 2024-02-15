@@ -5,6 +5,7 @@ const changePasswordForm = document.getElementById('change-password-form');
 const changeUsernameForm = document.getElementById('change-username-form');
 const toggleChangePasswordButton = document.getElementById('toggle-change-password-button');
 const toggleChangeUsernameButton = document.getElementById('toggle-change-username-button');
+const subscribersListContainer = document.getElementById("subscribers-list-container");
 
 changePasswordForm.style.display = 'none';
 let display = false;
@@ -17,7 +18,7 @@ function changeUrlToChat(url) {
   window.location.href = url;
 }
 
-function openChannelSettings(channel) {
+async function openChannelSettings(channel) {
   currentChannelName = channel;
 
   document.getElementById('channel-name-placeholder').textContent = channel;
@@ -25,49 +26,95 @@ function openChannelSettings(channel) {
 
   document.getElementById('set-public-privacy-button').onclick = () => setChannelPrivacy(channel, false);
   document.getElementById('set-private-privacy-button').onclick = () => setChannelPrivacy(channel, true);
+
+  const isPrivate = await checkChannelPrivacy(channel);
+  if (isPrivate) {
+    const subscribersListContainer = document.getElementById("subscribers-list-container");
+    subscribersListContainer.style.display = "block";
+    await loadSubscribers(channel);
+  }
 }
 
 async function fetchUserChannels() {
   try {
-      document.getElementById('channels-modal').style.display = 'block';
-      const response = await fetch('/user-channels');
-      const { channels } = await response.json();
+    document.getElementById('channels-modal').style.display = 'block';
+    const response = await fetch('/my-channels');
+    const data = await response.json();
+    if (response.ok && Array.isArray(data.myChannels)) {
       const channelsList = document.getElementById('channels-list');
       channelsList.innerHTML = '';
-      channels.forEach(channel => {
-          let MyChannelsElement = document.createElement('button');
-          MyChannelsElement.textContent = channel;
-          MyChannelsElement.onclick = () => openChannelSettings(channel);
-          channelsList.appendChild(MyChannelsElement);
+      data.myChannels.forEach(channel => {
+        let myChannelsElement = document.createElement('button');
+        myChannelsElement.textContent = channel.name;
+        myChannelsElement.onclick = () => openChannelSettings(channel.name);
+        channelsList.appendChild(myChannelsElement);
       });
+    } else {
+      console.log(data.myChannels)
+    }
   } catch (error) {
-      console.error('Помилка при отриманні каналів:', error);
+    console.error('Помилка при отриманні каналів:', error);
   }
+}
+
+
+async function checkChannelPrivacy(channelName) {
+  const response = await fetch(`/get-channel-privacy/${channelName}`);
+  const { isPrivate } = await response.json();
+  return isPrivate;
 }
 
 async function setChannelPrivacy(channelName, isPrivate) {
-  if(isPrivate){
-    const subscribersListContainer = document.getElementById("subscribers-list-container");
-    subscribersListContainer.style.display = "block";
-
-    await loadSubscribers(channelName);
-  }
-    try {
-      const response = await fetch('/channel/set-privacy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelName, isPrivate })
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert(`Канал "${channelName}" оновлено.`);
+  try {
+    const response = await fetch('/channel/set-privacy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelName, isPrivate })
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert(`Канал "${channelName}" оновлено.`);
+      if (isPrivate) {
+        subscribersListContainer.style.display = "block";
+        await loadSubscribers(channelName);
       } else {
-        alert(data.message);
+        const clearResponse = await fetch('/channel/clear-subscribers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelName })
+        });
+        const clearData = await clearResponse.json();
+        if (clearData.success) {
+          document.getElementById('subscribers-list').innerHTML = '';
+          subscribersListContainer.style.display = "none";
+        } else {
+          alert(clearData.message);
+        }
       }
-    } catch (error) {
-      console.error('Помилка:', error);
+    } else {
+      alert(data.message);
     }
+  } catch (error) {
+    console.error('Помилка:', error);
+  }
 }
+
+async function updateSubscribersChannels(channelName) {
+  try {
+    const response = await fetch(`/channel-subscribers/${channelName}`);
+    if (!response.ok) throw new Error('Не вдалося отримати список підписників');
+
+    const { subscribers } = await response.json();
+    await fetch('/update-user-channels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscribers, channelName })
+    });
+  } catch (error) {
+    console.error('Помилка при оновленні каналів користувачів:', error);
+  }
+}
+
 
 async function loadSubscribers(channelName) {
   try {
