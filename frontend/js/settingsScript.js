@@ -18,6 +18,23 @@ function changeUrlToChat(url) {
   window.location.href = url;
 }
 
+async function copyUserId() {
+  try {
+    const response = await fetch('/username');
+    const data = await response.json();
+    if (data.success && data.userId) {
+      await navigator.clipboard.writeText(data.userId);
+      alert('ID скопійовано в буфер обміну');
+    } else {
+      alert('Не вдалося отримати ID користувача');
+    }
+  } catch (error) {
+    console.error('Помилка:', error);
+    alert('Помилка при копіюванні ID в буфер обміну');
+  }
+
+}
+
 async function openChannelSettings(channel) {
   currentChannelName = channel;
 

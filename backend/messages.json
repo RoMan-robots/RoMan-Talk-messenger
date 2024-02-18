@@ -3,7 +3,7 @@
         {
             "name": "RoMan World Official",
             "owner": "RoMan",
-            "isPrivate": true,
+            "isPrivate": false,
             "messages": [
                 {
                     "id": 1,
@@ -167,6 +167,71 @@
                 },
                 {
                     "id": 33,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 34,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 35,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 36,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 37,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 38,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 39,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 40,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 41,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 42,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 43,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 44,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 45,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 46,
                     "author": "Привітання",
                     "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
                 }

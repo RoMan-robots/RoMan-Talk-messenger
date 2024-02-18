@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
+import mongoose from 'mongoose';
 import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -272,7 +273,10 @@ app.get('/username', checkUserExists, (req, res) => {
     getUsers().then(users => {
       const user = users.find(u => u.username === username);
       if (user) {
-        res.send({ username: user.username, theme: user['selected theme'] });
+        res.send({ 
+          success: true, 
+          username: user.username, 
+          theme: user['selected theme'], userId: user.id });
       } else {
         res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
       }
@@ -745,8 +749,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
