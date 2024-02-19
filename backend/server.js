@@ -417,13 +417,16 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
 
     const newChannel = { 
       name: channelName, 
+      owner: username,
+      isPrivate: false,
       messages: [
         {
           id: 1,
-          author: Системне,
+          author: "Системне",
           context: `Канал ${channelName} створено`
         }], 
-      isPrivate: false};
+      subs: []
+      };
     channels.push(newChannel);
     await saveChannels(channels);
     await updateUserChannels(username, channelName);
@@ -637,23 +640,35 @@ app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
 
 
 app.post('/channel/delete', checkUserExists, async (req, res) => {
-  const { channelName } = req.body;
+  const { currentChannelName, password } = req.body;
+  const username = req.session.username;
+
   try {
-    let channels = await getChannels();
-    const channelIndex = channels.findIndex(channel => channel.name === channelName);
-    if (channelIndex !== -1) {
-      channels = channels.filter(channel => channel.name !== channelName);
-      await saveChannels(channels);
-      res.send({ success: true, message: 'Канал видалено.' });
-    } else {
-      res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    const users = await getUsers();
+    const user = users.find(u => u.username === username);
+
+    const channels = await getChannels();
+
+    const channel = channels.find(c => c.name === currentChannelName);
+
+    if (!channel) {
+      return res.status(404).send({ success: false, message: 'Канал не знайдено. ' });
     }
+
+    const passwordIsValid = await bcrypt.compare(password, user.password);
+    if (!passwordIsValid) {
+      return res.status(401).send({ success: false, message: 'Неправильний пароль.' });
+    }
+
+    const updatedChannels = channels.filter(c => c.name !== currentChannelName);
+    await saveChannels(updatedChannels);
+    res.send({ success: true, message: 'Канал видалено.' });
+
   } catch (error) {
     console.error('Помилка при видаленні каналу:', error);
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
-
 
 app.get('/check-session', (req, res) => {
   if (req.session.username) {

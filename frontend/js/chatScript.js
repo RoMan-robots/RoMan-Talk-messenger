@@ -164,6 +164,7 @@ function createNewChannel() {
   .then(data => {
     if (data.success) {
       loadUserChannels();
+      loadMessages(channelName);
     } else {
       console.error(data.message);
     }

@@ -12,6 +12,7 @@ let display = false;
 let currentChannelName;
 
 saveSettingsButton.addEventListener('click', saveSettings);
+
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 function changeUrlToChat(url) {
@@ -24,13 +25,13 @@ async function copyUserId() {
     const data = await response.json();
     if (data.success && data.userId) {
       await navigator.clipboard.writeText(data.userId);
-      alert('ID скопійовано в буфер обміну');
+      alertify.success('ID скопійовано до буферу обміну.'); 
     } else {
-      alert('Не вдалося отримати ID користувача');
+      alertify.error("Не вдалося отримати ID користувача")
     }
   } catch (error) {
     console.error('Помилка:', error);
-    alert('Помилка при копіюванні ID в буфер обміну');
+    alertify.error("Помилка при копіюванні ID в буфер обміну")
   }
 
 }
@@ -90,7 +91,7 @@ async function setChannelPrivacy(channelName, isPrivate) {
     });
     const data = await response.json();
     if (data.success) {
-      alert(`Канал "${channelName}" оновлено.`);
+      alertify.success(`Канал "${channelName}" оновлено.`);
       if (isPrivate) {
         subscribersListContainer.style.display = "block";
         await loadSubscribers(channelName);
@@ -105,14 +106,15 @@ async function setChannelPrivacy(channelName, isPrivate) {
           document.getElementById('subscribers-list').innerHTML = '';
           subscribersListContainer.style.display = "none";
         } else {
-          alert(clearData.message);
+          alertify.error(clearData.message);
         }
       }
     } else {
-      alert(data.message);
+      alertify.error(data.message)
     }
   } catch (error) {
     console.error('Помилка:', error);
+    alertify.error('Помилка:', error)
   }
 }
 
@@ -129,6 +131,7 @@ async function updateSubscribersChannels(channelName) {
     });
   } catch (error) {
     console.error('Помилка при оновленні каналів користувачів:', error);
+    alertify.error('Помилка при оновленні каналів користувачів:', error)
   }
 }
 
@@ -157,7 +160,7 @@ async function loadSubscribers(channelName) {
       }
   } catch (error) {
       console.error('Помилка при завантаженні підписників:', error);
-      alert(`Помилка при завантаженні підписників: ${error.message}`);
+      alertify.error(`Помилка при завантаженні підписників: ${error.message}`);
   }
 }
 
@@ -180,14 +183,14 @@ async function addSubscriber() {
     const data = await addSubscriberResponse.json();
     
     if (data.success) {
-        alert(`Користувача ${username} (ID: ${subscriberId}) додано до каналу.`);
+        alertify.success(`Користувача ${username} (ID: ${subscriberId}) додано до каналу.`);
         updateSubscribersListUI(username, subscriberId);
     } else {
-        alert('Помилка: ' + data.message);
+        alertify.error(`Помилка ${data.message}`)
     }
   } catch (error) {
       console.error('Помилка при додаванні користувача:', error);
-      alert('Помилка при додаванні користувача: ' + error.message);
+      alertify.error(`Помилка при додаванні користувача: ${error.message}`);
   }
 }
 
@@ -200,9 +203,9 @@ async function removeSubscriber(userId, channelName) {
       });
       const data = await response.json();
       if (data.success) {
-          alert(`Підписника з ID ${userId} видалено з каналу ${channelName}.`);
+          alertify.success(`Підписника з ID ${userId} видалено з каналу ${channelName}.`);
       } else {
-          alert('Помилка: ' + data.message);
+          alertify.error('Помилка: ' + data.message);
       }
   } catch (error) {
       console.error('Помилка при видаленні підписника:', error);
@@ -220,23 +223,32 @@ function updateSubscribersListUI(username, userId) {
   subscribersList.appendChild(newSubscriberItem);
 }
 
-async function deleteChannel(channelName) {
+async function deleteChannel() {
+  const password = prompt('Будь ласка, введіть пароль для підтвердження видалення каналу:');
+
+  if (!password) {
+    alertify.error('Видалення каналу скасовано.');
+    return;
+  }
   try {
     const response = await fetch('/channel/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channelName })
+      body: JSON.stringify({ currentChannelName, password })
     });
     const data = await response.json();
     if (data.success) {
-      alert(`Канал "${channelName}" видалено.`);
+      alertify.success(`Канал "${currentChannelName}" видалено.`);
+      closeMyChannelsModal();
     } else {
-      alert(data.message);
+      alertify.error(data.message);
     }
   } catch (error) {
     console.error('Помилка:', error);
+    alertify.error('Помилка сервера при видаленні каналу.');
   }
 }
+
 
 function closeMyChannelsModal() {
   document.getElementById('channels-modal').style.display = 'none';
@@ -267,13 +279,13 @@ async function changePassword() {
     });
     const data = await response.json();
     if (data.success) {
-      alert('Пароль успішно змінено.');
+      alertify.success('Пароль успішно змінено.');
     } else {
-      alert(data.message || 'Помилка зміни пароля.');
+      alertify.error(data.message || 'Помилка зміни пароля.');
     }
   } catch (error) {
     console.error('Помилка:', error);
-    alert('Помилка з’єднання з сервером.');
+    alertify.error('Помилка з’єднання з сервером.');
   }
 }
 
@@ -287,10 +299,10 @@ async function logout() {
     if (data.success) {
       window.location.href = '/';
     } else {
-      alert('Помилка при виході з акаунту.');
+      alertify.error('Помилка при виході з акаунту.');
     }
   } catch (error) {
-    alert('Помилка з’єднання з сервером.');
+    alertify.error('Помилка з’єднання з сервером.');
     console.error('Error:', error);
   }
 }
@@ -309,10 +321,10 @@ async function deleteAccount() {
     if (data.success) {
       window.location.href = '/';
     } else {
-      alert('Видалення акаунту скасовано. Пароль неправильний.');
+      alertify.error('Видалення акаунту скасовано. Пароль неправильний.');
     }
   } catch (error) {
-    alert('Помилка з’єднання з сервером.');
+    alertify.error('Помилка з’єднання з сервером.');
     console.error('Error:', error);
   }
 }
@@ -329,10 +341,10 @@ async function saveSettings() {
     if (data.success) {
       changeUrlToChat('chat.html');
     } else {
-      alert('Помилка збереження теми.');
+      alertify.error('Помилка збереження теми.');
     }
   } catch (error) {
-    alert('Помилка збереження налаштувань.');
+    alertify.error('Помилка збереження налаштувань.');
     console.error('Error:', error);
   }
 }
