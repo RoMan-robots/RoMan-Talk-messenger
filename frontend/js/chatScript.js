@@ -29,6 +29,11 @@ async function getCurrentUsername() {
             loadMessages(selectedChannel);
             loadUserChannels();
             loadChannelButtons();
+
+            if ("Notification" in window) {
+              Notification.requestPermission();
+            }
+            
         } else {
             window.location.href = '/';
         }
@@ -60,7 +65,7 @@ async function loadMessages(channelName) {
       });
     }
   } catch (error) {
-    alert(`Канал ${channelName} не знайдено`);
+    alertify.error(`Канал ${channelName} не знайдено`);
   }
 }
 
@@ -80,6 +85,7 @@ async function sendMessage() {
       messageInput.value = '';
     } catch (error) {
       console.error('Помилка при відправленні повідомлення:', error);
+      alertify.error('Помилка при відправленні повідомлення:', error);
     }
   }
 }
@@ -128,9 +134,11 @@ async function loadUserChannels() {
       });
     } else {
       console.error(data.message);
+      alertify.error(data.message);
     }
   } catch (error) {
     console.error('Помилка при завантаженні каналів:', error);
+    alertify.error('Помилка при завантаженні каналів:', error);
   }
 }
 
@@ -167,10 +175,12 @@ function createNewChannel() {
       loadMessages(channelName);
     } else {
       console.error(data.message);
+      alertify.error(data.message);
     }
   })
   .catch(error => {
     console.error('Помилка при створенні каналу:', error);
+    alertify.error('Помилка при створенні каналу:', error);
   });
   closeModal();
 }
@@ -191,9 +201,11 @@ async function loadChannelButtons() {
       });
     } else {
       console.error('Помилка при завантаженні каналів:', data.message);
+      alertify.error('Помилка при завантаженні каналів:', data.message);
     }
   } catch (error) {
     console.error('Помилка при завантаженні каналів:', error);
+    alertify.error('Помилка при завантаженні каналів:', error);
   }
 }
 
@@ -213,9 +225,12 @@ async function joinChannel(channelName) {
       loadMessages(channelName);
     } else {
       console.error('Помилка при додаванні каналу:', data.message);
+      alertify.error('Помилка при додаванні каналу:', data.message);
+
     }
   } catch (error) {
     console.error('Помилка при спробі додати канал:', error);
+    alertify.error('Помилка при спробі додати канал:', error);
   }
 }
 
@@ -235,8 +250,61 @@ function changeUrlToSettings(url) {
 getCurrentUsername();
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.");
 
-socket.on('chat message', (channel, msg) => {
-  if (msg.author && msg.context && channel == selectedChannel) {
-      displayMessage(`${msg.author}: ${msg.context}`);
+class NotificationManager {
+  constructor(displayMessageCallback) {
+    this.currentChannel = null;
+    this.scrolledToBottom = true;
+    this.displayMessage = displayMessageCallback;
+
+    this.setupScrollHandler();
   }
+
+  setupScrollHandler() {
+    window.onscroll = () => {
+      const windowHeight = window.innerHeight || document.documentElement.offsetHeight;
+      const body = document.body;
+      const html = document.documentElement;
+      const docHeight = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+      const windowBottom = windowHeight + window.pageYOffset;
+      this.scrolledToBottom = windowBottom >= docHeight;
+    };
+  }
+
+  setCurrentChannel(channelName) {
+    this.currentChannel = channelName;
+  }
+
+  receiveMessage(channel, msg) {
+    if (channel == selectedChannel) {
+      this.displayMessage(`${msg.author}: ${msg.context}`);
+    }
+    if (!this.scrolledToBottom) {
+      this.showNotificationInChat(channel, msg);
+    }
+    if (document.hidden) {
+      showNotification(channel, `${msg.author}: ${msg.context}`);
+    }
+    }
+  showNotificationInChat(channelName, msg) {
+    alertify.success(`Нове повідомлення в каналі ${channelName}:`);
+    alertify.success(msg);
+  }
+  showNotification(channel, message) {
+    if (Notification.permission === "granted") {
+      const notification = new Notification(`Нове повідомлення з ${channel}`, {
+        body: message,
+        icon: '../images/favicon.ico'
+      });
+  
+      notification.onclick = () => {
+        window.focus();
+      };
+    }
+  }
+}
+
+const notificationManager = new NotificationManager(displayMessage);
+
+socket.on('chat message', (channel, msg) => {
+  notificationManager.receiveMessage(channel, msg);
 });
