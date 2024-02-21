@@ -768,4 +768,4 @@ app.get("/settings.html", (req, res) => {
 //   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
 //   });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`));
+httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
