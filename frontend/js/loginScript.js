@@ -20,11 +20,11 @@ async function login(event) {
     if (data.success) {
       window.location.href = data.redirectUrl;
     } else {
-      alert(data.message || 'Неправильний логін або пароль.');
+      alertify.error(data.message || 'Неправильний логін або пароль.');
     }
   } catch (error) {
     console.error('Помилка:', error);
-    alert('Помилка сервера');
+    alertify.error('Помилка сервера');
   }
 }
 

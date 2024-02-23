@@ -134,6 +134,74 @@
                     "id": 26,
                     "author": "Привітання",
                     "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 27,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 28,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 29,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 30,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 31,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 32,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 33,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 34,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 35,
+                    "author": "Привітання",
+                    "context": "RoMan залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 36,
+                    "author": "Привітання",
+                    "context": "111 залогінився в RoMan Talk. Вітаємо!"
+                },
+                {
+                    "id": 37,
+                    "author": "RoMan",
+                    "context": "аааа"
+                }
+            ],
+            "subs": []
+        },
+        {
+            "name": "какаші ріл топ",
+            "owner": "RoMan",
+            "isPrivate": false,
+            "messages": [
+                {
+                    "id": 1,
+                    "author": "Системне",
+                    "context": "Канал какаші ріл топ створено"
                 }
             ],
             "subs": []

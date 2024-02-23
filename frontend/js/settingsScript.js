@@ -224,7 +224,16 @@ function updateSubscribersListUI(username, userId) {
 }
 
 async function deleteChannel() {
-  const password = prompt('Будь ласка, введіть пароль для підтвердження видалення каналу:');
+  const password = await new Promise((resolve) => {
+    alertify.prompt('Будь ласка, введіть пароль для підтвердження видалення каналу:',
+      function(value) {
+        resolve(value);
+      },
+      function() {
+        resolve(null);
+      }
+    ).set('type', 'password');
+  });
 
   if (!password) {
     alertify.error('Видалення каналу скасовано.');
@@ -234,7 +243,7 @@ async function deleteChannel() {
     const response = await fetch('/channel/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentChannelName, password })
+      body: JSON.stringify({ channelName: currentChannelName, password })
     });
     const data = await response.json();
     if (data.success) {
@@ -290,9 +299,22 @@ async function changePassword() {
 }
 
 async function logout() {
-  if (!confirm('Ви впевнені, що хочете вийти? Потім зайти можна тільки за паролем.')) {
-    return;
+  const userConfirmed = await new Promise((resolve) => {
+    alertify.confirm('Ви впевнені, що хочете вийти? Потім зайти можна тільки за паролем.',
+      function() {
+        resolve(true);
+      },
+      function() {
+        resolve(false);
+      }
+    ).set('labels', {ok:'Так', cancel:'Ні'});
+  });
+
+  if (!userConfirmed) {
+    alertify.error("Вихід з акаунту скасовано")
+    return; 
   }
+
   try {
     const response = await fetch('/logout', { method: 'POST' });
     const data = await response.json();
@@ -308,25 +330,32 @@ async function logout() {
 }
 
 async function deleteAccount() {
-  const password = prompt('Будь ласка, введіть ваш пароль для підтвердження видалення акаунту:');
-
-  try {
-    const response = await fetch('/delete-account', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-      window.location.href = '/';
-    } else {
-      alertify.error('Видалення акаунту скасовано. Пароль неправильний.');
+  alertify.prompt('Будь ласка, введіть ваш пароль для підтвердження видалення акаунту:',
+    async function(value) {
+      const password = value;
+      try {
+        const response = await fetch('/delete-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          window.location.href = '/';
+          alertify.success('Акаунт видалено успішно.');
+        } else {
+          alertify.error('Видалення акаунту скасовано. Пароль неправильний.');
+        }
+      } catch (error) {
+        alertify.error('Помилка з’єднання з сервером.');
+        console.error('Error:', error);
+      }
+    },
+    function() {
+      alertify.error('Видалення акаунту скасовано.');
     }
-  } catch (error) {
-    alertify.error('Помилка з’єднання з сервером.');
-    console.error('Error:', error);
-  }
+  ).set('type', 'password');
 }
 
 async function saveSettings() {
