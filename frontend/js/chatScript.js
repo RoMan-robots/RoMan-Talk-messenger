@@ -250,61 +250,8 @@ function changeUrlToSettings(url) {
 getCurrentUsername();
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.");
 
-class NotificationManager {
-  constructor(displayMessageCallback) {
-    this.currentChannel = null;
-    this.scrolledToBottom = true;
-    this.displayMessage = displayMessageCallback;
-
-    this.setupScrollHandler();
-  }
-
-  setupScrollHandler() {
-    window.onscroll = () => {
-      const windowHeight = window.innerHeight || document.documentElement.offsetHeight;
-      const body = document.body;
-      const html = document.documentElement;
-      const docHeight = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
-      const windowBottom = windowHeight + window.pageYOffset;
-      this.scrolledToBottom = windowBottom >= docHeight;
-    };
-  }
-
-  setCurrentChannel(channelName) {
-    this.currentChannel = channelName;
-  }
-
-  receiveMessage(channel, msg) {
-    if (channel == selectedChannel) {
-      this.displayMessage(`${msg.author}: ${msg.context}`);
-    }
-    if (!this.scrolledToBottom) {
-      this.showNotificationInChat(channel, msg);
-    }
-    if (document.hidden) {
-      showNotification(channel, `${msg.author}: ${msg.context}`);
-    }
-    }
-  showNotificationInChat(channelName, msg) {
-    alertify.success(`Нове повідомлення в каналі ${channelName}:`);
-    alertify.success(msg);
-  }
-  showNotification(channel, message) {
-    if (Notification.permission === "granted") {
-      const notification = new Notification(`Нове повідомлення з ${channel}`, {
-        body: message
-      });
-  
-      notification.onclick = () => {
-        window.focus();
-      };
-      console.log(notification)
-    }
-  }
-}
-
-const notificationManager = new NotificationManager(displayMessage);
-
 socket.on('chat message', (channel, msg) => {
-  notificationManager.receiveMessage(channel, msg);
+  if (msg.author && msg.context && channel == selectedChannel) {
+      displayMessage(`${msg.author}: ${msg.context}`);
+  }
 });
