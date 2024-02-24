@@ -2,7 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
-import mongoose from 'mongoose';
+import { Octokit } from '@octokit/rest';
 import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -16,6 +16,10 @@ const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
+const octokit = new Octokit({ auth: 'your-github-token' });
+
+const owner = 'RoMan-robots';
+const repo = 'Database';
 
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
@@ -36,65 +40,62 @@ app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
 
-const getUsers = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path.join(__dirname, 'users.json'), 'utf8', (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        try {
-          const parsedData = JSON.parse(data);
-          if (Array.isArray(parsedData.users)) {
-            resolve(parsedData.users);
-          } else {
-            reject(new TypeError("Expected 'users' to be an array"));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      }
+const saveUsers = async (users) => {
+  try {
+    const content = Buffer.from(JSON.stringify({ users }, null, 2)).toString('base64');
+    const getUsersResponse = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'users.json',
     });
-  });
+    const sha = getUsersResponse.data.sha;
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: 'users.json',
+      message: 'Update users.json',
+      content,
+      sha,
+    });
+  } catch (error) {
+    throw new Error('Error saving users: ' + error.message);
+  }
 };
 
-const saveUsers = (users) => {
-  return new Promise((resolve, reject) => {
-    const dataToSave = JSON.stringify({ users }, null, 4);
-    fs.writeFile(path.join(__dirname, 'users.json'), dataToSave, 'utf8', (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
+const getChannels = async () => {
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'messages.json',
     });
-  });
+    const data = Buffer.from(response.data.content, 'base64').toString();
+    return JSON.parse(data).channels;
+  } catch (error) {
+    throw new Error('Error getting channels: ' + error.message);
+  }
 };
 
-const getChannels = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile('messages.json', 'utf8', (err, data) => {
-      if (err) reject(err);
-      else {
-        const obj = JSON.parse(data);
-        resolve(obj.channels);
-      }
+const saveChannels = async (channels) => {
+  try {
+    const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+    const getChannelsResponse = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'messages.json',
     });
-  });
-};
-
-
-const saveChannels = (channels) => {
-  return new Promise((resolve, reject) => {
-    const dataToSave = JSON.stringify({ channels }, null, 4);
-    fs.writeFile('messages.json', dataToSave, 'utf8', (err) => {
-      if (err) {
-        console.error('Помилка при збереженні каналів:', err);
-        reject(err);
-      } else {
-        resolve();
-      }
+    const sha = getChannelsResponse.data.sha;
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: 'messages.json',
+      message: 'Update messages.json',
+      content,
+      sha,
     });
-  });
+  } catch (error) {
+    throw new Error('Error saving channels: ' + error.message);
+  }
 };
 
 const updateUserChannels = async (username, channelName) => {
@@ -139,48 +140,38 @@ const updateUserChannelList = async (username) => {
   }
 };
 
+const getMessages = async (channelName) => {
+  try {
+    const channels = await getChannels();
+    const channelData = channels.find(c => c.name === channelName);
 
-const getMessages = (channel) => {
-  return new Promise((resolve, reject) => {
-    fs.readFile('messages.json', 'utf8', (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        try {
-          const obj = JSON.parse(data);
-          const channelData = obj.channels.find(c => c.name === channel);
-          if (!channelData) {
-            reject(new Error('Канал не знайдено.'));
-          } else {
-            resolve(channelData.messages);
-          }
-        } catch (error) {
-          reject(error);
-        }
-      }
-    });
-  });
+    if (!channelData) {
+      throw new Error('Канал не знайдено.');
+    } else {
+      return channelData.messages;
+    }
+  } catch (error) {
+    throw new Error('Помилка при отриманні повідомлень: ' + error.message);
+  }
 };
 
 const saveMessages = async (channelName, messageObject) => {
   try {
-    const data = await fs.promises.readFile('messages.json', 'utf8');
-    let obj = JSON.parse(data);
-
-    let channelIndex = obj.channels.findIndex(c => c.name === channelName);
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(c => c.name === channelName);
 
     if (channelIndex !== -1) {
-      obj.channels[channelIndex].messages.push({
-        id: obj.channels[channelIndex].messages.length + 1,
+      const newMessageId = channels[channelIndex].messages.length + 1;
+      channels[channelIndex].messages.push({
+        id: newMessageId,
         author: messageObject.author,
-        context: messageObject.context
+        context: messageObject.context,
       });
-    } else {
-      throw new Error(`Канал "${channelName}" з типом ${typeof channelName} не знайдено.`);
-    }
 
-    const dataToSave = JSON.stringify(obj, null, 4);
-    await fs.promises.writeFile('messages.json', dataToSave, 'utf8');
+      await saveChannels(channels);
+    } else {
+      throw new Error(`Канал "${channelName}" не знайдено.`);
+    }
   } catch (error) {
     console.error('Помилка при збереженні повідомлень:', error);
     throw error;
