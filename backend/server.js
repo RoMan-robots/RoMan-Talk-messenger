@@ -40,6 +40,22 @@ app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
 
+const getUsers = async () => {
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'users.json',
+    });
+    const data = Buffer.from(response.data.content, 'base64').toString();
+    const users = JSON.parse(data).users;
+    return users;
+  } catch (error) {
+    throw new Error('Error getting users: ' + error.message);
+  }
+};
+
+
 const saveUsers = async (users) => {
   try {
     const content = Buffer.from(JSON.stringify({ users }, null, 2)).toString('base64');
