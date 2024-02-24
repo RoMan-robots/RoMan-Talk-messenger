@@ -29,11 +29,7 @@ async function getCurrentUsername() {
             loadMessages(selectedChannel);
             loadUserChannels();
             loadChannelButtons();
-
-            if ("Notification" in window) {
-              Notification.requestPermission();
-            }
-            
+            messageInput.focus();
         } else {
             window.location.href = '/';
         }
