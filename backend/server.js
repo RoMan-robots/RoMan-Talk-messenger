@@ -16,10 +16,10 @@ const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
-const octokit = new Octokit({ auth: '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' });
+const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
 
-const owner = 'RoMan-robots';
-const repo = 'Database';
+const owner = process.env.OWNER_REPO;
+const repo = process.env.NAME_REPO;
 
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
