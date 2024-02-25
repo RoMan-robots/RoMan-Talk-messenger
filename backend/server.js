@@ -16,7 +16,7 @@ const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
-const octokit = new Octokit({ auth: 'your-github-token' });
+const octokit = new Octokit({ auth: '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' });
 
 const owner = 'RoMan-robots';
 const repo = 'Database';
@@ -54,7 +54,6 @@ const getUsers = async () => {
     throw new Error('Error getting users: ' + error.message);
   }
 };
-
 
 const saveUsers = async (users) => {
   try {
@@ -184,7 +183,25 @@ const saveMessages = async (channelName, messageObject) => {
         context: messageObject.context,
       });
 
-      await saveChannels(channels);
+      try {
+        const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+        const getChannelsResponse = await octokit.repos.getContent({
+          owner,
+          repo,
+          path: 'messages.json',
+        });
+        const sha = getChannelsResponse.data.sha;
+        await octokit.repos.createOrUpdateFileContents({
+          owner,
+          repo,
+          path: 'messages.json',
+          message: `New message from ${channelName}, ${messageObject}`,
+          content,
+          sha,
+        });
+      } catch (error) {
+        throw new Error('Error saving channels: ' + error.message);
+      }
     } else {
       throw new Error(`Канал "${channelName}" не знайдено.`);
     }
