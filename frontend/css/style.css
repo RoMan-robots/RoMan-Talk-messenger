@@ -399,3 +399,10 @@ body {
     .dark-theme #create-channel-submit:hover {
       background-color: #5b6eae;
     }
+    .settings-buttons {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+    
