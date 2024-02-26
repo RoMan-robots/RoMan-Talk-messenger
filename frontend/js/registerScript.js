@@ -13,7 +13,7 @@ async function register(event) {
   const enteredPasswordDuplicate = enteredPasswordDuplicateInput.value;
 
   if (enteredPassword !== enteredPasswordDuplicate) {
-    alert('Пароль не співпадає');
+    alertify.error('Пароль не співпадає');
     return;
   }
 
@@ -31,10 +31,10 @@ async function register(event) {
     if (data.success) {
       changeUrlToChat('chat.html');
     } else {
-      alert(data.message || 'Помилка реєстрації.');
+      alertify.error(data.message || 'Помилка реєстрації.');
     }
   } catch (error) {
-    alert('Помилка сервера при реєстрації');
+    alertify.error('Помилка сервера при реєстрації');
   }
 }
 

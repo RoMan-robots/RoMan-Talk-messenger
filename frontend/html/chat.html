@@ -2,22 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RoMan Talk 1.0</title>
+    <title>RoMan Talk 1.1</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script src="../js/chatScript.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="chat-container">
         <div id="top-bar">
-          <h1 id="title">RoMan Talk</h1>
+          <h1 class="title">RoMan Talk</h1>
           <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
           <div id="channel-list">
-            <button id="channel1" onclick="handleChannelClick()">RoMan World</button>
-            <button id="channel2" onclick="handleChannelClick()">Fun Land😎</button>
-            <button id="channel3" onclick="handleChannelClick()">Українські жарти</button>
+            <button id="explore-channels-button" onclick="openExploreChannelsModal()">Досліджувати канали</button>
+            <button id="create-channel-button" onclick="createChannelModal()">Створити канал</button>
           </div>
           <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
         </div>
@@ -27,6 +28,22 @@
           <input type="text" id="message-input" placeholder="Напишіть повідомлення">
           <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">Відправити</button>
         </div>
-    </div>
+        <div id="create-channel-modal" class="modal">
+          <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2 class="title">Створити новий канал</h2>
+            <input type="text" id="new-channel-name" placeholder="Назва каналу">
+            <button onclick="createNewChannel()">Створити</button>
+          </div>
+        </div>
+        <div id="explore-channels-modal" class="modal" style="display: none;">
+          <div class="modal-content">
+              <span class="close-button" onclick="closeExploreModal()">&times;</span>
+              <h2>Доступні канали</h2>
+              <div id="channel-buttons">
+              </div>
+          </div>
+      </div>
+        </div>
 </body>
 </html>

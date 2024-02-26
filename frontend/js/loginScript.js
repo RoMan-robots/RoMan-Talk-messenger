@@ -10,6 +10,7 @@ async function login(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+      credentials: 'include'
       },
       body: JSON.stringify({ username: enteredUsername, password: enteredPassword })
     });
@@ -19,11 +20,24 @@ async function login(event) {
     if (data.success) {
       window.location.href = data.redirectUrl;
     } else {
-      alert(data.message || 'Неправильний логін або пароль.');
+      alertify.error(data.message || 'Неправильний логін або пароль.');
     }
   } catch (error) {
     console.error('Помилка:', error);
-    alert('Помилка сервера');
+    alertify.error('Помилка сервера');
   }
 }
- 
+
+async function checkSessionStatus() {
+  try {
+    const response = await fetch('/session-status');
+    const data = await response.json();
+
+    if (data.loggedIn) {
+      window.location.href = '/chat.html';
+    }
+  } catch (error) {
+    console.error('Помилка при перевірці статусу сесії:', error);
+  }
+}
+document.addEventListener('DOMContentLoaded', checkSessionStatus);
