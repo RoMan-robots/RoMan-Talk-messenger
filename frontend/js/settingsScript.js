@@ -7,6 +7,9 @@ const toggleChangePasswordButton = document.getElementById('toggle-change-passwo
 const toggleChangeUsernameButton = document.getElementById('toggle-change-username-button');
 const subscribersListContainer = document.getElementById("subscribers-list-container");
 
+const settingsButtons = document.querySelector('.settings-buttons');
+const settingsOption = document.querySelector(".settings-option")
+
 changePasswordForm.style.display = 'none';
 let display = false;
 let currentChannelName;
@@ -40,6 +43,7 @@ async function openChannelSettings(channel) {
   currentChannelName = channel;
 
   document.getElementById('channel-name-placeholder').textContent = channel;
+  document.getElementById('channels-modal').style.display = 'none';
   document.getElementById('channel-settings-modal').style.display = 'block';
 
   document.getElementById('set-public-privacy-button').onclick = () => setChannelPrivacy(channel, false);
@@ -55,6 +59,8 @@ async function openChannelSettings(channel) {
 
 async function fetchUserChannels() {
   try {
+    settingsButtons.style.display = 'none';
+    settingsOption.style.display = 'none';
     document.getElementById('channels-modal').style.display = 'block';
     const response = await fetch('/my-channels');
     const data = await response.json();
@@ -262,6 +268,8 @@ async function deleteChannel() {
 function closeMyChannelsModal() {
   document.getElementById('channels-modal').style.display = 'none';
   document.getElementById('channel-settings-modal').style.display = 'none';
+  settingsButtons.style.display = 'block';
+  settingsOption.style.display = 'block';
 }
 
 function toggleChangePassword() {
