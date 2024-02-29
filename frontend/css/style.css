@@ -430,3 +430,59 @@ button,
   align-items: center;
   justify-content: center;
 }
+.dark-theme {
+  background-color: #111;
+  color: #fff;
+}
+
+.light-theme {
+  background-color: #fff;
+  color: #000;
+}
+
+.dark-blue-theme {
+  /* Стилі для темно-синьої теми */
+  background-color: #000055;
+  color: #fff;
+}
+
+.military-theme {
+  /* Стилі для військової теми */
+  background-color: #012a00;
+  color: #fff;
+}
+
+.blood-red-theme {
+  /* Стилі для теми "кровавий червоний" */
+  background-color: rgb(0, 0, 0);
+  color: rgb(124, 0, 0);
+}
+
+.light-blue-theme {
+  /* Стилі для світло-синьої теми */
+  background-color: #c0ebf9;
+  color: #000;
+}
+
+.uwu-theme {
+  /* Стилі для теми "UwU" */
+  background-color: #fdccd4;
+  color: #000;
+}
+
+.coffee-theme {
+  /* Стилі для кавової теми */
+  background-color: #eccea6;
+  color: #000;
+}
+
+.mint-theme {
+  /* Стилі для м'ятної теми */
+  background-color: #b1f6d4;
+  color: #000;
+}
+
+.vegetables-theme {
+  background-color: #4bda24;
+  color: #000;
+}

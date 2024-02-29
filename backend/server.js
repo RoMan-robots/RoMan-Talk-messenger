@@ -299,7 +299,8 @@ app.get('/username', checkUserExists, (req, res) => {
         res.send({ 
           success: true, 
           username: user.username, 
-          theme: user['selected theme'], userId: user.id });
+          theme: user['selected theme'], 
+          userId: user.id });
       } else {
         res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
       }
