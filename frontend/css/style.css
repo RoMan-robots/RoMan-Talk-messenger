@@ -8,6 +8,11 @@ body {
   background-size: cover;
 }
 
+.classic {
+  color: white;
+  font-family: Verdana, sans-serif;
+}
+
 #login-screen {
   flex-grow: 1;
   display: flex;
@@ -40,6 +45,17 @@ body {
   align-items: center;
 }
 
+.tos-screen {
+  background-color: #000;
+}
+
+#hello-screen {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 #chat-container {
   display: flex;
   flex-direction: column;
@@ -54,6 +70,39 @@ body {
 #input-container {
   margin-top: auto;
 }
+
+#theme-select {
+  padding: 10px;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  font-family: Verdana, sans-serif;
+}
+
+.footer {
+color: #fff;
+display: flex;
+justify-content: center;
+}
+
+.footer-a {
+color: #adadad;
+}
+
+#server-dropdown:hover {
+  text-decoration: underline;
+}
+
+#server-dropdown::after {
+  content: '▼';
+  margin-left: 5px;
+}
+
+#server-dropdown.active::after {
+  transform: rotate(180deg);
+}
+
 
 #top-bar {
   height: 70px;
@@ -78,18 +127,6 @@ body {
   align-items: center;
 }
 
-#server-dropdown:hover {
-  text-decoration: underline;
-}
-
-#server-dropdown::after {
-  content: '▼';
-  margin-left: 5px;
-}
-
-#server-dropdown.active::after {
-  transform: rotate(180deg);
-}
 
 #channel-list {
   position: absolute;
@@ -186,33 +223,8 @@ body {
   align-items: center;
 }
 
-.modal2 {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgb(0, 0, 0);
-  color: rgb(255, 255, 255); 
-  justify-content: center;
-  align-items: center;
-}
-
 .modal-content {
   background-color: #fefefe;
-  margin: 15% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 50%;
-  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-  animation-name: animatetop;
-  animation-duration: 0.4s
-}
-
-.modal-content2 {
   margin: 15% auto;
   padding: 20px;
   border: 1px solid #888;
@@ -300,24 +312,7 @@ body {
   padding: 10px 20px;
   font-family: Verdana, sans-serif;
 }
-#theme-select {
-  padding: 10px;
-  background-color: #333;
-  color: #fff;
-  border: 1px solid #aaa;
-  border-radius: 5px;
-  font-family: Verdana, sans-serif;
-}
 
-.footer {
-color: #fff;
-display: flex;
-justify-content: center;
-}
-
-.footer-a {
-color: #adadad;
-}
 
 .dark-theme {
   background-color: #111;
@@ -360,21 +355,9 @@ button,
   color: #000;
 }
 
-.classic {
-  color: white;
-  font-family: Verdana, sans-serif;
-}
 
-.tos-screen {
-  background-color: #000;
-}
 
-#hello-screen {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+
 
 .dark-theme {
   background-color: #111;
@@ -430,59 +413,129 @@ button,
   align-items: center;
   justify-content: center;
 }
-.dark-theme {
-  background-color: #111;
-  color: #fff;
+:root {
+  --background-color: #fff;
+  --text-color: #000;
+  --button-bg-color: #808080;
+  --button-text-color: #fff;
+  --input-bg-color: #f1f1f1;
+  --input-text-color: #000;
+  --modal-bg-color: #fefefe;
+  --message-bg-color: #393939;
+  --channel-list-bg-color: #333;
+  --channel-list-text-color: #fff;
 }
 
-.light-theme {
-  background-color: #fff;
-  color: #000;
+.dark-theme {
+  --background-color: #111;
+  --text-color: #fff;
+  --button-bg-color: #333;
+  --input-bg-color: #222;
+  --modal-bg-color: #161616;
+  --message-bg-color: #393939;
+  --channel-list-bg-color: #222;
 }
 
 .dark-blue-theme {
-  /* Стилі для темно-синьої теми */
-  background-color: #000055;
-  color: #fff;
+  --background-color: #00005d;
+  --text-color: #fff;
+  --button-bg-color: #23314f;
+  --input-bg-color: #2a478c;
+  --modal-bg-color: #002963;
+  --message-bg-color: #012476;
+  --channel-list-bg-color: #143173;
 }
 
 .military-theme {
-  /* Стилі для військової теми */
-  background-color: #012a00;
-  color: #fff;
+  --background-color: #1e5f00;
+  --text-color: #fff;
+  --button-bg-color: #2e3710;
+  --input-bg-color: #4f524b;
+  --modal-bg-color: #3e4226;
+  --message-bg-color: #5f6d31;
+  --channel-list-bg-color: #636f57;
 }
 
 .blood-red-theme {
-  /* Стилі для теми "кровавий червоний" */
-  background-color: rgb(0, 0, 0);
-  color: rgb(124, 0, 0);
+  --background-color: #000000;
+  --text-color: #8b0000;
+  --button-bg-color: #8b0000;
+  --input-bg-color: #4d0000;
+  --modal-bg-color: #290000;
+  --message-bg-color: #7b0000;
+  --channel-list-bg-color: #4d0000;
 }
 
 .light-blue-theme {
-  /* Стилі для світло-синьої теми */
-  background-color: #c0ebf9;
-  color: #000;
+  --background-color: #ace6f9;
+  --text-color: #000000;
+  --button-bg-color: #2ac0ee;
+  --input-bg-color: #9bd3e1;
+  --modal-bg-color: #a4d7e7;
+  --message-bg-color: #5bc0de;
+  --channel-list-bg-color: #9bd3e1;
 }
 
 .uwu-theme {
-  /* Стилі для теми "UwU" */
-  background-color: #fdccd4;
-  color: #000;
+  --background-color: #fcd9e5;
+  --text-color: #d85295;
+  --button-bg-color: #c10345;
+  --input-bg-color: #fcd3e1;
+  --modal-bg-color: #fcb8d2;
+  --message-bg-color: #ffa3c3;
+  --channel-list-bg-color: #ffadc8;
 }
 
 .coffee-theme {
-  /* Стилі для кавової теми */
-  background-color: #eccea6;
-  color: #000;
+  --background-color: #d3c5b3;
+  --text-color: #6f4e37;
+  --button-bg-color: #a67b5b;
+  --input-bg-color: #b8a597;
+  --modal-bg-color: #c9b7a2;
+  --message-bg-color: #a67b5b;
+  --channel-list-bg-color: #b8a597;
 }
 
 .mint-theme {
-  /* Стилі для м'ятної теми */
-  background-color: #b1f6d4;
-  color: #000;
+  --background-color: #b2f2bb;
+  --text-color: #087f23;
+  --button-bg-color: #75c791;
+  --input-bg-color: #9de0ad;
+  --modal-bg-color: #a4d7c6;
+  --message-bg-color: #75c791;
+  --channel-list-bg-color: #9de0ad;
 }
 
 .vegetables-theme {
-  background-color: #4bda24;
-  color: #000;
+  --background-color: #4bda24;
+  --text-color: #345d07;
+  --button-bg-color: #6ecb63;
+  --input-bg-color: #88d975;
+  --modal-bg-color: #76c255;
+  --message-bg-color: #6ecb63;
+  --channel-list-bg-color: #88d975;
+}
+
+body,  #chat-container, .modal-content, .modal-content2, #channel-list {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+button, #send-button, #create-channel-submit {
+  background-color: var(--button-bg-color);
+  color: var(--button-text-color);
+}
+
+input, #message-input, #new-channel-name {
+  background-color: var(--input-bg-color);
+  color: var(--input-text-color);
+}
+
+.message {
+  background-color: var(--message-bg-color);
+}
+
+#channel-list {
+  background-color: var(--channel-list-bg-color);
+  color: var(--channel-list-text-color);
 }

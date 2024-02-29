@@ -387,43 +387,5 @@ async function saveSettings() {
 }
 
 function applyTheme(theme) {
-    fetch('/username')
-    .then(response => response.json())
-    .then(data => {
-      if (data.success && data.theme) {
-        document.body.className = '';
-  switch(theme) {
-    case 'dark':
-      document.body.classList.add('dark-theme');
-      break;
-    case 'light':
-      document.body.classList.add('light-theme');
-      break;
-    case 'dark-blue':
-      document.body.classList.add('dark-blue-theme');
-      break;
-    case 'military':
-      document.body.classList.add('military-theme');
-      break;
-    case 'blood-red':
-      document.body.classList.add('blood-red-theme');
-      break;
-    case 'light-blue':
-      document.body.classList.add('light-blue-theme');
-      break;
-    case 'uwu':
-      document.body.classList.add('uwu-theme');
-      break;
-    case 'coffee':
-      document.body.classList.add('coffee-theme');
-      break;
-    case 'mint':
-      document.body.classList.add('mint-theme');
-      break;
-    case 'vegetables':
-      document.body.classList.add('vegetables-theme');
-      break;
-    default:
-      console.log('Unknown theme. Applying default.');
-      }
-  }})};
+  document.documentElement.className = theme;
+}
