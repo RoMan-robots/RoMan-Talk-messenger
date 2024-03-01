@@ -385,7 +385,3 @@ async function saveSettings() {
     console.error('Error:', error);
   }
 }
-
-function applyTheme(theme) {
-  document.documentElement.className = theme;
-}

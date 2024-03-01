@@ -426,7 +426,7 @@ button,
   --channel-list-text-color: #fff;
 }
 
-.dark-theme {
+[data-theme="dark-theme"] {
   --background-color: #111;
   --text-color: #fff;
   --button-bg-color: #333;
@@ -436,7 +436,7 @@ button,
   --channel-list-bg-color: #222;
 }
 
-.dark-blue-theme {
+[data-theme="dark-blue-theme"]{
   --background-color: #00005d;
   --text-color: #fff;
   --button-bg-color: #23314f;
@@ -446,7 +446,7 @@ button,
   --channel-list-bg-color: #143173;
 }
 
-.military-theme {
+[data-theme="military-theme"] {
   --background-color: #1e5f00;
   --text-color: #fff;
   --button-bg-color: #2e3710;
@@ -456,7 +456,7 @@ button,
   --channel-list-bg-color: #636f57;
 }
 
-.blood-red-theme {
+[data-theme="blood-red-theme"] {
   --background-color: #000000;
   --text-color: #8b0000;
   --button-bg-color: #8b0000;
@@ -466,7 +466,7 @@ button,
   --channel-list-bg-color: #4d0000;
 }
 
-.light-blue-theme {
+[data-theme="light-blue-theme"] {
   --background-color: #ace6f9;
   --text-color: #000000;
   --button-bg-color: #2ac0ee;
@@ -476,7 +476,7 @@ button,
   --channel-list-bg-color: #9bd3e1;
 }
 
-.uwu-theme {
+[data-theme="uwu-theme"] {
   --background-color: #fcd9e5;
   --text-color: #d85295;
   --button-bg-color: #c10345;
@@ -486,7 +486,7 @@ button,
   --channel-list-bg-color: #ffadc8;
 }
 
-.coffee-theme {
+[data-theme="coffee-theme"]{
   --background-color: #d3c5b3;
   --text-color: #6f4e37;
   --button-bg-color: #a67b5b;
@@ -496,7 +496,7 @@ button,
   --channel-list-bg-color: #b8a597;
 }
 
-.mint-theme {
+[data-theme="mint-theme"] {
   --background-color: #b2f2bb;
   --text-color: #087f23;
   --button-bg-color: #75c791;
@@ -506,7 +506,7 @@ button,
   --channel-list-bg-color: #9de0ad;
 }
 
-.vegetables-theme {
+[data-theme="vegetables-theme"] {
   --background-color: #4bda24;
   --text-color: #345d07;
   --button-bg-color: #6ecb63;

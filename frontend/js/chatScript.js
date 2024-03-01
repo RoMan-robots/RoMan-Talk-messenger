@@ -230,13 +230,8 @@ async function joinChannel(channelName) {
   }
 }
 
-
 function applyTheme(theme) {
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-    } else {
-        document.body.classList.remove('dark-theme');
-    }
+  document.documentElement.setAttribute('data-theme', theme);
 }
 
 function changeUrlToSettings(url) {
