@@ -224,7 +224,6 @@ color: #adadad;
 }
 
 .modal-content {
-  background-color: #fefefe;
   margin: 15% auto;
   padding: 20px;
   border: 1px solid #888;
@@ -313,7 +312,6 @@ color: #adadad;
   font-family: Verdana, sans-serif;
 }
 
-
 .dark-theme {
   background-color: #111;
 }
@@ -354,11 +352,6 @@ button,
   background-color: #fff; 
   color: #000;
 }
-
-
-
-
-
 .dark-theme {
   background-color: #111;
   color: #fff;
@@ -416,6 +409,7 @@ button,
 :root {
   --background-color: #fff;
   --text-color: #000;
+  --additional-text-color: #fff;
   --button-bg-color: #808080;
   --button-text-color: #fff;
   --input-bg-color: #f1f1f1;
@@ -426,7 +420,7 @@ button,
   --channel-list-text-color: #fff;
 }
 
-[data-theme="dark-theme"] {
+[data-theme="dark"] {
   --background-color: #111;
   --text-color: #fff;
   --button-bg-color: #333;
@@ -436,37 +430,40 @@ button,
   --channel-list-bg-color: #222;
 }
 
-[data-theme="dark-blue-theme"]{
+[data-theme="dark-blue"]{
   --background-color: #00005d;
   --text-color: #fff;
-  --button-bg-color: #23314f;
-  --input-bg-color: #2a478c;
+  --button-bg-color: #063a57;
+  --input-bg-color: #000000;
   --modal-bg-color: #002963;
-  --message-bg-color: #012476;
+  --message-bg-color: #0a2564;
   --channel-list-bg-color: #143173;
+  --top-bar-bg-color: #00095e;
 }
 
-[data-theme="military-theme"] {
-  --background-color: #1e5f00;
+[data-theme="military"] {
+  --background-color: #103300;
   --text-color: #fff;
   --button-bg-color: #2e3710;
-  --input-bg-color: #4f524b;
+  --input-bg-color: #313e1f;
   --modal-bg-color: #3e4226;
-  --message-bg-color: #5f6d31;
+  --message-bg-color: #20530a;
   --channel-list-bg-color: #636f57;
 }
 
-[data-theme="blood-red-theme"] {
+[data-theme="blood-red"] {
   --background-color: #000000;
   --text-color: #8b0000;
-  --button-bg-color: #8b0000;
-  --input-bg-color: #4d0000;
+  --additional-text-color: #8b0000;
+  --button-bg-color: #000000;
+  --input-bg-color: #000000;
   --modal-bg-color: #290000;
-  --message-bg-color: #7b0000;
+  --message-bg-color: #000000;
   --channel-list-bg-color: #4d0000;
 }
 
-[data-theme="light-blue-theme"] {
+
+[data-theme="light-blue"] {
   --background-color: #ace6f9;
   --text-color: #000000;
   --button-bg-color: #2ac0ee;
@@ -476,17 +473,17 @@ button,
   --channel-list-bg-color: #9bd3e1;
 }
 
-[data-theme="uwu-theme"] {
+[data-theme="uwu"] {
   --background-color: #fcd9e5;
-  --text-color: #d85295;
-  --button-bg-color: #c10345;
+  --text-color: #cd5f96;
+  --button-bg-color: #d53da8;
   --input-bg-color: #fcd3e1;
-  --modal-bg-color: #fcb8d2;
-  --message-bg-color: #ffa3c3;
+  --modal-bg-color: #fcb8d2; 
+  --message-bg-color: #dd8ba7;
   --channel-list-bg-color: #ffadc8;
 }
 
-[data-theme="coffee-theme"]{
+[data-theme="coffee"]{
   --background-color: #d3c5b3;
   --text-color: #6f4e37;
   --button-bg-color: #a67b5b;
@@ -496,46 +493,56 @@ button,
   --channel-list-bg-color: #b8a597;
 }
 
-[data-theme="mint-theme"] {
-  --background-color: #b2f2bb;
+[data-theme="mint"] {
+  --background-color: #d4f8d9;
   --text-color: #087f23;
-  --button-bg-color: #75c791;
+  --button-bg-color: #60b17b;
   --input-bg-color: #9de0ad;
   --modal-bg-color: #a4d7c6;
-  --message-bg-color: #75c791;
+  --message-bg-color: #6da37f;
   --channel-list-bg-color: #9de0ad;
 }
 
-[data-theme="vegetables-theme"] {
-  --background-color: #4bda24;
-  --text-color: #345d07;
-  --button-bg-color: #6ecb63;
-  --input-bg-color: #88d975;
-  --modal-bg-color: #76c255;
-  --message-bg-color: #6ecb63;
-  --channel-list-bg-color: #88d975;
+[data-theme="neon"] {
+  --background-color: #000000;
+  --text-color: #ffffff;
+  --button-bg-color: #b000c0;
+  --input-bg-color: #770075;
+  --modal-bg-color: #000000;
+  --message-bg-color: #6f006a;
+  --channel-list-bg-color: #000000;
 }
 
-body,  #chat-container, .modal-content, .modal-content2, #channel-list {
-  background-color: var(--background-color);
+#chat-container, .modal-content, #channel-list {
+  background-color: var(--background-color) !important;
   color: var(--text-color);
 }
 
-button, #send-button, #create-channel-submit {
-  background-color: var(--button-bg-color);
-  color: var(--button-text-color);
+#send-button, #create-channel-submit, .channel-buttons {
+  background-color: var(--button-bg-color) !important;
+  color: var(--additional-text-color) !important;
 }
 
 input, #message-input, #new-channel-name {
   background-color: var(--input-bg-color);
-  color: var(--input-text-color);
+  color: var(--text-color);
 }
 
 .message {
   background-color: var(--message-bg-color);
+  color: var(--additional-text-color) !important;
 }
 
 #channel-list {
   background-color: var(--channel-list-bg-color);
   color: var(--channel-list-text-color);
+}
+
+#top-bar {
+  background-color: var(--top-bar-bg-color);
+  color: var(--text-color);
+}
+
+#server-dropdown {
+  color: var(--text-color);
 }
