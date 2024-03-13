@@ -330,6 +330,7 @@ app.post('/register', async (req, res) => {
     username, 
     password,
     'selected theme': 'light',
+    'rank': 'user', 
     channels: ['RoMan World Official']
   };
   users.push(newUser);
@@ -702,6 +703,18 @@ app.get('/check-session', (req, res) => {
   }
 });
 
+app.post("/get-rank", async (req, res) => {
+  try {
+    const username = req.session.username;
+    const users = await getUsers();
+    
+    const user = Object.values(users).find(user => user.username === username);
+    res.status(200).json({ success: true, rank: user.rank });
+  } catch (error){
+    res.status(404).json({ success:false, message: "Користувач не знайдений" });
+  }
+});
+
 app.post('/change-password', checkUserExists, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const username = req.session.username;
@@ -788,8 +801,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 

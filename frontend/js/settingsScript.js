@@ -6,6 +6,7 @@ const changeUsernameForm = document.getElementById('change-username-form');
 const toggleChangePasswordButton = document.getElementById('toggle-change-password-button');
 const toggleChangeUsernameButton = document.getElementById('toggle-change-username-button');
 const subscribersListContainer = document.getElementById("subscribers-list-container");
+const changeRankModal = document.getElementById("change-rank-modal");
 
 const settingsButtons = document.querySelector('.settings-buttons');
 const settingsOption = document.querySelector(".settings-option")
@@ -40,7 +41,7 @@ async function copyUserId() {
 }
 
 async function openChannelSettings(channel) {
-  currentChannelName = channel;
+  currentChannelName = channel; 
 
   document.getElementById('channel-name-placeholder').textContent = channel;
   document.getElementById('channels-modal').style.display = 'none';
@@ -272,6 +273,20 @@ function closeMyChannelsModal() {
   settingsOption.style.display = 'block';
 }
 
+function openChangeRankModal() {
+  changeRankModal.style.display = "block";
+
+  settingsButtons.style.display = 'none';
+  settingsOption.style.display = 'none';
+}
+
+function closeChangeRankModal() {
+  changeRankModal.style.display = "none";
+
+  settingsButtons.style.display = 'block';
+  settingsOption.style.display = 'block';
+}
+
 function toggleChangePassword() {
   if (!display) {
     changePasswordForm.style.display = 'block';
@@ -385,3 +400,21 @@ async function saveSettings() {
     console.error('Error:', error);
   }
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const response = await fetch('/get-rank', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json(); 
+    if (data.success) {
+      if(data.rank == "owner" || "admin") {
+        document.getElementById("change-rank-button").style.display = "block"
+      }
+    }
+  } catch (error) {
+    alertify.error("Помилка при завантаженні рангу.")
+    console.error(error)
+  }
+})
