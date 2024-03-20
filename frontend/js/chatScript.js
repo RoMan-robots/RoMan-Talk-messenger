@@ -5,7 +5,11 @@ const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
 const settingsButton = document.getElementById('settings');
 const chatContainer = document.getElementById('chat-container');
+
 const socket = io();
+const welcomeSound = new Audio('/welcomeSound.mp3');
+const newMessageSound = new Audio("/newMessageSound.mp3");
+const newUserSound = new Audio("/newUserSound.mp3");
 
 let isDropdownActive = true;
 let currentUsername;
@@ -244,5 +248,13 @@ console.log("Привіт! Це консоль для розробників, д
 socket.on('chat message', (channel, msg) => {
   if (msg.author && msg.context && channel == selectedChannel) {
       displayMessage(`${msg.author}: ${msg.context}`);
+  }
+  if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
+    newMessageSound.play();
+  } else if(!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)){
+    newUserSound.play();
+  }
+  if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
+    welcomeSound.play()
   }
 });

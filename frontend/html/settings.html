@@ -64,15 +64,30 @@
               </div>
               <button id="delete-channel-button" class="btn btn-danger" onclick="deleteChannel()">Видалити канал</button>
           </div>
-            <div class="modal2 modal-content2" style="display: none;" id="change-rank-modal">
+          <div class="modal2 modal-content2" style="display: none;" id="change-rank-modal">
                 <span class="close" onclick="closeChangeRankModal()">&times;</span>
                 <h3 class="title">Змінити ранг в RoMan Talk</h3>
                 <p class="classic">Введіть id або ім'я учасника для взаємодії:</p>
                 <input type="text" placeholder="Введіть ID">
-                <button>Знайти по ID</button>
+                <button onclick="changeRankById()">Знайти по ID</button>
                 <p class="classic">або</p>
                 <input type="text" placeholder="Введіть ім'я">
-                <button>Знайти по імені</button>
+                <button onclick="changeRankByName()">Знайти по імені</button>
+            </div>
+            <div class="modal2 modal-content2" style="display: none;" id="change-rank-form">
+                <span class="close" onclick="closeChangeRankModal()">&times;</span>
+                <h3 class="title">Змінити ранг для <span id="change-rank-name-placeholder"></span></h3>
+                <p class="classic">Теперішній ранг: <span id="rank-name-placeholder"></span></p>
+                <p class ="classic">Змінити на:</p>
+                <select id="new-rank-select">
+                    <option value="admin">Адміністратор</option>
+                    <option value="moderator">Модератор</option>
+                    <option value="tester">Тестувальник</option>
+                    <option value="super-user">Супер користувач</option>
+                    <option value="user">Користувач</option>
+                    <option value="banned">Заблокований</option>
+                </select>
+                <button onclick="saveRank()">Обрати ранг</button>
             </div>
     </div>
     <p class="footer">RoMan Talk 1.2 beta 2. Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>

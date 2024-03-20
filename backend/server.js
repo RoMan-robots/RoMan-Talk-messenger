@@ -37,7 +37,12 @@ io.use(sharedsession(sessionMiddleware, {
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
+
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
+
+app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
+app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
+app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
 
 const getUsers = async () => {
   try {
@@ -268,6 +273,9 @@ app.post('/login', async (req, res) => {
 
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
+      if (foundUser.rank === 'banned') {
+        return res.status(401).send({ success: false, message: 'Користувач заблокований' });
+      }
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
       req.session.save(async (err) =>{
@@ -519,7 +527,9 @@ app.get('/user-info/:userId', async (req, res) => {
     const user = users.find(user => user.id === parseInt(userId));
 
     if (user) {
-      res.json({ username: user.username });
+      res.json({ username: user.username, 
+                 id: user.id, 
+                 rank: user.rank });
     } else {
       res.status(404).send({ message: 'Користувача не знайдено.' });
     }
@@ -527,6 +537,38 @@ app.get('/user-info/:userId', async (req, res) => {
     console.error(error);
     res.status(500).send({ message: 'Помилка сервера.' });
   }
+});
+
+app.get('/user-info-by-name/:username', async (req, res) => {
+  const { username } = req.params;
+  try {
+    const users = await getUsers();
+    const user = users.find(user => user.username === username);
+    if (user) {
+      res.json({ username: user.username, 
+                 id: user.id,
+                 rank: user.rank});
+    } else {
+      res.status(404).send({ message: 'Користувача не знайдено.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Помилка сервера.' });
+  }
+});
+
+app.post('/save-rank', async (req, res) => {
+  const { userId, newRank } = req.body;
+  const users = await getUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: 'Користувач не знайдений' });
+  }
+
+  user.rank = newRank;
+  await saveUsers(users);
+
+  res.json({ message: 'Ранг користувача збережено' });
 });
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {

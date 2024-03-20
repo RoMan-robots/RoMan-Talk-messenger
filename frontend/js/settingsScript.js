@@ -7,6 +7,7 @@ const toggleChangePasswordButton = document.getElementById('toggle-change-passwo
 const toggleChangeUsernameButton = document.getElementById('toggle-change-username-button');
 const subscribersListContainer = document.getElementById("subscribers-list-container");
 const changeRankModal = document.getElementById("change-rank-modal");
+const rankNamePlaceholder = document.getElementById('rank-name-placeholder');
 
 const settingsButtons = document.querySelector('.settings-buttons');
 const settingsOption = document.querySelector(".settings-option")
@@ -171,15 +172,15 @@ async function loadSubscribers(channelName) {
   }
 }
 
-
 async function addSubscriber() {
   const subscriberId = document.getElementById('subscriber-id').value;
   const channelName = document.getElementById('channel-name-placeholder').textContent;
 
   try {
-    const userInfoResponse = await fetch(`/user-info/${subscriberId}`);
-    if (!userInfoResponse.ok) throw new Error("Не вдалося отримати дані користувача");
-    const userInfo = await userInfoResponse.json();
+    const userInfo = await findUser('id', subscriberId);
+    if (!userInfo) {
+      throw new Error("Не вдалося отримати дані користувача");
+    }
     const username = userInfo.username; 
 
     const addSubscriberResponse = await fetch('/add-subscriber', {
@@ -295,8 +296,115 @@ function toggleChangePassword() {
   } else {
     changePasswordForm.style.display = 'none';
     toggleChangePasswordButton.textContent = 'Змінити пароль';
-    display = false;
+    display = false; 
   }
+}
+
+async function findUser(type, userInfo){ 
+  let endpoint;
+  if (type === 'id') {
+    endpoint = `/user-info/${userInfo}`;
+  } else if (type === 'name') {
+    endpoint = `/user-info-by-name/${userInfo}`;
+  } else {
+    throw new Error('Непідтримуваний тип пошуку.');
+  }
+
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error('Не вдалося знайти користувача.');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Помилка при пошуку користувача:', error);
+    alertify.error(`Помилка при пошуку користувача: ${error.message}`);
+    return null;
+  }
+}
+
+async function changeRankById() {
+  const userId = document.querySelector('#change-rank-modal input:nth-of-type(1)').value;
+  const user = await findUser('id', userId);
+  if (user) {
+      openChangeRankForm(user);
+  } else {
+      alert('Користувача з таким ID не знайдено.');
+  }
+}
+
+async function changeRankByName() {
+  const username = document.querySelector('#change-rank-modal input:nth-of-type(2)').value;
+  const user = await findUser('name', username);
+  if (user) {
+      openChangeRankForm(user);
+  } else {
+      alert('Користувача з таким іменем не знайдено.');
+  }
+}
+
+function openChangeRankForm(user) {
+  const changeRankForm = document.getElementById('change-rank-form');
+  const changeRankNamePlaceholder = document.getElementById('change-rank-name-placeholder');
+
+
+  changeRankForm.style.display = "block";
+  changeRankModal.style.display = "none";
+
+  changeRankNamePlaceholder.textContent = user.username;
+  rankNamePlaceholder.textContent = translateRank(user.rank);
+}
+
+function translateRank(rank) {
+  switch(rank) {
+    case 'admin':
+      return 'адміністратор';
+    case 'moderator':
+      return 'модератор';
+    case 'tester':
+      return 'тестувальник';
+    case 'super-user':
+      return 'супер користувач';
+    case 'user':
+      return 'користувач';
+    case 'banned':
+      return 'заблокований';
+    default:
+      return '';
+  }
+}
+
+async function saveRank() {
+  const username = document.getElementById("change-rank-name-placeholder").textContent;
+  const user = findUser("name", username).then (async user => {
+  const selectedUserId = user.id;
+  const newRank = document.getElementById('new-rank-select').value;
+  const translatedRank = translateRank(newRank);
+  try {
+      const response = await fetch('/save-rank', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              userId: selectedUserId,
+              newRank: newRank 
+          })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+          alertify.success(`Ранг для ${username} успішно змінено на ${translatedRank}`);
+          rankNamePlaceholder.textContent = translatedRank;
+      } else {
+          alertify.error('Помилка при зміні рангу');
+      }
+  } catch (error) {
+      console.error('Помилка при зміні рангу:', error);
+      alertify.error('Помилка при зміні рангу');
+  }
+  });
+  
 }
 
 async function changePassword() {
@@ -409,8 +517,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     const data = await response.json(); 
     if (data.success) {
-      if(data.rank == "owner" || "admin") {
-        document.getElementById("change-rank-button").style.display = "block"
+      if(data.rank === "owner" || data.rank === "admin") {
+        const changeRankButton = document.getElementById("change-rank-button")
+        changeRankButton.style.display = "block"
       }
     }
   } catch (error) {
