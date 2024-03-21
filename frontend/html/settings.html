@@ -32,6 +32,7 @@
         <div class="settings-buttons w-100 text-center">
             <button id="copy-user-id-button" class="btn btn-secondary" onclick="copyUserId()">Копіювати мій ID</button>
             <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
+            <button id='requests-button' class="btn btn-secondary" style="display: none;">Заявки</button>
             <button id="change-rank-button" class="btn btn-danger" style="display: none;" onclick="openChangeRankModal()">Змінити ранг</button>
             <button id="toggle-change-password-button" class="btn btn-danger my-2" onclick="toggleChangePassword()">Змінити пароль</button>
             <div id="change-password-form">
@@ -41,7 +42,7 @@
             </div>
             <button id="leave-button" class="btn btn-danger my-2" onclick="logout()">Вийти з акаунту</button>
             <button id="delete-button" class="btn btn-danger my-2" onclick="deleteAccount()">Видалити акаунт</button>
-            <button id="save-settings" class="btn btn-success my-2" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
+            <button id="save-settings" class="btn btn-success my-2" onclick="saveSettings()">Зберегти та вийти</button>
         </div>
         <div id="channels-modal" class="modal2" style="display:none;">
             <div class="modal-content2">

@@ -38,6 +38,17 @@ body {
   font-weight: bold;
 }
 
+.ban-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#appeal-button {
+  display: flex;
+  justify-content: center;
+}
+
 #register-screen {
   flex-grow: 1;
   display: flex;

@@ -274,7 +274,7 @@ app.post('/login', async (req, res) => {
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
       if (foundUser.rank === 'banned') {
-        return res.status(401).send({ success: false, message: 'Користувач заблокований' });
+        return res.status(423).send({ success: false, message: 'Користувач заблокований' });
       }
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
@@ -792,6 +792,7 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
     await saveUsers(users);
     res.send({ success: true, message: 'Тема збережена.' });
   } catch (error) {
+    console.log(error)
     res.status(500).send({ success: false, message: 'Помилка сервера при збереженні теми.' });
   }
 });

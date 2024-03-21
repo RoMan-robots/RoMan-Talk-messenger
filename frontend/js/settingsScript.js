@@ -489,6 +489,11 @@ async function deleteAccount() {
   ).set('type', 'password');
 }
 
+function applyTheme(theme) {
+  console.log(theme)
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
 async function saveSettings() {
   const selectedTheme = themeSelect.value;
   try {
@@ -499,9 +504,10 @@ async function saveSettings() {
     });
     const data = await response.json();
     if (data.success) {
-      changeUrlToChat('chat.html');
+      alertify.success('Налаштування збережено.');
+      applyTheme(selectedTheme);
     } else {
-      alertify.error('Помилка збереження теми.');
+      alertify.error('Помилка збереження налаштувань.');
     }
   } catch (error) {
     alertify.error('Помилка збереження налаштувань.');
@@ -520,6 +526,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if(data.rank === "owner" || data.rank === "admin") {
         const changeRankButton = document.getElementById("change-rank-button")
         changeRankButton.style.display = "block"
+      }
+      if(data.rank === "owner" || data.rank === "admin" || data.rank === "moderator") {
+        const requestsButton = document.getElementById("requests-button")
+        requestsButton.style.display = "block"
       }
     }
   } catch (error) {

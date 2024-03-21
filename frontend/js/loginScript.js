@@ -20,9 +20,14 @@ async function login(event) {
     if (data.success) {
       window.location.href = data.redirectUrl;
     } else {
-      alertify.error(data.message || 'Неправильний логін або пароль.');
-    }
-  } catch (error) {
+      if (data.message.includes("заблокований")) {
+        document.getElementById("login-screen").style.display = 'none'
+        document.getElementById('ban-screen').style.display = 'block';
+        document.getElementById('login-footer').style.display = 'none';
+      } else {
+        alertify.error(data.message || 'Неправильний логін або пароль.');
+      }}} 
+    catch (error) {
     console.error('Помилка:', error);
     alertify.error('Помилка сервера');
   }
@@ -40,4 +45,9 @@ async function checkSessionStatus() {
     console.error('Помилка при перевірці статусу сесії:', error);
   }
 }
+
+function changeUrlTo(url) {
+  window.location.href = url;
+}
+
 document.addEventListener('DOMContentLoaded', checkSessionStatus);
