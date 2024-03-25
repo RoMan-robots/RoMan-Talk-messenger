@@ -46,6 +46,44 @@ async function checkSessionStatus() {
   }
 }
 
+function openAppealForm() {
+  const appealForm = document.getElementById("appeal-form")
+  appealForm.style.display = 'block';
+  document.getElementById('ban-screen').style.display = 'none';
+}
+
+async function sendAppeal(event) {
+  event.preventDefault();
+  const username = document.getElementById('username-appeal-input').value;
+  const reason = document.getElementById('appeal-reason').value;
+
+  try {
+    const response = await fetch('/send-appeal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, reason }),
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      document.getElementById('username-appeal-input').value = '';
+      document.getElementById('appeal-reason').value = '';
+      alertify.success('Апеляція успішно відправлена!');
+
+      setTimeout(() => {
+        changeUrlTo('/')
+      }, 3500);
+    } else {
+      alertify.error('Не вдалося відправити апеляцію. Спробуйте пізніше.');
+    }
+  } catch (error) {
+    console.error('Помилка:', error);
+    alertify.error('Помилка сервера');
+  }
+}
+
 function changeUrlTo(url) {
   window.location.href = url;
 }

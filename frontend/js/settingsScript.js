@@ -266,6 +266,79 @@ async function deleteChannel() {
   }
 }
 
+async function loadAppeals() {
+  try {
+    const response = await fetch('/get-appeals');
+    const { appeals } = await response.json();
+
+    const requestsModal = document.getElementById('requests-modal');
+
+    appeals.forEach((appeal, index) => {
+      const appealItem = document.createElement('div');
+      appealItem.classList.add('appeal-item');
+      appealItem.innerHTML = `
+        <h3 class='classic'>Заявка ${index+1}</h3>
+        <p class='classic'><strong>Тип заявки:</strong> апеляція на блокування</p>
+        <p class='classic'><strong>Ім'я акаунту:</strong> ${appeal.username}</p>
+        <p class='classic'><strong>Причина апеляції:</strong> ${appeal.reason}</p>
+      `;
+    
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Видалити заявку';
+      deleteButton.classList.add('btn', 'btn-light');
+      deleteButton.addEventListener('click', async () => {
+        try {
+          const response = await fetch('/delete-appeal', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ index })
+          });
+          const data = await response.json();
+          if (data.success) {
+              appeals.splice(index, 1);
+              requestsModal.removeChild(appealItem);
+              if (appeals.length === 0) {
+                const noRequestsMessage = document.createElement('p');
+                noRequestsMessage.textContent = 'Немає жодних заявок.';
+                noRequestsMessage.classList.add('classic')
+                requestsModal.appendChild(noRequestsMessage);
+              }
+          } else {
+              alertify.error('Помилка видалення заявки');
+          }
+      } catch (error) {
+          console.error('Помилка:', error);
+          alertify.error('Помилка з’єднання з сервером.');
+      }
+      });
+    
+      appealItem.appendChild(deleteButton);
+      requestsModal.appendChild(appealItem);
+    });
+    
+
+    if (appeals.length === 0) {
+      const noRequestsMessage = document.createElement('p');
+      noRequestsMessage.textContent = 'Немає жодних заявок.';
+      noRequestsMessage.classList.add('classic')
+      requestsModal.appendChild(noRequestsMessage);
+    }
+  } catch (error) {
+    console.error('Помилка при завантаженні заявок:', error);
+    alertify.error('Помилка при завантаженні заявок.');
+  }
+}
+
+function openRequestsModal() {
+  document.getElementById('requests-modal').style.display = 'block';
+
+  settingsButtons.style.display = 'none';
+  settingsOption.style.display = 'none';
+
+  loadAppeals()
+}
 
 function closeMyChannelsModal() {
   document.getElementById('channels-modal').style.display = 'none';
@@ -490,7 +563,6 @@ async function deleteAccount() {
 }
 
 function applyTheme(theme) {
-  console.log(theme)
   document.documentElement.setAttribute('data-theme', theme);
 }
 
@@ -506,6 +578,7 @@ async function saveSettings() {
     if (data.success) {
       alertify.success('Налаштування збережено.');
       applyTheme(selectedTheme);
+      changeUrlToChat('chat.html');
     } else {
       alertify.error('Помилка збереження налаштувань.');
     }

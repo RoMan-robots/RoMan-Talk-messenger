@@ -44,7 +44,7 @@ app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/so
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
 
-const getUsers = async () => {
+async function getUsers() {
   try {
     const response = await octokit.repos.getContent({
       owner,
@@ -57,9 +57,9 @@ const getUsers = async () => {
   } catch (error) {
     throw new Error('Error getting users: ' + error.message);
   }
-};
+}
 
-const saveUsers = async (users) => {
+async function saveUsers(users) {
   try {
     const content = Buffer.from(JSON.stringify({ users }, null, 2)).toString('base64');
     const getUsersResponse = await octokit.repos.getContent({
@@ -79,9 +79,9 @@ const saveUsers = async (users) => {
   } catch (error) {
     throw new Error('Error saving users: ' + error.message);
   }
-};
+}
 
-const getChannels = async () => {
+async function getChannels() {
   try {
     const response = await octokit.repos.getContent({
       owner,
@@ -93,9 +93,9 @@ const getChannels = async () => {
   } catch (error) {
     throw new Error('Error getting channels: ' + error.message);
   }
-};
+}
 
-const saveChannels = async (channels) => {
+async function saveChannels(channels) {
   try {
     const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
     const getChannelsResponse = await octokit.repos.getContent({
@@ -115,9 +115,9 @@ const saveChannels = async (channels) => {
   } catch (error) {
     throw new Error('Error saving channels: ' + error.message);
   }
-};
+}
 
-const updateUserChannels = async (username, channelName) => {
+async function updateUserChannels(username, channelName) {
   try {
     const users = await getUsers();
     const userIndex = users.findIndex(user => user.username === username);
@@ -134,9 +134,9 @@ const updateUserChannels = async (username, channelName) => {
     console.error('Error in updateUserChannels:', error);
     throw error;
   }
-};
+}
 
-const updateUserChannelList = async (username) => {
+async function updateUserChannelList(username) {
   try {
     const users = await getUsers();
     const channels = await getChannels();
@@ -157,9 +157,9 @@ const updateUserChannelList = async (username) => {
   } catch (error) {
     console.error(`Помилка при оновленні списку каналів для ${username}:`, error);
   }
-};
+}
 
-const getMessages = async (channelName) => {
+async function getMessages(channelName) {
   try {
     const channels = await getChannels();
     const channelData = channels.find(c => c.name === channelName);
@@ -172,9 +172,9 @@ const getMessages = async (channelName) => {
   } catch (error) {
     throw new Error('Помилка при отриманні повідомлень: ' + error.message);
   }
-};
+}
 
-const saveMessages = async (channelName, messageObject) => {
+async function saveMessages(channelName, messageObject) {
   try {
     const channels = await getChannels();
     const channelIndex = channels.findIndex(c => c.name === channelName);
@@ -213,9 +213,9 @@ const saveMessages = async (channelName, messageObject) => {
     console.error('Помилка при збереженні повідомлень:', error);
     throw error;
   }
-};
+}
 
-const addedUserMessage = async (eventMessage) => {
+async function addedUserMessage(eventMessage) {
   try {
     const newMessageId = await getMessages("RoMan World Official")
       .then(messages => messages.length + 1)
@@ -228,8 +228,44 @@ const addedUserMessage = async (eventMessage) => {
   } catch (error) {
     console.error('Помилка при додаванні події:', error);
   }
-};
+}
 
+async function getRequests() {
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'requests.json',
+    });
+    const data = Buffer.from(response.data.content, 'base64').toString();
+    const requests = JSON.parse(data).requests;
+    return requests;
+  } catch (error) {
+    throw new Error('Error getting requests: ' + error.message);
+  }
+}
+
+async function saveRequests(requests) {
+  try {
+    const content = Buffer.from(JSON.stringify({ requests }, null, 2)).toString('base64');
+    const getRequestsResponse = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'requests.json',
+    });
+    const sha = getRequestsResponse.data.sha;
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: 'requests.json',
+      message: 'Update requests.json',
+      content,
+      sha,
+    });
+  } catch (error) {
+    throw new Error('Error saving requests: ' + error.message);
+  }
+}
 
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
@@ -435,7 +471,6 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
   }
 });
 
-
 app.post('/create-channel', checkUserExists, async (req, res) => {
   const { channelName } = req.body;
   const username = req.session.username;
@@ -570,6 +605,46 @@ app.post('/save-rank', async (req, res) => {
 
   res.json({ message: 'Ранг користувача збережено' });
 });
+
+app.post('/send-appeal', async (req, res) => {
+  const { username, reason } = req.body;
+
+  try {
+    const requests = await getRequests();
+    requests.push({ username, reason, 'type':'appeal'});
+    await saveRequests(requests);
+    res.send({ success: true });
+  } catch (error) {
+    console.error('Помилка при збереженні апеляції:', error);
+    res.status(500).send({ success: false });
+  }
+});
+
+app.get('/get-appeals', async (req, res) => {
+  try {
+    const appeals = await getRequests();
+
+    res.status(200).json({ success: true, appeals });
+  } catch (error) {
+    console.error('Помилка при отриманні апеляцій:', error);
+    res.status(500).json({ success: false, message: 'Помилка при отриманні апеляцій.' });
+  }
+});
+
+app.post('/delete-appeal', async (req, res) => {
+  const { index } = req.body;
+  const appeals = await getRequests();
+
+  if (index !== undefined && index >= 0 && index < appeals.length) {
+    appeals.splice(index, 1);
+    await saveRequests(appeals);
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, message: 'Неправильний індекс заявки' });
+    console.log(index)
+  }
+});
+
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {
   const { userId, channelName } = req.body;
@@ -792,7 +867,6 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
     await saveUsers(users);
     res.send({ success: true, message: 'Тема збережена.' });
   } catch (error) {
-    console.log(error)
     res.status(500).send({ success: false, message: 'Помилка сервера при збереженні теми.' });
   }
 });

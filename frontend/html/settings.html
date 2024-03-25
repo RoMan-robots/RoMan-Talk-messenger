@@ -21,7 +21,7 @@
                 <option value="dark">Темна</option>
                 <option value="dark-blue">Темно-синя</option>
                 <option value="military">Військова</option>
-                <option value="blood-red">Кровава ніч(хорор+скрімери)</option>
+                <option value="blood-red">Кровава ніч(хорор режим)</option>
                 <option value="light-blue">Світло-синя</option>
                 <option value="uwu">UwU</option>
                 <option value="coffee">Кава</option>
@@ -32,7 +32,7 @@
         <div class="settings-buttons w-100 text-center">
             <button id="copy-user-id-button" class="btn btn-secondary" onclick="copyUserId()">Копіювати мій ID</button>
             <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
-            <button id='requests-button' class="btn btn-secondary" style="display: none;">Заявки</button>
+            <button id='requests-button' class="btn btn-secondary" style="display: none;" onclick="openRequestsModal()">Заявки</button>
             <button id="change-rank-button" class="btn btn-danger" style="display: none;" onclick="openChangeRankModal()">Змінити ранг</button>
             <button id="toggle-change-password-button" class="btn btn-danger my-2" onclick="toggleChangePassword()">Змінити пароль</button>
             <div id="change-password-form">
@@ -90,7 +90,10 @@
                 </select>
                 <button onclick="saveRank()">Обрати ранг</button>
             </div>
+            <div class="modal2 modal-content2" style="display:none;" id="requests-modal">
+                <h1 class="classic">Заявки:</h1>
+            </div>
     </div>
-    <p class="footer">RoMan Talk 1.2 beta 2. Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
+    <p class="footer">RoMan Talk 1.2 beta 3. Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
 </body>
 </html>
