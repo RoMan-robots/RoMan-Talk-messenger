@@ -8,6 +8,13 @@ body {
   background-size: cover;
 }
 
+#hello-screen {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .classic {
   color: white;
   font-family: Verdana, sans-serif;
