@@ -12,7 +12,6 @@ const rankNamePlaceholder = document.getElementById('rank-name-placeholder');
 const settingsButtons = document.querySelector('.settings-buttons');
 const settingsOption = document.querySelector(".settings-option")
 
-changePasswordForm.style.display = 'none';
 let display = false;
 let currentChannelName;
 
@@ -83,7 +82,6 @@ async function fetchUserChannels() {
   }
 }
 
-
 async function checkChannelPrivacy(channelName) {
   const response = await fetch(`/get-channel-privacy/${channelName}`);
   const { isPrivate } = await response.json();
@@ -142,7 +140,6 @@ async function updateSubscribersChannels(channelName) {
     alertify.error('Помилка при оновленні каналів користувачів:', error)
   }
 }
-
 
 async function loadSubscribers(channelName) {
   try {
@@ -588,6 +585,17 @@ async function saveSettings() {
   }
 }
 
+async function loadPastTheme(){
+  const response = await fetch('/username', {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await response.json();
+  if(data.success) {
+    themeSelect.value = data.theme;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const response = await fetch('/get-rank', {
@@ -605,6 +613,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         requestsButton.style.display = "block"
       }
     }
+    await loadPastTheme();
   } catch (error) {
     alertify.error("Помилка при завантаженні рангу.")
     console.error(error)

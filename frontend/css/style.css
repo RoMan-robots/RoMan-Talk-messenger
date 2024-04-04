@@ -557,3 +557,7 @@ input, #message-input, #new-channel-name {
 #server-dropdown {
   color: var(--text-color);
 }
+#create-channel-button, #explore-channels-button {
+  color: white;
+  background-color: black;
+}
