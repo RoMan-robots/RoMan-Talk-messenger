@@ -16,6 +16,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
+const version = 1.2;
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
@@ -43,6 +44,28 @@ app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
+
+async function checkVersion() {
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'versions.json',
+    });
+    const data = Buffer.from(response.data.content, 'base64').toString();
+    const versions = JSON.parse(data).versions;
+
+    let isSupported = false;
+    if (versions[version.toString()] === true) {
+      isSupported = true;
+    }
+
+    return isSupported;
+  } catch (error) {
+    console.error('Помилка при перевірці версії:', error.message);
+    return false;
+  }
+}
 
 async function getUsers() {
   try {
@@ -423,11 +446,14 @@ app.post('/messages', checkUserExists, async (req, res) => {
 });
 
 app.get("/session-status", async (req, res) => {
-  if (req.session.username) {
+  const isSupportedVersion = await checkVersion();
+  if(!isSupportedVersion){
+    res.send({ success: false, message: "Оновіть версію додатку" })
+  } else if (req.session.username) {
     await addedUserMessage(`${req.session.username} залогінився в RoMan Talk. Вітаємо!`);
-    res.send({ loggedIn: true });
+    res.send({ loggedIn: true, success: true });
   } else {
-    res.send({ loggedIn: false });
+    res.send({ loggedIn: false, success: true });
   }
 });
 

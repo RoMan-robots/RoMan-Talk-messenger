@@ -13,11 +13,13 @@ function changeUrlToLogin(url) {
     try {
       const response = await fetch('/session-status');
       const data = await response.json();
-  
+      if (!data.success) {
+        alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
+          checkSessionStatus();
+        });
+      }
       if (data.loggedIn) {
         window.location.href = '/chat.html';
-        
-        
       }
     } catch (error) {
       console.error('Помилка при перевірці статусу сесії:', error);
