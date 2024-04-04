@@ -16,7 +16,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
-const version = 1.2;
+const version = "1.2.1";
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
