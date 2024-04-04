@@ -19,11 +19,21 @@
             <select id="theme-select" class="form-control mb-4">
                 <option value="light">Світла</option>
                 <option value="dark">Темна</option>
-            </select>
+                <option value="dark-blue">Темно-синя</option>
+                <option value="military">Військова</option>
+                <option value="blood-red">Кровава ніч(хорор режим)</option>
+                <option value="light-blue">Світло-синя</option>
+                <option value="uwu">UwU</option>
+                <option value="coffee">Кава</option>
+                <option value="mint">М'ята</option>
+                <option value="neon">Неонова</option>
+              </select>
         </div>
         <div class="settings-buttons w-100 text-center">
             <button id="copy-user-id-button" class="btn btn-secondary" onclick="copyUserId()">Копіювати мій ID</button>
             <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
+            <button id='requests-button' class="btn btn-secondary" style="display: none;" onclick="openRequestsModal()">Заявки</button>
+            <button id="change-rank-button" class="btn btn-danger" style="display: none;" onclick="openChangeRankModal()">Змінити ранг</button>
             <button id="toggle-change-password-button" class="btn btn-danger my-2" onclick="toggleChangePassword()">Змінити пароль</button>
             <div id="change-password-form">
                 <input type="password" id="old-password" placeholder="Старий пароль">
@@ -32,7 +42,7 @@
             </div>
             <button id="leave-button" class="btn btn-danger my-2" onclick="logout()">Вийти з акаунту</button>
             <button id="delete-button" class="btn btn-danger my-2" onclick="deleteAccount()">Видалити акаунт</button>
-            <button id="save-settings" class="btn btn-success my-2" onclick="changeUrlToChat('chat.html')">Зберегти та вийти</button>
+            <button id="save-settings" class="btn btn-success my-2" onclick="saveSettings()">Зберегти та вийти</button>
         </div>
         <div id="channels-modal" class="modal2" style="display:none;">
             <div class="modal-content2">
@@ -41,8 +51,7 @@
                 <ul id="channels-list"></ul>
             </div>
         </div>
-        <div id="channel-settings-modal" class="modal2" style="display: none;">
-            <div class="modal-content2">
+        <div class="modal2 modal-content2" style="display: none;" id="channel-settings-modal">
               <span class="close" onclick="closeMyChannelsModal()">&times;</span>
               <h3 id="title">Налаштування каналу <span id="channel-name-placeholder"></span></h3>
               <p>Оберіть приватність:</p>
@@ -55,9 +64,36 @@
                 <ol id="subscribers-list"></ol>
               </div>
               <button id="delete-channel-button" class="btn btn-danger" onclick="deleteChannel()">Видалити канал</button>
-            </div>
           </div>
+          <div class="modal2 modal-content2" style="display: none;" id="change-rank-modal">
+                <span class="close" onclick="closeChangeRankModal()">&times;</span>
+                <h3 class="title">Змінити ранг в RoMan Talk</h3>
+                <p class="classic">Введіть id або ім'я учасника для взаємодії:</p>
+                <input type="text" placeholder="Введіть ID">
+                <button onclick="changeRankById()">Знайти по ID</button>
+                <p class="classic">або</p>
+                <input type="text" placeholder="Введіть ім'я">
+                <button onclick="changeRankByName()">Знайти по імені</button>
+            </div>
+            <div class="modal2 modal-content2" style="display: none;" id="change-rank-form">
+                <span class="close" onclick="closeChangeRankModal()">&times;</span>
+                <h3 class="title">Змінити ранг для <span id="change-rank-name-placeholder"></span></h3>
+                <p class="classic">Теперішній ранг: <span id="rank-name-placeholder"></span></p>
+                <p class ="classic">Змінити на:</p>
+                <select id="new-rank-select">
+                    <option value="admin">Адміністратор</option>
+                    <option value="moderator">Модератор</option>
+                    <option value="tester">Тестувальник</option>
+                    <option value="super-user">Супер користувач</option>
+                    <option value="user">Користувач</option>
+                    <option value="banned">Заблокований</option>
+                </select>
+                <button onclick="saveRank()">Обрати ранг</button>
+            </div>
+            <div class="modal2 modal-content2" style="display:none;" id="requests-modal">
+                <h1 class="classic">Заявки:</h1>
+            </div>
     </div>
-    <p class="footer">RoMan Talk 1.1.1 Official Release(OR). Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
+    <p class="footer">RoMan Talk 1.2 Official Release(OR). Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
 </body>
 </html>

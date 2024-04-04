@@ -8,11 +8,16 @@ function changeUrlToLogin(url) {
   function changeUrlToRegister(url) {
     window.location.href = url;
   }
+    
   async function checkSessionStatus() {
     try {
       const response = await fetch('/session-status');
       const data = await response.json();
-  
+      if (!data.success) {
+        alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
+          checkSessionStatus();
+        });
+      }
       if (data.loggedIn) {
         window.location.href = '/chat.html';
       }

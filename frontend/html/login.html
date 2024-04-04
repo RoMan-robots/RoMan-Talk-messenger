@@ -17,6 +17,18 @@
         <input type="password" id="password-input" class="form-control" placeholder="Пароль">
         <button id="login-button" class="btn btn-light" onclick="login()">Увійти</button>
     </form>  
-    <p class="footer">Пам'ятайте, входячи в акаунт в RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
+    <div id="ban-screen" style="display: none;">
+        <h1 class="classic ban-text">Акаунт заблоковано!</h1>
+        <h3 class="classic ban-text">Ви були заблоковані за порушення правил використання сервісу. Проте, ви можете подати на апеляцію, натиснувши на кнопку нижче.</h3>
+        <button class="btn btn-light" id="appeal-button" onclick="openAppealForm()">Подати на апеляцію</button>
+        <button class="btn btn-light" onclick="changeUrlTo('/')">Перейти до головної сторінки</button>
+    </div>
+    <form id="appeal-form" style="display: none;" onsubmit="sendAppeal(event)">
+        <h2 class="classic">Подати апеляцію на блокування</h2>
+        <input type="text" placeholder="Ім'я акаунту" id="username-appeal-input">
+        <textarea class="form-control" id="appeal-reason" rows="3" placeholder="Причина апеляції"></textarea>
+        <button class="btn btn-light" onclick="sendAppeal()">Надіслати</button>
+    </form>
+    <p class="footer" id="login-footer">Пам'ятайте, входячи в акаунт в RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
 </body>
 </html>
