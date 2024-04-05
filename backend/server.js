@@ -16,7 +16,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
-const version = "1.2.1";
+const version = "2.0";
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
@@ -619,17 +619,29 @@ app.get('/user-info-by-name/:username', async (req, res) => {
 });
 
 app.post('/save-rank', async (req, res) => {
-  const { userId, newRank } = req.body;
+  const username = req.session.username;
   const users = await getUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) {
-    return res.status(404).json({ error: 'Користувач не знайдений' });
+  const user = users.find(user => user.username === username);
+  const userRank = req.session.rank;
+
+  if (userRank === 'owner' || userRank === 'admin') {
+    const { userId, newRank } = req.body;
+    const targetUser = users.find(u => u.id === userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Користувач не знайдений' });
+    }
+
+    targetUser.rank = newRank;
+    await saveUsers(users);
+
+    res.json({ message: 'Ранг користувача збережено' });
+  } else {
+    user.rank = 'banned';
+    await saveUsers(users);
+    req.session.destroy();
+    res.json({ message: 'Використання адміністраторських можливостей користувачам заборонено' });
   }
-
-  user.rank = newRank;
-  await saveUsers(users);
-
-  res.json({ message: 'Ранг користувача збережено' });
 });
 
 app.post("/block-account", async (req, res) => {
