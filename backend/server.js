@@ -632,6 +632,24 @@ app.post('/save-rank', async (req, res) => {
   res.json({ message: 'Ранг користувача збережено' });
 });
 
+app.post("/block-account", async (req, res) => {
+  try {
+    const username = req.session.username;
+    const users = await getUsers();
+    const user = Object.values(users).find(user => user.username === username);
+      
+     if (user) {
+      user.rank = 'banned';
+      await saveUsers(users);
+    }
+    req.session.destroy();
+      
+      res.status(403).json({ success: false, message: `Ваш акаунт заблоковано з причини незаконного використання адміністраторських інструментів` });
+    } catch (error) {
+    res.status(500).json({ success: false, message: "Помилка при блокуванні акаунта" });
+  }
+});
+
 app.post('/send-appeal', async (req, res) => {
   const { username, reason } = req.body;
 
@@ -944,8 +962,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 

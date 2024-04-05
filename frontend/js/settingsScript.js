@@ -463,12 +463,15 @@ async function saveRank() {
   if (currentUserRank !== 'owner' && currentUserRank !== 'admin') {
     alertify.error('Ваш акаунт заблоковано з причини незаконного використання адміністраторських інструментів');
     setTimeout(async () => {
+      const response = await fetch('/block-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
         window.location.href = "/"
-        await blockAccount();
     }, 5000);
     return;
 }
-
 
   const selectedUserId = user.id;
   const newRank = document.getElementById('new-rank-select').value;
