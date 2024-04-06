@@ -12,7 +12,6 @@ const rankNamePlaceholder = document.getElementById('rank-name-placeholder');
 const settingsButtons = document.querySelector('.settings-buttons');
 const settingsOption = document.querySelector(".settings-option")
 
-changePasswordForm.style.display = 'none';
 let display = false;
 let currentChannelName;
 
@@ -83,7 +82,6 @@ async function fetchUserChannels() {
   }
 }
 
-
 async function checkChannelPrivacy(channelName) {
   const response = await fetch(`/get-channel-privacy/${channelName}`);
   const { isPrivate } = await response.json();
@@ -142,7 +140,6 @@ async function updateSubscribersChannels(channelName) {
     alertify.error('Помилка при оновленні каналів користувачів:', error)
   }
 }
-
 
 async function loadSubscribers(channelName) {
   try {
@@ -449,35 +446,60 @@ function translateRank(rank) {
 
 async function saveRank() {
   const username = document.getElementById("change-rank-name-placeholder").textContent;
-  const user = findUser("name", username).then (async user => {
+  const user = await findUser("name", username);
+
+  if (!user) {
+    alertify.error('Користувача не знайдено.');
+    return;
+  }
+
+  const response = await fetch('/get-rank', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await response.json();
+
+  const currentUserRank = data.rank;
+  if (currentUserRank !== 'owner' && currentUserRank !== 'admin') {
+    alertify.error('Ваш акаунт заблоковано з причини незаконного використання адміністраторських інструментів');
+    setTimeout(async () => {
+      const response = await fetch('/block-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+        window.location.href = "/"
+    }, 5000);
+    return;
+}
+
   const selectedUserId = user.id;
   const newRank = document.getElementById('new-rank-select').value;
   const translatedRank = translateRank(newRank);
-  try {
-      const response = await fetch('/save-rank', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-              userId: selectedUserId,
-              newRank: newRank 
-          })
-      });
 
-      const data = await response.json();
-      if (response.ok) {
-          alertify.success(`Ранг для ${username} успішно змінено на ${translatedRank}`);
-          rankNamePlaceholder.textContent = translatedRank;
-      } else {
-          alertify.error('Помилка при зміні рангу');
-      }
-  } catch (error) {
-      console.error('Помилка при зміні рангу:', error);
+  try {
+    const response = await fetch('/save-rank', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId: selectedUserId,
+        newRank: newRank
+      })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alertify.success(`Ранг для ${username} успішно змінено на ${translatedRank}`);
+      rankNamePlaceholder.textContent = translatedRank;
+    } else {
       alertify.error('Помилка при зміні рангу');
+    }
+  } catch (error) {
+    console.error('Помилка при зміні рангу:', error);
+    alertify.error('Помилка при зміні рангу');
   }
-  });
-  
 }
 
 async function changePassword() {
@@ -588,6 +610,17 @@ async function saveSettings() {
   }
 }
 
+async function loadPastTheme(){
+  const response = await fetch('/username', {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await response.json();
+  if(data.success) {
+    themeSelect.value = data.theme;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const response = await fetch('/get-rank', {
@@ -597,14 +630,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const data = await response.json(); 
     if (data.success) {
       if(data.rank === "owner" || data.rank === "admin") {
-        const changeRankButton = document.getElementById("change-rank-button")
-        changeRankButton.style.display = "block"
+        const changeRankButton = document.getElementById("change-rank-button");
+        changeRankButton.style.display = "block";
       }
       if(data.rank === "owner" || data.rank === "admin" || data.rank === "moderator") {
-        const requestsButton = document.getElementById("requests-button")
-        requestsButton.style.display = "block"
+        const requestsButton = document.getElementById("requests-button");
+        requestsButton.style.display = "block";
       }
     }
+    await loadPastTheme();
   } catch (error) {
     alertify.error("Помилка при завантаженні рангу.")
     console.error(error)
