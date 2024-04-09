@@ -40,6 +40,7 @@ app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
+app.use('/bg.png', express.static(path.join(__dirname, '../frontend/images/bg.png'))); 
 
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
@@ -974,8 +975,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 

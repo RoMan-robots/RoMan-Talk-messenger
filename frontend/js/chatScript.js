@@ -123,6 +123,16 @@ async function loadUserChannels() {
       exploreChannelButton.onclick = openExploreChannelsModal;
       channelListElement.appendChild(exploreChannelButton);
 
+      const sortChannelsButton = document.createElement('button');
+      sortChannelsButton.id = 'sort-channels-button';
+      sortChannelsButton.textContent = 'Сортувати канали';
+      channelListElement.appendChild(sortChannelsButton);
+
+      const aiButton = document.createElement('button');
+      aiButton.id = 'ai-button';
+      aiButton.textContent = 'AI';
+      channelListElement.appendChild(aiButton);
+      
       data.channels.forEach(channel => {
         const channelButton = document.createElement('button');
         channelButton.textContent = channel;

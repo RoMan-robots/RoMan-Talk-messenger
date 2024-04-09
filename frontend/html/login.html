@@ -12,10 +12,12 @@
 </head>
 <body>
     <form id="login-screen" onsubmit="login(event)">
-        <h2 class="classic" class="card-title text-center">Вхід в акаунт RoMan Talk</h2>
+        <div id="login-text">
+            <h2 class="classic" class="card-title text-center">Вхід в акаунт RoMan Talk</h2>
         <input type="text" id="username-input" class="form-control" placeholder="Ім'я користувача">
-        <input type="password" id="password-input" class="form-control" placeholder="Пароль">
+        <input type="password" id="password-input" class="form-control" placeholder="Пароль"><i class="fi fi-rr-password"></i>
         <button id="login-button" class="btn btn-light" onclick="login()">Увійти</button>
+        </div>
     </form>  
     <div id="ban-screen" style="display: none;">
         <h1 class="classic ban-text">Акаунт заблоковано!</h1>

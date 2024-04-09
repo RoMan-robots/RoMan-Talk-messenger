@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RoMan Talk 1.2.1</title>
+  <title>Головна сторінка RoMan Talk</title>
   <link rel="stylesheet" type="text/css" href="../css/style.css">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
@@ -10,40 +10,43 @@
   <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
 </head>
-<body  style="height: 165vh !important;">
- <div class="text-center" id="hello-screen">
-        <div class="row">
-          <h2 class="classic">Вітаємо в RoMan Talk 1.2.1!</h2>
-        </div>
-        <div class="row">
-          <div class="btn-group" role="group">
-            <button class="btn btn-light" id="login-screen-button" onclick="changeUrlToLogin('login.html')">Увійти</button>
-            <button class="btn btn-light" id="register-screen-button" onclick="changeUrlToRegister('register.html')">Зареєструватись</button>
-          </div>
-        </div>
+<body  style="height: 175vh !important;">
+  <div class="text-center" id="hello-screen">
+    <div id="hello-screen-container">
+      <h1 class="classic">Вітаємо в RoMan Talk 2.0 UC!</h1>
+      <div class="btn-group" role="group">
+        <button class="btn btn-light" id="login-screen-button" onclick="changeUrlToLogin('login.html')">Увійти</button>
+        <button class="btn btn-light" id="register-screen-button" onclick="changeUrlToRegister('register.html')">Зареєструватись</button>
       </div>
+    </div>
+  </div>
+  
   <div id="whats-new-screen" class="text-center">
-    <h3 class="classic">Що нового в RoMan Talk</h3>
-    <h4 class="classic">Версія 1.2.1: Security Update</h4>
-    <p class="classic">Пофікшено баг зі звуком, завантажується минула тема в налаштуваннях, прибрано баг зі зміною рангів з боку користувача</p>
-    <h4 class="classic">Версія 1.2: Design & Moderation Update</h4>
-    <p class="classic">Додано: <br>
-      Ранги(власник, адміністратор, модератор, тестувальник, супер користувач, користувач, заблокований). Від рангу
-      залежить функціонал акаунту. <br>
-      Можливість адміністраторам блокувати акаунти. Також можна подати апеляцію на блокування.
-      У разі спаму апеляціями, акаунт видаляється. <br>
-      8 нових тем <br>
-      3 нових звука <br>
-      Додано на головній сторінці "Що нового в RoMan Talk"
-    </p>
-    <h4 class="classic">Версія 1.1.1: Bug Fix</h4>
-    <p class="classic">Пофікшено баг з модальними вікнами в налаштуванні</p>
-    <h4 class="classic">Версія 1.1: Channel Update</h4>
-    <p class="classic">Додано: <br>  
-    Робочі канали, можна робити свої, міняти на публічний та приватний, керувати підписниками <br>
-    Alertify JS(плагін для оновлених повідомлень про неправильний пароль, тд) <br>
-    </p>
-    <h4 class="classic">Версія 1.0: Реліз RoMan Talk</h4>
+    <div id="whats-new-text">
+      <h3 class="classic">Що нового в RoMan Talk</h3>
+      <h4 class="classic">Версія 2.0: Global Update</h4>
+      <p class="classic">Додано: <br></p>
+      <h4 class="classic">Версія 1.2.1: Security Update</h4>
+      <p class="classic">Пофікшено баг зі звуком, завантажується минула тема в налаштуваннях, прибрано баг зі зміною рангів з боку користувача</p>
+      <h4 class="classic">Версія 1.2: Design & Moderation Update</h4>
+      <p class="classic">Додано: <br>
+        Ранги(власник, адміністратор, модератор, тестувальник, супер користувач, користувач, заблокований). Від рангу
+        залежить функціонал акаунту. <br>
+        Можливість адміністраторам блокувати акаунти. Також можна подати апеляцію на блокування.
+        У разі спаму апеляціями, акаунт видаляється. <br>
+        8 нових тем <br>
+        3 нових звука <br>
+        Додано на головній сторінці "Що нового в RoMan Talk"
+      </p>
+      <h4 class="classic">Версія 1.1.1: Bug Fix</h4>
+      <p class="classic">Пофікшено баг з модальними вікнами в налаштуванні</p>
+      <h4 class="classic">Версія 1.1: Channel Update</h4>
+      <p class="classic">Додано: <br>  
+      Робочі канали, можна робити свої, міняти на публічний та приватний, керувати підписниками <br>
+      Alertify JS(плагін для оновлених повідомлень про неправильний пароль, тд) <br>
+      </p>
+      <h4 class="classic">Версія 1.0: Реліз RoMan Talk</h4>
+    </div>
   </div>
   <p class="footer">Користуючись RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
 </body>

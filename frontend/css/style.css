@@ -4,7 +4,7 @@ body {
   display: flex; 
   flex-direction: column;
   height: 100vh;
-  background-color: #000 !important;
+  background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b2/%D0%92%D0%B5%D1%87%D1%96%D1%80%D0%BD%D1%96%D0%B9_%D0%B1%D0%B5%D1%80%D0%B5%D0%B3_%D0%94%D0%BD%D1%96%D0%BF%D1%80%D0%B0_3.jpg') !important;
   background-size: cover;
 }
 
@@ -13,6 +13,28 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+#hello-screen-container {
+  padding: 20px;
+  max-width: 650px; 
+  border-radius: 10px;
+  text-align: center;
+  background: rgba( 0, 0, 0, 0.4 );
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 10.5px );
+-webkit-backdrop-filter: blur( 10.5px );
+border-radius: 10px;
+border: 1px solid rgba( 255, 255, 255, 0.18 );
+}
+
+#whats-new-text {
+  background: rgba( 0, 0, 0, 0.4 );
+  box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+  backdrop-filter: blur( 10.5px );
+  -webkit-backdrop-filter: blur( 10.5px );
+  border-radius: 10px;
+  border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
 .classic {
@@ -25,7 +47,15 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.8);
+}
+#login-text{
+  max-height: 250px;
+  background: rgba( 0, 0, 0, 0.4 );
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 10.5px );
+-webkit-backdrop-filter: blur( 10.5px );
+border-radius: 10px;
+border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
 #login-form input[type="text"],
@@ -64,7 +94,12 @@ body {
 }
 
 .tos-screen {
-  background-color: #000;
+  background: rgba( 0, 0, 0, 0.4 );
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 10.5px );
+-webkit-backdrop-filter: blur( 10.5px );
+border-radius: 10px;
+border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
 #chat-container {
@@ -95,6 +130,12 @@ body {
 color: #fff;
 display: flex;
 justify-content: center;
+background: rgba( 0, 0, 0, 0.4 );
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 10.5px );
+-webkit-backdrop-filter: blur( 10.5px );
+border-radius: 10px;
+border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
 .footer-a {
@@ -289,9 +330,14 @@ color: #adadad;
   justify-content: center;
   height: 100vh;
   padding: 20px;
-  background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   font-family: Verdana, sans-serif;
+  background: rgba( 0, 0, 0, 0.4 );
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 10.5px );
+-webkit-backdrop-filter: blur( 10.5px );
+border-radius: 10px;
+border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
 #settings-title {
@@ -557,7 +603,7 @@ input, #message-input, #new-channel-name {
 #server-dropdown {
   color: var(--text-color);
 }
-#create-channel-button, #explore-channels-button {
+#create-channel-button, #explore-channels-button, #ai-button, #sort-channels-button {
   color: white;
   background-color: black;
 }
