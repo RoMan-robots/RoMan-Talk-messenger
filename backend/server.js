@@ -40,7 +40,6 @@ app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 
 app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
-app.use('/bg.png', express.static(path.join(__dirname, '../frontend/images/bg.png'))); 
 
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
@@ -800,6 +799,40 @@ app.get('/get-channel-privacy/:channelName', checkUserExists, async (req, res) =
   }
 });
 
+app.get('/sorted-channels/:type', async (req, res) => {
+  const { type } = req.params;
+  const username = req.session.username;
+  
+  if (!username) {
+    return res.status(403).json({ message: 'Потрібно увійти в акаунт для доступу до каналів.' });
+  }
+
+  try {
+    const users = await getUsers();
+    const userIndex = users.findIndex(e => e.username === username);
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'Користувач не знайдений.' });
+    }
+
+    const user = users[userIndex];
+    const sortedChannels = user.channels ? [...user.channels] : [];
+
+    if (type === 'name') {
+      sortedChannels.sort((a, b) => a.localeCompare(b));
+    } else if (type === 'size') {
+      sortedChannels.sort((a, b) => a.length - b.length);
+    }
+
+    users[userIndex].channels = sortedChannels;
+    await saveUsers(users);
+
+    res.json({ channels: sortedChannels, success: true });
+  } catch (error) {
+    console.error('Помилка при сортуванні каналів:', error);
+    res.status(500).json({ message: 'Помилка при сортуванні каналів.' });
+  }
+});
+
 app.post('/update-user-channels', checkUserExists, async (req, res) => {
   const { subscribers, channelName } = req.body;
   try {
@@ -817,7 +850,6 @@ app.post('/update-user-channels', checkUserExists, async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
-
 
 app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
   const { channelName } = req.body;

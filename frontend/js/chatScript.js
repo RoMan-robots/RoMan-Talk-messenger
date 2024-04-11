@@ -5,6 +5,7 @@ const serverDropdown = document.getElementById('server-dropdown');
 const channelList = document.getElementById('channel-list');
 const settingsButton = document.getElementById('settings');
 const chatContainer = document.getElementById('chat-container');
+const sortModal = document.getElementById('sort-modal');
 
 const socket = io();
 const welcomeSound = new Audio('/welcomeSound.mp3');
@@ -102,6 +103,40 @@ function toggleDropdown() {
     channelList.classList.toggle('active', isDropdownActive);
 }
 
+function loadChannelManagementButtons() {
+  const channelListElement = document.getElementById('channel-list');
+  const createChannelButton = document.createElement('button');
+  createChannelButton.id = 'create-channel-button';
+  createChannelButton.textContent = 'Створити канал';
+  createChannelButton.onclick = createChannelModal;
+  channelListElement.appendChild(createChannelButton);
+
+  const exploreChannelButton = document.createElement('button');
+  exploreChannelButton.id = 'explore-channels-button';
+  exploreChannelButton.textContent = 'Досліджувати канали';
+  exploreChannelButton.onclick = openExploreChannelsModal;
+  channelListElement.appendChild(exploreChannelButton);
+
+  const sortChannelsButton = document.createElement('button');
+  sortChannelsButton.id = 'sort-channels-button';
+  sortChannelsButton.textContent = 'Сортувати канали';
+  channelListElement.appendChild(sortChannelsButton);
+
+  const aiButton = document.createElement('button');
+  aiButton.id = 'ai-button';
+  aiButton.textContent = 'AI';
+  channelListElement.appendChild(aiButton);
+
+  const sortModalClose = document.getElementById('sort-modal-close');
+  sortChannelsButton.addEventListener('click', () => {
+    sortModal.style.display = 'block';
+  });
+  
+  sortModalClose.addEventListener('click', () => {
+    sortModal.style.display = 'none';
+  });
+} 
+
 async function loadUserChannels() {
   try {
     const response = await fetch('/user-channels');
@@ -110,29 +145,8 @@ async function loadUserChannels() {
     if (response.ok) {
       const channelListElement = document.getElementById('channel-list');
       channelListElement.innerHTML = '';
+      loadChannelManagementButtons();
 
-      const createChannelButton = document.createElement('button');
-      createChannelButton.id = 'create-channel-button';
-      createChannelButton.textContent = 'Створити канал';
-      createChannelButton.onclick = createChannelModal;
-      channelListElement.appendChild(createChannelButton);
-
-      const exploreChannelButton = document.createElement('button');
-      exploreChannelButton.id = 'explore-channels-button';
-      exploreChannelButton.textContent = 'Досліджувати канали';
-      exploreChannelButton.onclick = openExploreChannelsModal;
-      channelListElement.appendChild(exploreChannelButton);
-
-      const sortChannelsButton = document.createElement('button');
-      sortChannelsButton.id = 'sort-channels-button';
-      sortChannelsButton.textContent = 'Сортувати канали';
-      channelListElement.appendChild(sortChannelsButton);
-
-      const aiButton = document.createElement('button');
-      aiButton.id = 'ai-button';
-      aiButton.textContent = 'AI';
-      channelListElement.appendChild(aiButton);
-      
       data.channels.forEach(channel => {
         const channelButton = document.createElement('button');
         channelButton.textContent = channel;
@@ -152,6 +166,37 @@ async function loadUserChannels() {
   }
 }
 
+async function sortChannels(type) {
+  try {
+    const response = await fetch(`/sorted-channels/${type}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const channelListElement = document.getElementById('channel-list');
+      channelListElement.innerHTML = '';
+      loadChannelManagementButtons();
+
+      data.channels.forEach(channel => {
+        const channelButton = document.createElement('button');
+        channelButton.textContent = channel;
+        channelButton.onclick = () => {
+          selectedChannel = channel;
+          loadMessages(channel);
+        };
+        channelListElement.appendChild(channelButton);
+      });
+
+      sortModal.style.display = 'none';
+      alertify.success("Канали відсортовано успішно")
+    } else {
+      console.error(data.message);
+      alertify.error('Помилка при сортуванні каналів');
+    }
+  } catch (error) {
+    console.error('Помилка при сортуванні каналів:', error);
+    alertify.error('Помилка при сортуванні каналів:', error);
+  }
+}
 
 function createChannelModal() {
   document.getElementById("create-channel-modal").style.display = "block";
