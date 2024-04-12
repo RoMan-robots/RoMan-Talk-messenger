@@ -7,6 +7,7 @@ import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import openai from 'openai';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -643,6 +644,22 @@ app.post('/save-rank', async (req, res) => {
     res.json({ message: 'Використання адміністраторських можливостей користувачам заборонено' });
   }
 });
+
+app.post('/gpt', async (req, res) => {
+  const { message } = req.body;
+  const apiKey = process.env.TOKEN_GPT;
+    const model = 'gpt-3.5-turbo';
+    const maxTokens = 500;
+    const response = await openai.complete({
+        engine: 'text-davinci-003',
+        prompt: message,
+        max_tokens: maxTokens,
+        stop: '\n',
+        temperature: 0.5,
+        api_key: apiKey
+    });
+    console.log(response.data.choices[0].text.trim());
+})
 
 app.post("/block-account", async (req, res) => {
   try {
