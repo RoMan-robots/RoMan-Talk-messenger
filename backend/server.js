@@ -7,6 +7,7 @@ import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import GPT2 from 'gpt-2';
 import dotenv from 'dotenv';
 dotenv.config();
 
