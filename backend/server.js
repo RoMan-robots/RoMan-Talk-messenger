@@ -7,7 +7,6 @@ import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import GPT2 from 'gpt-2';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -920,6 +919,15 @@ app.post("/get-rank", async (req, res) => {
   } catch (error){
     res.status(404).json({ success:false, message: "Користувач не знайдений" });
   }
+});
+
+app.post('/gpt', async (req, res) => {
+  const { message } = req.body;
+
+  const gpt2 = new GPT2();
+  const generatedText = await gpt2.generate(message);
+  console.log(generatedText)
+  res.json({ success: true, message: generatedText });
 });
 
 app.post('/change-password', checkUserExists, async (req, res) => {
