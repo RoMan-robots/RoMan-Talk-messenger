@@ -7,7 +7,6 @@ import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -17,7 +16,6 @@ const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
-const apiGptKey = process.env.TOKEN_GPT;
 const version = "2.0";
 
 const owner = process.env.OWNER_REPO;
@@ -644,34 +642,6 @@ app.post('/save-rank', async (req, res) => {
     req.session.destroy();
     res.json({ message: 'Використання адміністраторських можливостей користувачам заборонено' });
   }
-});
-const openai = new OpenAI({ apiKey: process.env.TOKEN_GPT });
-
-app.post('/gpt', async (req, res) => {
-  const { message } = req.body;
-
-  const model = 'gpt-3.5-turbo';
-  const maxTokens = 100;
-  try {
-    const completions = await openai.completions.create({
-      model: model,
-      prompt: message,
-      maxTokens: maxTokens,
-      stop: '\n',
-      temperature: 0.5,
-      apiKey: apiGptKey
-    });
-    console.log( completions.data.choices[0].text.trim())
-    res.json({ success: true, message: completions.data.choices[0].text.trim() });
-  } catch (error) {
-    console.error('Помилка виклику OpenAI:', error);
-    let errorMessage = 'Помилка виклику OpenAI';
-    if (error.response && error.response.data && error.response.data.error) {
-      errorMessage = error.response.data.error.message;
-    }
-    res.status(500).json({ success: false, message: errorMessage });
-  }
-  
 });
 
 app.post("/block-account", async (req, res) => {
