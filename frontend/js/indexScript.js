@@ -11,18 +11,25 @@ function changeUrlToLogin(url) {
     
   async function checkSessionStatus() {
     try {
-      const response = await fetch('/session-status');
-      const data = await response.json();
-      if (!data.success) {
-        alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
-          checkSessionStatus();
-        });
-      }
-      if (data.loggedIn) {
-        window.location.href = '/chat.html';
-      }
+        const response = await fetch('/session-status');
+        const data = await response.json();
+        if (!data.success) {
+            alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
+                checkSessionStatus();
+            });
+        }
+        if (data.loggedIn) {
+            window.location.href = '/chat.html';
+        }
     } catch (error) {
-      console.error('Помилка при перевірці статусу сесії:', error);
+        console.error('Помилка при перевірці статусу сесії:', error);
+    } finally {
+        if (!navigator.onLine) {
+            alertify.alert("Немає підключення до інтернету, повторіть спробу пізніше", function () {
+                checkSessionStatus();
+            });
+        }
     }
-  }
-  document.addEventListener('DOMContentLoaded', checkSessionStatus);
+}
+
+document.addEventListener('DOMContentLoaded', checkSessionStatus);

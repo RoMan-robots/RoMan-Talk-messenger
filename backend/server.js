@@ -3,6 +3,7 @@ import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import { Octokit } from '@octokit/rest';
+import { sendAI } from './ai.js';
 import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -62,7 +63,9 @@ async function checkVersion() {
 
     return isSupported;
   } catch (error) {
-    console.error('Помилка при перевірці версії:', error.message);
+    if(error.message != "getaddrinfo ENOTFOUND api.github.com"){
+      console.error('Помилка при перевірці версії:', error.message);
+    }
     return false;
   }
 }
@@ -900,6 +903,12 @@ app.post('/channel/delete', checkUserExists, async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
+
+app.post('/ai', async (req, res) =>{
+  const prompt = req.body.message;
+  const result = sendAI(prompt);
+  res.status(200).json({ res:result.text, success: true });
+})
 
 app.get('/check-session', (req, res) => {
   if (req.session.username) {

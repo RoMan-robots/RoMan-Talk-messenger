@@ -6,6 +6,7 @@ const channelList = document.getElementById('channel-list');
 const settingsButton = document.getElementById('settings');
 const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
+const aiModal =document.getElementById("ai-modal");
 
 const socket = io();
 const welcomeSound = new Audio('/welcomeSound.mp3');
@@ -135,6 +136,9 @@ function loadChannelManagementButtons() {
   sortModalClose.addEventListener('click', () => {
     sortModal.style.display = 'none';
   });
+  aiButton.addEventListener("click", () =>{
+
+  })
 } 
 
 async function loadUserChannels() {
