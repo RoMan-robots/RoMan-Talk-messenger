@@ -137,7 +137,7 @@ function loadChannelManagementButtons() {
     sortModal.style.display = 'none';
   });
   aiButton.addEventListener("click", () =>{
-
+    aiModal.style.display = "block";
   })
 } 
 
