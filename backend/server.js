@@ -293,6 +293,42 @@ async function saveRequests(requests) {
   }
 }
 
+async function getSecurity() {
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'security.json',
+    });
+    const data = Buffer.from(response.data.content, 'base64').toString();
+    return JSON.parse(data).security;
+  } catch (error) {
+    throw new Error('Error getting security data: ' + error.message);
+  }
+}
+
+async function saveSecurity(security) {
+  try {
+    const content = Buffer.from(JSON.stringify({ security }, null, 2)).toString('base64');
+    const getSecurityResponse = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'security.json',
+    });
+    const sha = getSecurityResponse.data.sha;
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: 'security.json',
+      message: 'Update security.json',
+      content,
+      sha,
+    });
+  } catch (error) {
+    throw new Error('Error saving security data: ' + error.message);
+  }
+}
+
 async function checkUserExists(req, res, next) {
   const username = req.session.username;
 
