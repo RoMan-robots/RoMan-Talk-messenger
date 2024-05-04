@@ -22,6 +22,8 @@ const version = "2.0";
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
 
+let loginAttempts = {};
+
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -351,7 +353,7 @@ async function checkUserExists(req, res, next) {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 }
-
+ 
 io.on('connection', (socket) => {
   socket.on('new message', (channel, messageData) => {
     io.emit('chat message', channel, messageData);
@@ -369,6 +371,18 @@ app.post('/login', async (req, res) => {
       return res.status(401).send({ success: false, message: 'Користувача не знайдено' });
     }
 
+    const now = Date.now();
+    const userAttempts = loginAttempts[username] || [];
+    const recentAttempts = userAttempts.filter(attemptTime => now - attemptTime < 60000);
+    if (recentAttempts.length >= 5) {
+      const security = await getSecurity();
+      const message = { message: "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я." };
+      security.push({ [username]: [message] });
+      await saveSecurity(security);
+    
+      return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше."});
+    }
+    
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
       if (foundUser.rank === 'banned') {
@@ -387,6 +401,7 @@ app.post('/login', async (req, res) => {
           await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
     } else {
+      loginAttempts[username] = [...userAttempts, now];
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
     }
     
@@ -395,7 +410,6 @@ app.post('/login', async (req, res) => {
     res.status(500).send({ success: false, message: 'Помилка сервера' });
   }
 });
-
 
 app.get('/username', checkUserExists, (req, res) => {
   const username = req.session.username;
@@ -443,6 +457,14 @@ app.post('/register', async (req, res) => {
 
   await saveUsers(users);
 
+  const security = await getSecurity();
+
+  security.push({ [username]: [] });
+
+  await saveSecurity(security);
+
+  users.push(newUser);
+
   req.session.username = username;
   req.session.userId = newUser.id;
 
@@ -450,7 +472,6 @@ app.post('/register', async (req, res) => {
 
   res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
   await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
-  console.log(newUser);
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -740,6 +761,13 @@ app.post('/delete-appeal', async (req, res) => {
   }
 });
 
+app.get("/get-security", async (req, res) => {
+  const username = req.session.username;
+  const securityData = await getSecurity();
+  const security = securityData.find(obj => Object.keys(obj)[0] === username);
+
+  res.status(200).json({ success: true, security })
+})
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {
   const { userId, channelName } = req.body;

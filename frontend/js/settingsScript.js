@@ -328,6 +328,46 @@ async function loadAppeals() {
   }
 }
 
+async function loadSecurityRecomendations() {
+  const securityDiv = document.getElementById("security-recomendations");
+  const response = await fetch('/get-security', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  const data = await response.json();
+
+  if(data.success) {
+    const ol = document.createElement('ol');
+    const securityObj = data.security;
+
+    Object.keys(securityObj).forEach((username, index) => {
+      const li = document.createElement('li');
+      li.textContent = securityObj[username][0];
+      ol.appendChild(li);
+    });
+
+    securityDiv.appendChild(ol);
+  }
+}
+
+async function openSecurityModal() {
+  document.getElementById('security-modal').style.display = 'block';
+
+  settingsButtons.style.display = 'none';
+  settingsOption.style.display = 'none';
+
+  await loadSecurityRecomendations();
+}
+
+function closeSecurityModal() {
+  document.getElementById('security-modal').style.display = 'none';
+
+  settingsButtons.style.display = 'block';
+  settingsOption.style.display = 'block';
+}
+
 function openRequestsModal() {
   document.getElementById('requests-modal').style.display = 'block';
 

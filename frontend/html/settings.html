@@ -31,7 +31,7 @@
         </div>
         <div class="settings-buttons w-100 text-center">
             <button id="copy-user-id-button" class="btn btn-secondary" onclick="copyUserId()">Копіювати мій ID</button>
-            <button id="security-button" class="btn btn-secondary">Безпека акаунта</button>
+            <button id="security-button" class="btn btn-secondary" onclick="openSecurityModal()">Безпека акаунта</button>
             <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
             <button id='requests-button' class="btn btn-secondary" style="display: none;" onclick="openRequestsModal()">Заявки</button>
             <button id="change-rank-button" class="btn btn-danger" style="display: none;" onclick="openChangeRankModal()">Змінити ранг</button>
@@ -93,6 +93,13 @@
             </div>
             <div class="modal2 modal-content2" style="display:none;" id="requests-modal">
                 <h1 class="classic">Заявки:</h1>
+            </div>
+            <div id="security-modal" class="modal2 modal-content2" style="display: none;">
+                <span class="close" onclick="closeSecurityModal()">&times;</span>
+                <h3 class="classic">Безпека акаунта</h3>
+                <p class="classic">Не забувайте, безпека це дуже важливо та може зберегти від поганих наслідків.</p>
+                <p class="classic">Ось рекомендації та попередження, як захистити акаунт:</p>
+                <div id="security-recomendations"></div>
             </div>
     </div>
     <p class="footer">Користуючись RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
