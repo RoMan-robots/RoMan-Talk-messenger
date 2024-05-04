@@ -45,7 +45,7 @@ async function openChannelSettings(channel) {
 
   document.getElementById('channel-name-placeholder').textContent = channel;
   document.getElementById('channels-modal').style.display = 'none';
-  document.getElementById('channel-settings-modal').style.display = 'block';
+  document.getElementById('channel-settings-modal').style.display = 'flex';
 
   document.getElementById('set-public-privacy-button').onclick = () => setChannelPrivacy(channel, false);
   document.getElementById('set-private-privacy-button').onclick = () => setChannelPrivacy(channel, true);
@@ -364,8 +364,8 @@ async function openSecurityModal() {
 function closeSecurityModal() {
   document.getElementById('security-modal').style.display = 'none';
 
-  settingsButtons.style.display = 'block';
-  settingsOption.style.display = 'block';
+  settingsButtons.style.display = 'flex';
+  settingsOption.style.display = 'flex';
 }
 
 function openRequestsModal() {
@@ -380,8 +380,9 @@ function openRequestsModal() {
 function closeMyChannelsModal() {
   document.getElementById('channels-modal').style.display = 'none';
   document.getElementById('channel-settings-modal').style.display = 'none';
-  settingsButtons.style.display = 'block';
-  settingsOption.style.display = 'block';
+
+  settingsButtons.style.display = 'flex';
+  settingsOption.style.display = 'flex';
 }
 
 function openChangeRankModal() {
@@ -394,13 +395,13 @@ function openChangeRankModal() {
 function closeChangeRankModal() {
   changeRankModal.style.display = "none";
 
-  settingsButtons.style.display = 'block';
-  settingsOption.style.display = 'block';
+  settingsButtons.style.display = 'flex';
+  settingsOption.style.display = 'flex';
 }
 
 function toggleChangePassword() {
   if (!display) {
-    changePasswordForm.style.display = 'block';
+    changePasswordForm.style.display = 'flex';
     toggleChangePasswordButton.textContent = 'Скасувати';
     display = true;
   } else {
@@ -458,7 +459,7 @@ function openChangeRankForm(user) {
   const changeRankNamePlaceholder = document.getElementById('change-rank-name-placeholder');
 
 
-  changeRankForm.style.display = "block";
+  changeRankForm.style.display = "flex";
   changeRankModal.style.display = "none";
 
   changeRankNamePlaceholder.textContent = user.username;
