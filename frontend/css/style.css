@@ -472,12 +472,14 @@ button,
 .dark-theme #create-channel-submit:hover {
   background-color: #5b6eae;
 }
+
 .settings-buttons {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
+
 :root {
   --background-color: #fff;
   --text-color: #000;

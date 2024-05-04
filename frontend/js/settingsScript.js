@@ -668,16 +668,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       headers: { 'Content-Type': 'application/json' }
     });
     const data = await response.json(); 
-    if (data.success) {
+    if(data.success) {
       if(data.rank === "owner" || data.rank === "admin") {
         const changeRankButton = document.getElementById("change-rank-button");
-        changeRankButton.style.display = "block";
+        changeRankButton.removeAttribute("style");
       }
       if(data.rank === "owner" || data.rank === "admin" || data.rank === "moderator") {
         const requestsButton = document.getElementById("requests-button");
-        requestsButton.style.display = "block";
+        requestsButton.removeAttribute("style");
       }
     }
+
     await loadPastTheme();
   } catch (error) {
     alertify.error("Помилка при завантаженні рангу.")
