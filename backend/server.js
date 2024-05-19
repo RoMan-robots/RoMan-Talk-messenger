@@ -47,6 +47,7 @@ app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
+app.use('/tutorialSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/tutorialSound.mp3')));
 
 async function checkVersion() {
   try {

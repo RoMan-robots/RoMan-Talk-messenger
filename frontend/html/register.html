@@ -11,17 +11,39 @@
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
 </head>
 <body>
-    <div id="register-screen" class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
-        <div id="register-text">
-            <h2 class="classic" id="register-title" class="test-up">Реєстрація в RoMan Talk</h2>
-            <div id="register-inputs">
+<div id="register-screen" class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
+    <div id="register-text">
+        <h2 class="classic" id="register-title" class="test-up">Реєстрація в RoMan Talk</h2>
+        <div id="register-inputs">
+            <div id="step-1">
+                <h3 class="classic">Крок 1. Збір інформації</h3>
                 <input type="text" id="register-username-input" placeholder="Ім'я користувача">
                 <input type="password" id="register-password-input" placeholder="Пароль">
-                <input type="password" id="dublicate-register-password-input" placeholder="Повторіть пароль">
+                <p class="classic">Продовжуючи, я погоджуюсь з <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
+                <button onclick="nextStep(2)">Далі</button>
             </div>
-            <button id="register-submit-button" onclick="register(event)" class="btn btn-light">Зареєструватись</button>
+            
+            <div id="step-2" style="display: none;">
+                <h3 class="classic">Крок 2. Підтвердження</h3>
+                <input type="password" id="confirm-password-input" placeholder="Повторіть пароль">
+                
+                <button onclick="nextStep(1)">Назад</button>
+                <button onclick="nextStep(3)">Далі</button>
+            </div>                 
+
+            <div id="step-3" style="display: none;">
+                <h3 class="classic">Крок 3. Кастомізація</h3>
+                <button onclick="nextStep(2)">Назад</button>
+                <button onclick="nextStep(4)">Далі</button>
+            </div>
+
+            <div id="step-4" style="display: none;">
+                <h3 class="classic">Крок 4. Туторіал і перший вхід</h3>
+                <button onclick="nextStep(3)">Назад</button>
+                <button onclick="register(event)">Готово</button>
+            </div>
         </div>
-      </div>
-      <p class="footer">Пам'ятайте, реєструючись в RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
+    </div>
+</div>
 </body>
 </html>
