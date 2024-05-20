@@ -44,6 +44,7 @@ app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
+app.use('/RoManTalkHack.bat', express.static(path.join(__dirname, '../frontend/RoManTalkHack.bat')));
 
 async function checkVersion() {
   try {
@@ -343,9 +344,7 @@ app.post('/login', async (req, res) => {
               return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
           }
           res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-          res.send({ success: true, redirectUrl: '/chat.html' });
-
-          await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+          res.send({ success: true, redirectUrl: '/' });
       });
     } else {
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -397,21 +396,14 @@ app.post('/register', async (req, res) => {
     username, 
     password,
     'selected theme': 'light',
-    'rank': 'user', 
+    'rank': 'banned', 
     channels: ['RoMan World Official']
   };
   users.push(newUser);
 
   await saveUsers(users);
 
-  req.session.username = username;
-  req.session.userId = newUser.id;
-
-  res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-
-  res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
-  await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
-  console.log(newUser);
+  res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/' });
 });
 
 app.get('/messages', checkUserExists, async (req, res) => {
@@ -974,8 +966,8 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-//   });
+httpServer.listen(port, 'localhost', () => {
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+  });
   
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 

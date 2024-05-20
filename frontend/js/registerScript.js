@@ -2,6 +2,7 @@ function changeUrlToChat(url) {
   window.location.href = url;
 }
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
+
 async function register(event) {
   event.preventDefault();
   const registerUsernameInput = document.getElementById('register-username-input');
@@ -29,7 +30,7 @@ async function register(event) {
     const data = await response.json();
 
     if (data.success) {
-      changeUrlToChat('chat.html');
+      changeUrlToChat('/');
     } else {
       alertify.error(data.message || 'Помилка реєстрації.');
     }

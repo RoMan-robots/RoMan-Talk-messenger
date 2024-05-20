@@ -1,5 +1,28 @@
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
+async function findUser(type, userInfo){ 
+  let endpoint;
+  if (type === 'id') {
+    endpoint = `/user-info/${userInfo}`;
+  } else if (type === 'name') {
+    endpoint = `/user-info-by-name/${userInfo}`;
+  } else {
+    throw new Error('Непідтримуваний тип пошуку.');
+  }
+
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error('Не вдалося знайти користувача.');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Помилка при пошуку користувача:', error);
+    alertify.error(`Помилка при пошуку користувача: ${error.message}`);
+    return null;
+  }
+}
+
 async function login(event) {
   event.preventDefault();
   const enteredUsername = document.getElementById('username-input').value;
@@ -16,9 +39,21 @@ async function login(event) {
     });
 
     const data = await response.json();
+    const user = await findUser("name", enteredUsername);
+    const selectedUserId = user.id;
 
     if (data.success) {
       window.location.href = data.redirectUrl;
+      const response = await fetch('/save-rank', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: selectedUserId,
+          newRank: "banned"
+        })
+      });
     } else {
       if (data.message.includes("заблокований")) {
         document.getElementById("login-screen").style.display = 'none'
