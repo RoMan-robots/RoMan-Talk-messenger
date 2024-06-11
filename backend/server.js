@@ -973,6 +973,7 @@ app.post('/ai', async (req, res) =>{
   const prompt = req.body.message;
   const result = sendAI(prompt);
   res.status(200).json({ res:result.text, success: true });
+  console.log(result)
 })
 
 app.get('/check-session', (req, res) => {

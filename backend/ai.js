@@ -1,64 +1,4 @@
 import stringSimilarity from 'string-similarity';
-const database = {
-    "вітання": {
-        "привіт": {
-            text: "Привіт! Я тут, щоб тобі допомогти.",
-            category: "вітання"
-        },
-        "добрий день": {
-            text: "Добрий день! Як я можу допомогти?",
-            category: "вітання"
-        },
-        "здрастуйте": {
-            text: "Здрастуйте! Чим можу бути корисним?",
-            category: "вітання"
-        }
-    },
-    "спілкування": {
-        "як": {
-            text: "Як у тебе справи?",
-            category: "спілкування"
-        },
-        "хто ти": {
-            text: "Я, RoMan AI, асистент для допомоги в месенжері RoMan Talk",
-            category: "хто я"
-        }
-    },
-    "інформація про roman talk": {
-        "roman talk": {
-            text: "RoMan Talk - це чат для всіх, хто хоче цікаво провести час!",
-            category: "інформація про RoMan Talk"
-        },
-        "що таке roman talk": {
-            text: "RoMan Talk - це чат для всіх, хто хоче цікаво провести час!",
-            category: "інформація про RoMan Talk"
-        },
-        "як працює roman talk": {
-            text: "RoMan Talk - це чат, де ви можете спілкуватися з іншими користувачами, обмінюватися інформацією та проводити час цікаво!",
-            category: "інформація про RoMan Talk"
-        }
-    }
-};
-
-function findClosestMatch(word) {
-    let bestMatch = null;
-    let bestMatchScore = 0;
-
-    const lowerCaseWord = word.toLowerCase();
-
-    for (const category in database) {
-        for (const subCategory in database[category]) {
-            const lowerCaseSubCategory = subCategory.toLowerCase();
-            const similarity = stringSimilarity.compareTwoStrings(lowerCaseWord, lowerCaseSubCategory);
-            if (similarity > bestMatchScore) {
-                bestMatchScore = similarity;
-                bestMatch = subCategory;
-            }
-        }
-    }
-
-    return { bestMatch, bestMatchScore };
-}
 
 function normalizeWord(word) {
     const map = {
@@ -75,40 +15,53 @@ function normalizeWord(word) {
         .join('');
 }
 
+function generateGreetingResponse() {
+    const greetings = [
+        "Привіт! Як справи?",
+        "Добрий день! Як я можу допомогти?",
+        "Здрастуйте! Чим можу бути корисним?"
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+}
+
+function generateInformationResponse() {
+    return "RoMan Talk - це чат для всіх, хто хоче цікаво провести час!";
+}
+
+function generateGeneralResponse() {
+    const responses = [
+        "Це цікаве питання!",
+        "Я не зовсім впевнений, як відповісти на це.",
+        "Дай мені трохи часу подумати."
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+}
+
+function generateResponse(word) {
+    const normalizedWord = normalizeWord(word);
+    const greetingsKeywords = ["привіт", "добрий день", "здрастуйте"];
+    const infoKeywords = ["roman talk", "що таке roman talk", "як працює roman talk"];
+
+    for (const keyword of greetingsKeywords) {
+        const similarity = stringSimilarity.compareTwoStrings(normalizedWord, normalizeWord(keyword));
+        if (similarity > 0.7) {
+            return generateGreetingResponse();
+        }
+    }
+
+    for (const keyword of infoKeywords) {
+        const similarity = stringSimilarity.compareTwoStrings(normalizedWord, normalizeWord(keyword));
+        if (similarity > 0.7) {
+            return generateInformationResponse();
+        }
+    }
+
+    return generateGeneralResponse();
+}
+
 export function sendAI(word) {
     if (word.trim().length > 0) {
-        let { bestMatch, bestMatchScore } = findClosestMatch(word);
-        if (bestMatch !== null && bestMatchScore > 0.7) {
-            let closestCategory = null;
-            for (const category in database) {
-                if (database[category].hasOwnProperty(bestMatch)) {
-                    closestCategory = category;
-                    const wordInfo = database[category][bestMatch];
-                    return { text: wordInfo.text, category: wordInfo.category };
-                }
-            }
-            if (!closestCategory) {
-                return "Запит не знайдено в базі даних.";
-            }
-        } else {
-            let normalizedWord = normalizeWord(word);
-            let { bestMatch: normalizedBestMatch, bestMatchScore: normalizedBestMatchScore } = findClosestMatch(normalizedWord);
-            if (normalizedBestMatch !== null && normalizedBestMatchScore > 0.65) {
-                let closestCategory = null;
-                for (const category in database) {
-                    if (database[category].hasOwnProperty(normalizedBestMatch)) {
-                        closestCategory = category;
-                        const wordInfo = database[category][normalizedBestMatch];
-                        return { text: wordInfo.text, category: wordInfo.category };
-                    }
-                }
-                if (!closestCategory) {
-                    return "Запит не знайдено в базі даних.";
-                }
-            } else {
-                return "Запит не знайдено в базі даних?";
-            }
-        }
+        return generateResponse(word);
     } else {
         return "Будь ласка, введіть слово.";
     }
