@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RoMan Talk</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -17,21 +18,47 @@
           <h1 class="title">RoMan Talk</h1>
           <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
           <div id="channel-list">
+            <div id="management-buttons"></div>
+            <div id="channels"></div>
           </div>
           <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
         </div>
         <div id="message-list">
         </div>
+        <div id="edit-message" class="edit-message-invisible">
+          <h5>Редагування повідомлення</h5>
+          <span id="edit-message-span"></span>
+        </div>
         <div id="input-container">
+          <label for="file-input" class="file-input-label">+</label>
+          <input type="file" id="file-input" class="file-input" accept="image/*">
           <input type="text" id="message-input" placeholder="Напишіть повідомлення">
-          <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">Відправити</button>
+          <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">✈️</button>
+        </div>
+        <div id="message-options-menu" class="message-options-menu-hide">
+          <div>
+            <p>Загальне</p>
+            <button onclick="copyText(this)">Копіювати текст</button>
+            <button onclick="copyMessageId(this)">Копіювати ID повідомлення</button>
+          </div>
+          <div>
+            <p>AI Функції (BETA)</p>
+             <button onclick="translateMessage()">Перекласти текст</button>
+             <button onclick="compressMessage()">Стиснути текст</button>
+             <button onclick="getOriginalMessage()">Показати оригінальне повідомлення</button>
+          </div>
+          <div>
+            <p>Керування повідомленням</p>
+            <button>Редагувати повідомення</button>
+            <button>Видалити повідомлення</button>
+          </div>
         </div>
         <div id="create-channel-modal" class="modal">
           <div class="modal-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
             <h2 class="title">Створити новий канал</h2>
             <input type="text" id="new-channel-name" placeholder="Назва каналу">
-            <button onclick="createNewChannel()">Створити</button>
+            <button onclick="createNewChannel()" id="create">Створити</button>
           </div>
         </div>
         <div id="explore-channels-modal" class="modal" style="display: none;">
@@ -46,16 +73,9 @@
         <div class="modal-content">
           <span id="sort-modal-close" class="close">&times;</span>
           <h2>Сортувати канали за:</h2>
-          <button onclick="sortChannels('name')">алфавітом</button>
-          <button onclick="sortChannels('size')">розміром</button>
+          <button onclick="sortChannels('name')" class="sort-button">алфавітом</button>
+          <button onclick="sortChannels('size')" class="sort-button">розміром</button>
         </div>
-      </div>
-      <div id="ai-modal" class="modal">
-        <div class="modal-content">
-          <h2>Майбутнє настало!</h2>
-          <h3>Тепер ви можете спілкуватись з AI асистентом прямо в RoMan Talk!</h3> 
-        </div>
-      </div>
       </div>
 </body>
 </html>
