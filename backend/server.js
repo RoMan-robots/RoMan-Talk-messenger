@@ -1,14 +1,26 @@
 import express from 'express';
+import fileUpload from "express-fileupload"
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import { Octokit } from '@octokit/rest';
-import { sendAI } from './ai.js';
 import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import LanguageDetect from 'languagedetect';
+import fs from "fs"
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+
+import {
+  filterText,
+  checkGrammar,
+  analyzeSentiment,
+  rephraseText,
+  loadModels,
+  translateTextInParts
+} from './ai.js';
+
 dotenv.config();
 
 const __dirname = path.resolve();
@@ -24,6 +36,10 @@ const repo = process.env.NAME_REPO;
 
 let loginAttempts = {};
 
+const lngDetector = new LanguageDetect();
+let modelsLoaded = false;
+let models = {}
+
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -31,18 +47,21 @@ const sessionMiddleware = session({
   cookie: { httpOnly: true }
 });
 
+app.use(fileUpload());
 app.use(sessionMiddleware);
 app.use(express.json());
 app.use(cookieParser());
 
 io.use(sharedsession(sessionMiddleware, {
-    autoSave: true
+  autoSave: true
 }));
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 
-app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/images/favicon.ico')));
+const imagesDir = path.join(__dirname, '/images/bg');
+
+app.use('/favicon.ico', express.static(path.join(__dirname, '/images/favicon.ico')));
 
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
@@ -66,7 +85,7 @@ async function checkVersion() {
 
     return isSupported;
   } catch (error) {
-    if(error.message != "getaddrinfo ENOTFOUND api.github.com"){
+    if (error.message != "getaddrinfo ENOTFOUND api.github.com") {
       console.error('Помилка при перевірці версії:', error.message);
     }
     return false;
@@ -188,6 +207,14 @@ async function updateUserChannelList(username) {
   }
 }
 
+async function ensureModelsLoaded() {
+  if (!modelsLoaded) {
+    models = await loadModels();
+    modelsLoaded = true;
+    console.log('Models loaded successfully');
+  }
+}
+
 async function getMessages(channelName) {
   try {
     const channels = await getChannels();
@@ -203,27 +230,46 @@ async function getMessages(channelName) {
   }
 }
 
-async function saveMessages(channelName, messageObject) {
+async function saveMessages(channelName, messageObject, messageType = "classic", retries = 3) {
   try {
     const channels = await getChannels();
     const channelIndex = channels.findIndex(c => c.name === channelName);
 
     if (channelIndex !== -1) {
-      const newMessageId = channels[channelIndex].messages.length + 1;
-      channels[channelIndex].messages.push({
+      const channel = channels[channelIndex];
+      const newMessageId = channel.messages.length + 1;
+
+      let newMessage = {
         id: newMessageId,
         author: messageObject.author,
         context: messageObject.context,
-      });
+      };
+
+      if (messageType === 'photo' && messageObject.image) {
+        const originalFileName = messageObject.image.name;
+
+        const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
+
+        const imageFileName = `${newMessageId}--${sanitizedFileName}`;
+        newMessage.photo = imageFileName;
+        await uploadImage(messageObject.image, imageFileName);
+
+        const imageUrl = await getPhotos(imageFileName);
+        newMessage.photo = imageUrl;
+      }
+
+      channel.messages.push(newMessage);
+
+      const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
 
       try {
-        const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
         const getChannelsResponse = await octokit.repos.getContent({
           owner,
           repo,
           path: 'messages.json',
         });
         const sha = getChannelsResponse.data.sha;
+
         await octokit.repos.createOrUpdateFileContents({
           owner,
           repo,
@@ -233,13 +279,107 @@ async function saveMessages(channelName, messageObject) {
           sha,
         });
       } catch (error) {
-        throw new Error('Error saving channels: ' + error.message);
+        if (retries > 0) {
+          console.log(`Retrying saveMessages due to conflict... Attempts left: ${retries}`);
+          return saveMessages(channelName, messageObject, messageType, retries - 1);
+        } else {
+          throw new Error('Error saving channels: ' + error.message);
+        }
       }
     } else {
       throw new Error(`Канал "${channelName}" не знайдено.`);
     }
   } catch (error) {
     console.error('Помилка при збереженні повідомлень:', error);
+    throw error;
+  }
+}
+
+async function editMessage(channelName, messageId, newContent) {
+  try {
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(c => c.name === channelName);
+
+    if (channelIndex !== -1) {
+      let messageFound = false;
+
+      channels[channelIndex].messages.forEach(message => {
+        if (message.id === messageId) {
+          message.context = newContent;
+          messageFound = true;
+        }
+      });
+
+      if (messageFound) {
+        try {
+          const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+          const getChannelsResponse = await octokit.repos.getContent({
+            owner,
+            repo,
+            path: 'messages.json',
+          });
+          const sha = getChannelsResponse.data.sha;
+
+          await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: 'messages.json',
+            message: `Updated message ${messageId} in channel ${channelName}`,
+            content,
+            sha,
+          });
+        } catch (error) {
+          throw new Error('Error saving channels: ' + error.message);
+        }
+      } else {
+        throw new Error(`Повідомлення з ID ${messageId} не знайдено у каналі "${channelName}".`);
+      }
+    } else {
+      throw new Error(`Канал "${channelName}" не знайдено.`);
+    }
+  } catch (error) {
+    console.error('Помилка при редагуванні повідомлення:', error);
+    throw error;
+  }
+}
+
+async function deleteMessage(channelName, messageId) {
+  try {
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(c => c.name === channelName);
+
+    if (channelIndex !== -1) {
+      const messages = channels[channelIndex].messages;
+      const messageToDelete = messages.find(message => message.id === messageId);
+
+      if (!messageToDelete) {
+        throw new Error('Повідомлення не знайдено.');
+      }
+
+      channels[channelIndex].messages = messages.filter(message => message.id !== messageId);
+
+      const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+      const getChannelsResponse = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: 'messages.json',
+      });
+      const sha = getChannelsResponse.data.sha;
+      await octokit.repos.createOrUpdateFileContents({
+        owner,
+        repo,
+        path: 'messages.json',
+        message: `Deleted message with ID ${messageId} from ${channelName}`,
+        content,
+        sha,
+      });
+
+      return true;
+    } else {
+      throw new Error(`Канал "${channelName}" не знайдено.`);
+    }
+  } catch (error) {
+    console.error('Помилка при видаленні повідомлення:', error);
     throw error;
   }
 }
@@ -256,6 +396,45 @@ async function addedUserMessage(eventMessage) {
     io.emit('chat message', "RoMan World Official", newMessage);
   } catch (error) {
     console.error('Помилка при додаванні події:', error);
+  }
+}
+
+async function getPhotos(imageFileName) {
+  const imagePath = `images/${imageFileName}`;
+
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: imagePath,
+    });
+
+    const imageUrl = response.data.download_url;
+    return imageUrl;
+  } catch (error) {
+    console.error('Error getting image from GitHub:', error);
+    throw error;
+  }
+}
+
+async function uploadImage(imageFile, imageFileName) {
+  const base64Image = imageFile.data.toString('base64');
+  const imagePath = `images/${imageFileName}`;
+
+  try {
+    const response = await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: imagePath,
+      message: `Upload image ${imageFileName}`,
+      content: base64Image,
+    });
+
+    const imageUrl = response.data.content.download_url;
+    return imageUrl;
+  } catch (error) {
+    console.error('Error uploading image to GitHub:', error);
+    throw error;
   }
 }
 
@@ -354,10 +533,30 @@ async function checkUserExists(req, res, next) {
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 }
- 
+
 io.on('connection', (socket) => {
-  socket.on('new message', (channel, messageData) => {
-    io.emit('chat message', channel, messageData);
+  socket.on('new message', async (channel, messageData) => {
+    try {
+      const messages = await getMessages(channel);
+      const id = messages.length + 1;
+
+      io.emit('chat message', channel, messageData, id);
+    } catch (error) {
+      console.error('Error handling new message:', error);
+    }
+  });
+});
+
+app.get('/set-bg', (req, res) => {
+  fs.readdir(imagesDir, (err, files) => {
+    if (err) {
+      return res.status(500).send('Unable to scan directory');
+    }
+
+    const randomImage = files[Math.floor(Math.random() * files.length)];
+    const imagePath = path.join(imagesDir, randomImage);
+
+    res.sendFile(imagePath);
   });
 });
 
@@ -380,10 +579,10 @@ app.post('/login', async (req, res) => {
       const message = { message: "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я." };
       security.push({ [username]: [message] });
       await saveSecurity(security);
-    
-      return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше."});
+
+      return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
     }
-    
+
     const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
     if (isPasswordMatch) {
       if (foundUser.rank === 'banned') {
@@ -391,21 +590,21 @@ app.post('/login', async (req, res) => {
       }
       req.session.username = foundUser.username;
       req.session.userId = foundUser.id;
-      req.session.save(async (err) =>{
-          if (err) {
-              console.error(err);
-              return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
-          }
-          res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-          res.send({ success: true, redirectUrl: '/chat.html' });
+      req.session.save(async (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
+        }
+        res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
+        res.send({ success: true, redirectUrl: '/chat.html' });
 
-          await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+        await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
     } else {
       loginAttempts[username] = [...userAttempts, now];
       res.status(401).send({ success: false, message: 'Неправильний пароль' });
     }
-    
+
   } catch (error) {
     console.error(error);
     res.status(500).send({ success: false, message: 'Помилка сервера' });
@@ -414,21 +613,22 @@ app.post('/login', async (req, res) => {
 
 app.get('/username', checkUserExists, (req, res) => {
   const username = req.session.username;
-    getUsers().then(users => {
-      const user = users.find(u => u.username === username);
-      if (user) {
-        res.send({ 
-          success: true, 
-          username: user.username, 
-          theme: user['selected theme'], 
-          userId: user.id });
-      } else {
-        res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
-      }
-    }).catch(err => {
-      console.error(err);
-      res.status(500).send({ success: false, message: 'Помилка сервера.' });
-    });
+  getUsers().then(users => {
+    const user = users.find(u => u.username === username);
+    if (user) {
+      res.send({
+        success: true,
+        username: user.username,
+        theme: user['selected theme'],
+        userId: user.id
+      });
+    } else {
+      res.status(404).send({ success: false, message: 'Користувач не знайдений.' });
+    }
+  }).catch(err => {
+    console.error(err);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
+  });
 });
 
 app.post('/register', async (req, res) => {
@@ -447,11 +647,11 @@ app.post('/register', async (req, res) => {
   password = await bcrypt.hash(password, 10);
 
   const newUser = {
-    id: users.length + 1, 
-    username, 
+    id: users.length + 1,
+    username,
     password,
     'selected theme': 'light',
-    'rank': 'user', 
+    'rank': 'user',
     channels: ['RoMan World Official']
   };
   users.push(newUser);
@@ -475,40 +675,59 @@ app.post('/register', async (req, res) => {
   await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
 });
 
-app.get('/messages', checkUserExists, async (req, res) => {
-  const username = req.session.username;
-
-  try {
-    const users = await getUsers();
-    const userExists = users.some(user => user.username === username);
-
-    if (!userExists) {
-      req.session.destroy();
-      return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
-    }
-
-    const messages = await getMessages();
-    res.send(messages);
-  } catch (error) {
-    res.status(500).send({ success: false, message: 'Помилка сервера.' });
-  }
-});
-
 app.post('/messages', checkUserExists, async (req, res) => {
   try {
     const messageObject = req.body;
-    const channelName = messageObject.channel
+    const channelName = messageObject.channel;
+
     await saveMessages(channelName, messageObject);
+
+    const messages = await getMessages(channelName);
+    const id = messages.length;
+    messageObject.id = id;
+
     io.emit('chat message', channelName, messageObject);
+
     res.send({ success: true, message: 'Повідомлення відправлено.' });
   } catch (error) {
     res.status(500).send({ success: false, message: error });
   }
 });
 
+app.post('/upload-photo-message', async (req, res) => {
+  try {
+    const { channelName, author, context } = req.body;
+    const photo = req.files?.photo;
+
+    let messageObject = { author, context };
+
+    if (photo) {
+      const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
+      const fileExtension = photo.name.split('.').pop().toLowerCase();
+
+      if (!validExtensions.includes(`.${fileExtension}`)) {
+        return res.status(400).send('Invalid file type.');
+      }
+
+      if (photo.size > 10 * 1024 * 1024) {
+        return res.status(400).send('File size exceeds 10MB.');
+      }
+
+      messageObject.image = photo;
+    }
+
+    await saveMessages(channelName, messageObject, messageObject.image ? 'photo' : 'classic');
+
+    res.status(200).json({ success: true, message: 'Message saved successfully.' });
+  } catch (error) {
+    console.error('Error saving photo and message:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 app.get("/session-status", async (req, res) => {
   const isSupportedVersion = await checkVersion();
-  if(!isSupportedVersion){
+  if (!isSupportedVersion) {
     res.send({ success: false, message: "Оновіть версію додатку" })
   } else if (req.session.username) {
     await addedUserMessage(`${req.session.username} залогінився в RoMan Talk. Вітаємо!`);
@@ -565,13 +784,13 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
   try {
     const channels = await getChannels();
     const channelExists = channels.some(channel => channel.name === channelName);
-    
+
     if (channelExists) {
       return res.status(400).send({ success: false, message: 'Канал вже існує.' });
     }
 
-    const newChannel = { 
-      name: channelName, 
+    const newChannel = {
+      name: channelName,
       owner: username,
       isPrivate: false,
       messages: [
@@ -579,15 +798,15 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
           id: 1,
           author: "Системне",
           context: `Канал ${channelName} створено`
-        }], 
+        }],
       subs: []
-      };
+    };
     channels.push(newChannel);
     await saveChannels(channels);
     await updateUserChannels(username, channelName);
 
     res.send({ success: true, message: 'Канал створено успішно.' });
-    
+
   } catch (error) {
     console.error('Помилка при створенні каналу:', error);
     res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -642,6 +861,186 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
   }
 });
 
+app.post('/filter', (req, res) => {
+  const { text } = req.body;
+  const filteredText = filterText(text);
+  res.json({ filteredText });
+});
+
+app.post('/check-grammar', async (req, res) => {
+  const { text } = req.body;
+  const correctedText = await checkGrammar(text, language);
+  res.json({ correctedText });
+});
+
+app.post('/analyze-sentiment', (req, res) => {
+  const { text } = req.body;
+  const sentimentResult = analyzeSentiment(text);
+  res.json({ sentimentResult });
+});
+
+app.post('/rephrase', async (req, res) => {
+  const { text, language, style } = req.body;
+  const rephrasedText = await rephraseText(text, language, style);
+  res.json({ rephrasedText });
+});
+
+app.post('/translate', async (req, res) => {
+  const { text } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: 'Text is required' });
+  }
+
+  try {
+    await ensureModelsLoaded();
+
+    console.log('Received text:', text);
+
+    const detectedLanguages = lngDetector.detect(text, 3);
+    console.log('Detected languages:', detectedLanguages);
+
+    let direction;
+    const isEnglish = detectedLanguages.some(([language]) => language === 'english');
+    const isUkrainian = detectedLanguages.some(([language]) => language === 'ukrainian');
+    const isRussian = detectedLanguages.some(([language]) => language === 'russian');
+
+    if (isUkrainian || isRussian) {
+      direction = 'toEnglish';
+    } else if (isEnglish) {
+      direction = 'toOriginal';
+    } else {
+      return res.status(400).json({ error: 'Мова тексту не підтримується цією функцією. Лише українська, російська та англійська' });
+    }
+
+    const parts =
+      text.length >= 100000 ? 1000 :
+        text.length >= 50000 ? 500 :
+          text.length >= 25000 ? 250 :
+            text.length >= 10000 ? 100 :
+              text.length >= 1000 ? 50 :
+                text.length >= 500 ? 10 :
+                  text.length >= 100 ? 3 : 2;
+
+    let translatedText;
+    if (direction === 'toEnglish') {
+      translatedText = await translateTextInParts(text, models.translatorToEnglish, parts);
+    } else if (direction === 'toOriginal') {
+      translatedText = await translateTextInParts(text, models.translatorToOriginalLanguage, parts);
+    }
+
+    console.log('Translated text:', translatedText);
+
+    res.json({ translatedText });
+  } catch (error) {
+    console.error('Error in translation:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.post('/summarize', async (req, res) => {
+  const { text } = req.body;
+
+  if (!text || typeof text !== 'string' || text.length === 0) {
+    return res.status(400).json({ error: "Invalid input text for summarization." });
+  }
+
+  await ensureModelsLoaded();
+
+  const detectedLanguages = lngDetector.detect(text, 3);
+  console.log(detectedLanguages);
+
+  try {
+    let processedText = text;
+    const isEnglish = detectedLanguages.some(([language]) => language === 'english');
+    const isUkrainian = detectedLanguages.some(([language]) => language === 'ukrainian');
+    const isRussian = detectedLanguages.some(([language]) => language === 'russian');
+
+    if (isUkrainian || isRussian) {
+      const parts =
+        text.length >= 10000 ? 1000 :
+          text.length >= 1000 ? 100 :
+            text.length >= 500 ? 50 :
+              text.length >= 250 ? 30 : 2;
+      processedText = await translateTextInParts(text, models.translatorToEnglish, parts);
+    } else if (!isEnglish) {
+      return res.status(400).json({ error: "Мова тексту не підтримується цією функцією. Лише українська, російська та англійська" });
+    }
+
+    const summaryText = await models.summarizer(processedText);
+
+    if (isUkrainian) {
+      const parts = summaryText.length >= 100000 ? 1000 :
+        summaryText.length >= 50000 ? 500 :
+          summaryText.length >= 25000 ? 250 :
+            summaryText.length >= 10000 ? 100 :
+              summaryText.length >= 1000 ? 50 :
+                summaryText.length >= 500 ? 10 :
+                  summaryText.length >= 100 ? 3 : 2;
+      processedText = await translateTextInParts(summaryText, models.translatorToOriginalLanguage, parts);
+    } else {
+      processedText = summaryText;
+    }
+
+    res.json({ summaryText: processedText });
+  } catch (error) {
+    console.error('Error summarizing text:', error);
+    res.status(500).json({ error: 'Failed to summarize text.' });
+  }
+});
+
+app.post('/update-message/:id', async (req, res) => {
+  const messageId = parseInt(req.params.id, 10);
+  const { channelName, newContent } = req.body;
+  
+  if (!req.session.username) {
+    return res.status(403).json({ success: false, message: 'Неавторизований доступ' });
+  }
+  
+  try {
+    const messages = await getMessages(channelName);
+
+    const message = messages.find(m => m.id === messageId);
+    
+    if (!message) {
+      return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
+    }
+
+    if (message.author !== req.session.username) {
+      return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його редагувати!' });
+    }
+
+    message.context = newContent;
+    
+    await editMessage(channelName, messageId, newContent);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Помилка при оновленні повідомлення:', error);
+    res.status(500).json({ success: false, message: 'Внутрішня помилка сервера' });
+  }
+});
+
+app.post('/delete-message/:id', async (req, res) => {
+  const messageId = parseInt(req.params.id, 10);
+  const channelName = req.body.channelName;
+
+  try {
+    const messages = await getMessages(channelName);
+    const messageToDelete = messages.find(message => message.id === messageId);
+    console.log(messageToDelete)
+
+    if (messageToDelete.author !== req.session.username) {
+      return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його видалити!' });
+    }
+
+    await deleteMessage(channelName, messageId);
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.get('/user-info/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
@@ -649,9 +1048,11 @@ app.get('/user-info/:userId', async (req, res) => {
     const user = users.find(user => user.id === parseInt(userId));
 
     if (user) {
-      res.json({ username: user.username, 
-                 id: user.id, 
-                 rank: user.rank });
+      res.json({
+        username: user.username,
+        id: user.id,
+        rank: user.rank
+      });
     } else {
       res.status(404).send({ message: 'Користувача не знайдено.' });
     }
@@ -667,9 +1068,11 @@ app.get('/user-info-by-name/:username', async (req, res) => {
     const users = await getUsers();
     const user = users.find(user => user.username === username);
     if (user) {
-      res.json({ username: user.username, 
-                 id: user.id,
-                 rank: user.rank});
+      res.json({
+        username: user.username,
+        id: user.id,
+        rank: user.rank
+      });
     } else {
       res.status(404).send({ message: 'Користувача не знайдено.' });
     }
@@ -710,15 +1113,15 @@ app.post("/block-account", async (req, res) => {
     const username = req.session.username;
     const users = await getUsers();
     const user = Object.values(users).find(user => user.username === username);
-      
-     if (user) {
+
+    if (user) {
       user.rank = 'banned';
       await saveUsers(users);
     }
     req.session.destroy();
-      
-      res.status(403).json({ success: false, message: `Ваш акаунт заблоковано з причини незаконного використання адміністраторських інструментів` });
-    } catch (error) {
+
+    res.status(403).json({ success: false, message: `Ваш акаунт заблоковано з причини незаконного використання адміністраторських інструментів` });
+  } catch (error) {
     res.status(500).json({ success: false, message: "Помилка при блокуванні акаунта" });
   }
 });
@@ -728,7 +1131,7 @@ app.post('/send-appeal', async (req, res) => {
 
   try {
     const requests = await getRequests();
-    requests.push({ username, reason, 'type':'appeal'});
+    requests.push({ username, reason, 'type': 'appeal' });
     await saveRequests(requests);
     res.send({ success: true });
   } catch (error) {
@@ -772,32 +1175,32 @@ app.get("/get-security", async (req, res) => {
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {
   const { userId, channelName } = req.body;
-  
+
   try {
-      const channels = await getChannels();
-      const channelIndex = channels.findIndex(channel => channel.name === channelName);
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(channel => channel.name === channelName);
 
-      if (channelIndex === -1) {
-          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-      }
+    if (channelIndex === -1) {
+      return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
 
-      const channel = channels[channelIndex];
+    const channel = channels[channelIndex];
 
-      if (!channel.isPrivate) {
-          return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
-      }
+    if (!channel.isPrivate) {
+      return res.status(403).send({ success: false, message: 'Цей канал не є приватним.' });
+    }
 
-      if (channel.subs.includes(userId)) {
-          return res.status(409).send({ success: false, message: 'Користувач вже є у цьому каналі.' });
-      }
+    if (channel.subs.includes(userId)) {
+      return res.status(409).send({ success: false, message: 'Користувач вже є у цьому каналі.' });
+    }
 
-      channel.subs.push(userId);
-      await saveChannels(channels);
+    channel.subs.push(userId);
+    await saveChannels(channels);
 
-      res.send({ success: true, message: 'Користувача додано до каналу.' });
+    res.send({ success: true, message: 'Користувача додано до каналу.' });
   } catch (error) {
-      console.error('Помилка при додаванні користувача до каналу:', error);
-      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    console.error('Помилка при додаванні користувача до каналу:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 
@@ -805,25 +1208,25 @@ app.post('/remove-subscriber', checkUserExists, async (req, res) => {
   const { userId, channelName } = req.body;
 
   try {
-      const channels = await getChannels();
-      const channelIndex = channels.findIndex(channel => channel.name === channelName);
-      
-      if (channelIndex === -1) {
-          return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-      }
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(channel => channel.name === channelName);
 
-      const channel = channels[channelIndex];
-      const subscriberIndex = channel.subs.indexOf(userId);
-      if (subscriberIndex !== -1) {
-          channel.subs.splice(subscriberIndex, 1);
-          await saveChannels(channels);
-          res.send({ success: true, message: 'Користувача видалено з каналу.' });
-      } else {
-          res.status(404).send({ success: false, message: 'Підписника не знайдено в каналі.' });
-      }
+    if (channelIndex === -1) {
+      return res.status(404).send({ success: false, message: 'Канал не знайдено.' });
+    }
+
+    const channel = channels[channelIndex];
+    const subscriberIndex = channel.subs.indexOf(userId);
+    if (subscriberIndex !== -1) {
+      channel.subs.splice(subscriberIndex, 1);
+      await saveChannels(channels);
+      res.send({ success: true, message: 'Користувача видалено з каналу.' });
+    } else {
+      res.status(404).send({ success: false, message: 'Підписника не знайдено в каналі.' });
+    }
   } catch (error) {
-      console.error('Помилка при видаленні підписника:', error);
-      res.status(500).send({ success: false, message: 'Помилка сервера.' });
+    console.error('Помилка при видаленні підписника:', error);
+    res.status(500).send({ success: false, message: 'Помилка сервера.' });
   }
 });
 
@@ -870,7 +1273,7 @@ app.get('/get-channel-privacy/:channelName', checkUserExists, async (req, res) =
 app.get('/sorted-channels/:type', async (req, res) => {
   const { type } = req.params;
   const username = req.session.username;
-  
+
   if (!username) {
     return res.status(403).json({ message: 'Потрібно увійти в акаунт для доступу до каналів.' });
   }
@@ -969,13 +1372,6 @@ app.post('/channel/delete', checkUserExists, async (req, res) => {
   }
 });
 
-app.post('/ai', async (req, res) =>{
-  const prompt = req.body.message;
-  const result = sendAI(prompt);
-  res.status(200).json({ res:result.text, success: true });
-  console.log(result)
-})
-
 app.get('/check-session', (req, res) => {
   if (req.session.username) {
     res.send({ isLoggedIn: true });
@@ -988,21 +1384,12 @@ app.post("/get-rank", async (req, res) => {
   try {
     const username = req.session.username;
     const users = await getUsers();
-    
+
     const user = Object.values(users).find(user => user.username === username);
     res.status(200).json({ success: true, rank: user.rank });
-  } catch (error){
-    res.status(404).json({ success:false, message: "Користувач не знайдений" });
+  } catch (error) {
+    res.status(404).json({ success: false, message: "Користувач не знайдений" });
   }
-});
-
-app.post('/gpt', async (req, res) => {
-  const { message } = req.body;
-
-  const gpt2 = new GPT2();
-  const generatedText = await gpt2.generate(message);
-  console.log(generatedText)
-  res.json({ success: true, message: generatedText });
 });
 
 app.post('/change-password', checkUserExists, async (req, res) => {
@@ -1080,11 +1467,11 @@ app.get("/register.html", (req, res) => {
 });
 
 app.get("/chat.html", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "../frontend/html" , "chat.html"));
+  res.sendFile(path.resolve(__dirname, "../frontend/html", "chat.html"));
 });
 
 app.get("/tos.html", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "../frontend/html" , "tos.html"));
+  res.sendFile(path.resolve(__dirname, "../frontend/html", "tos.html"));
 })
 
 app.get("/settings.html", (req, res) => {
@@ -1093,6 +1480,6 @@ app.get("/settings.html", (req, res) => {
 
 httpServer.listen(port, 'localhost', () => {
   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-  });
-  
+});
+
 // httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 

@@ -4,7 +4,7 @@ body {
   display: flex; 
   flex-direction: column;
   height: 100vh;
-  background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b2/%D0%92%D0%B5%D1%87%D1%96%D1%80%D0%BD%D1%96%D0%B9_%D0%B1%D0%B5%D1%80%D0%B5%D0%B3_%D0%94%D0%BD%D1%96%D0%BF%D1%80%D0%B0_3.jpg') !important;
+  background-color: #000000;
   background-size: cover;
 }
 
@@ -130,7 +130,36 @@ border: 1px solid rgba( 255, 255, 255, 0.18 );
 
 #input-container {
   margin-top: auto;
+  z-index: 1000;
 }
+
+#edit-message {
+  background-color: var(--input-bg-color);
+}
+
+.edit-message-visible {
+  display: block
+}
+.edit-message-invisible {
+  display: none
+}
+
+.file-input {
+  display: none;
+}
+
+.file-input-label {
+  padding: 5px;
+  background: var(--message-bg-color);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10.5px);
+  -webkit-backdrop-filter: blur(10.5px);
+  border-radius: 7px;
+  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  color:var(--some-buttons-text);  
+  cursor: pointer;
+}
+
 
 #theme-select {
   padding: 10px;
@@ -189,30 +218,48 @@ color: #adadad;
   cursor: pointer;
   font-weight: bold;
   font-size: 16px;
-  margin-right: 20px;
   display: flex;
   align-items: center;
 }
 
 
 #channel-list {
-  position: absolute;
+  margin-left: 35vw;
   top: 70px;
-  right: 600px;
   width: 200px;
   background-color: #333;
-  border: 1px solid #ccc;
+  border-radius: 10px;
   display: none;
   padding: 10px;
 }
 
 #channel-list.active {
-  display: block;
+  display: flex;
 }
 
 .channel {
   color: #fff;
   margin-bottom: 5px;
+}
+
+#management-buttons{
+  border-bottom: 1px solid var(--text-color); 
+  padding: 10px;
+}
+
+#channels {
+  margin-top: 10px;
+
+}
+
+.user-channel-button{
+  background: var(--message-bg-color);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10.5px);
+  -webkit-backdrop-filter: blur(10.5px);
+  border-radius: 7px;
+  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  color:var(--some-buttons-text);  
 }
 
 #message-list {
@@ -229,6 +276,66 @@ color: #adadad;
   margin-bottom: 5px;
   color: #fff;
   font-family: Verdana, sans-serif;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message p {
+  margin: 0;
+  padding: 0;
+  flex-grow: 1;
+}
+
+.message-options {
+  background: rgba(0, 0, 0, 0.274);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10.5px);
+  -webkit-backdrop-filter: blur(10.5px);
+  border-radius: 20px;
+  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  color: var(--additional-text-color);
+  transition: background 1s, border 1s;
+  margin-left: 10px;
+  padding: 0 10px; 
+}
+
+.message-options:hover {
+  background: rgba(0, 0, 0, 0.748);
+}
+
+#message-options-menu {
+  position: absolute;
+  background: var(--background-color);
+  border-radius: 7px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  width:400px;
+  height: 250px
+}
+
+#message-options-menu button {
+  background: var(--message-bg-color);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10.5px);
+  -webkit-backdrop-filter: blur(10.5px);
+  border-radius: 20px;
+  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  color:var(--text-color);
+}
+
+.message-options-menu-hide {
+  display: none;
+}
+
+.message-options-menu-visible {
+  display: block;
+}
+
+#message-options-menu p {
+  margin: 0;
+  padding: 5px 0;
+  font-weight: bold;
 }
 
 #input-container {
@@ -249,8 +356,7 @@ color: #adadad;
 }
 
 #send-button {
-  height: 40px;
-  padding: 5px 10px;
+  padding: 5px 5px;
   background-color: #808080;
   color: #fff;
   border: none;
@@ -262,9 +368,6 @@ color: #adadad;
 
 #channel-list {
   position: absolute;
-  top: 70px;
-  right: 600px;
-  width: 200px;
   background-color: #333;
   border: 1px solid #ccc;
   display: none;
@@ -492,6 +595,7 @@ button,
   --message-bg-color: #393939;
   --channel-list-bg-color: #333;
   --channel-list-text-color: #fff;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="dark"] {
@@ -502,6 +606,7 @@ button,
   --modal-bg-color: #161616;
   --message-bg-color: #393939;
   --channel-list-bg-color: #222;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="dark-blue"]{
@@ -513,6 +618,7 @@ button,
   --message-bg-color: #0a2564;
   --channel-list-bg-color: #143173;
   --top-bar-bg-color: #00095e;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="military"] {
@@ -523,6 +629,7 @@ button,
   --modal-bg-color: #3e4226;
   --message-bg-color: #20530a;
   --channel-list-bg-color: #636f57;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="blood-red"] {
@@ -534,6 +641,7 @@ button,
   --modal-bg-color: #290000;
   --message-bg-color: #000000;
   --channel-list-bg-color: #4d0000;
+  --some-buttons-text: #8b0000;
 }
 
 
@@ -545,6 +653,7 @@ button,
   --modal-bg-color: #a4d7e7;
   --message-bg-color: #5bc0de;
   --channel-list-bg-color: #9bd3e1;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="uwu"] {
@@ -555,6 +664,7 @@ button,
   --modal-bg-color: #fcb8d2; 
   --message-bg-color: #dd8ba7;
   --channel-list-bg-color: #ffadc8;
+  --some-buttons-text: #cd5f96;
 }
 
 [data-theme="coffee"]{
@@ -565,6 +675,7 @@ button,
   --modal-bg-color: #c9b7a2;
   --message-bg-color: #a67b5b;
   --channel-list-bg-color: #b8a597;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="mint"] {
@@ -575,6 +686,7 @@ button,
   --modal-bg-color: #a4d7c6;
   --message-bg-color: #6da37f;
   --channel-list-bg-color: #9de0ad;
+  --some-buttons-text: #fff;
 }
 
 [data-theme="neon"] {
@@ -585,6 +697,7 @@ button,
   --modal-bg-color: #000000;
   --message-bg-color: #6f006a;
   --channel-list-bg-color: #000000;
+  --some-buttons-text: #fff;
 }
 
 #chat-container, .modal-content, #channel-list {
@@ -620,7 +733,19 @@ input, #message-input, #new-channel-name {
 #server-dropdown {
   color: var(--text-color);
 }
-#create-channel-button, #explore-channels-button, #ai-button, #sort-channels-button {
-  color: white;
-  background-color: black;
+#create-channel-button, 
+#explore-channels-button, 
+#sort-channels-button, 
+.sort-button, 
+.channel-button,
+#create,
+#message-options-menu button
+ {
+  background: var(--message-bg-color);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10.5px);
+  -webkit-backdrop-filter: blur(10.5px);
+  border-radius: 7px;
+  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  color:var(--some-buttons-text);  
 }
