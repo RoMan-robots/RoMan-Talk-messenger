@@ -66,17 +66,19 @@ function displayMessage(message, id) {
     }, 10);
   };
 
-  if (message.photo) {
-    const imageElement = document.createElement('img');
-    imageElement.src = message.photo;
-    imageElement.alt = 'Image';
-    imageElement.classList.add('message-photo');
-    messageElement.appendChild(imageElement);
-  }
-
   messageElement.appendChild(messageP);
   messageElement.appendChild(messageOptions);
   messageList.appendChild(messageElement);
+
+  if (message.photo) {
+    const photoURL = `/photos/${message.photo}`;
+    const img = document.createElement('img');
+    img.src = photoURL;
+    img.alt = `Фото повідомлення ID ${id}`;
+    img.classList.add('message-photo'); 
+    img.classList.add('message'); 
+    messageList.appendChild(img);
+  }
 }
 
 async function openMessageOptionsMenu(id) {

@@ -8,7 +8,7 @@ import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import LanguageDetect from 'languagedetect';
-import fs from "fs"
+import fs from "fs-extra"
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
@@ -29,6 +29,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
+const localDir = path.join(__dirname, 'images/message-images');
 const version = "2.0";
 
 const owner = process.env.OWNER_REPO;
@@ -58,6 +59,8 @@ io.use(sharedsession(sessionMiddleware, {
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
+
+app.use('/photos', express.static(localDir));
 
 const imagesDir = path.join(__dirname, '/images/bg');
 
@@ -254,8 +257,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
         newMessage.photo = imageFileName;
         await uploadImage(messageObject.image, imageFileName);
 
-        const imageUrl = await getPhotos(imageFileName);
-        newMessage.photo = imageUrl;
+        newMessage.photo = `${imageFileName}`;
       }
 
       channel.messages.push(newMessage);
@@ -399,30 +401,12 @@ async function addedUserMessage(eventMessage) {
   }
 }
 
-async function getPhotos(imageFileName) {
-  const imagePath = `images/${imageFileName}`;
-
-  try {
-    const response = await octokit.repos.getContent({
-      owner,
-      repo,
-      path: imagePath,
-    });
-
-    const imageUrl = response.data.download_url;
-    return imageUrl;
-  } catch (error) {
-    console.error('Error getting image from GitHub:', error);
-    throw error;
-  }
-}
-
 async function uploadImage(imageFile, imageFileName) {
   const base64Image = imageFile.data.toString('base64');
   const imagePath = `images/${imageFileName}`;
 
   try {
-    const response = await octokit.repos.createOrUpdateFileContents({
+    await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
       path: imagePath,
@@ -430,11 +414,47 @@ async function uploadImage(imageFile, imageFileName) {
       content: base64Image,
     });
 
-    const imageUrl = response.data.content.download_url;
-    return imageUrl;
+    await fs.ensureDir(localDir);
+
+    const fileBuffer = Buffer.from(imageFile.content, 'base64');
+    const localFilePath = path.join(localDir, imageFileName);
+    await fs.writeFile(localFilePath, fileBuffer);
+    console.log(`Downloaded and saved new image: ${imageFileName}`);
   } catch (error) {
     console.error('Error uploading image to GitHub:', error);
     throw error;
+  }
+}
+
+async function downloadImages() {
+  try {
+    await fs.ensureDir(localDir);
+
+    const { data: files } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: "images",
+    });
+
+    for (const file of files) {
+      if (file.type === 'file') {
+        const filePath = file.path;
+        const fileName = path.basename(filePath);
+
+        const { data: fileContent } = await octokit.repos.getContent({
+          owner,
+          repo,
+          path: filePath,
+        });
+
+        const fileBuffer = Buffer.from(fileContent.content, 'base64');
+        const localFilePath = path.join(localDir, fileName);
+        await fs.writeFile(localFilePath, fileBuffer);
+        console.log(`Downloaded and saved: ${fileName}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error downloading images:', error);
   }
 }
 
@@ -766,6 +786,7 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
   const { channelName } = req.params;
   try {
     const messages = await getMessages(channelName);
+
     res.send({ channels: [{ name: channelName, messages }] });
   } catch (error) {
     if (error.message === 'Канал не знайдено.') {
@@ -991,16 +1012,16 @@ app.post('/summarize', async (req, res) => {
 app.post('/update-message/:id', async (req, res) => {
   const messageId = parseInt(req.params.id, 10);
   const { channelName, newContent } = req.body;
-  
+
   if (!req.session.username) {
     return res.status(403).json({ success: false, message: 'Неавторизований доступ' });
   }
-  
+
   try {
     const messages = await getMessages(channelName);
 
     const message = messages.find(m => m.id === messageId);
-    
+
     if (!message) {
       return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
     }
@@ -1010,9 +1031,9 @@ app.post('/update-message/:id', async (req, res) => {
     }
 
     message.context = newContent;
-    
+
     await editMessage(channelName, messageId, newContent);
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error('Помилка при оновленні повідомлення:', error);
@@ -1478,8 +1499,9 @@ app.get("/settings.html", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//   console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
+httpServer.listen(port, 'localhost', async () => {
+  await downloadImages();
+  console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
