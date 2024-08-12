@@ -18,7 +18,7 @@ let currentUsername;
 
 let editMode = false;
 let selectedPhotoFile = null;
-let selectedChannel = 'RoMan World Official';
+let selectedChannel = 'RoMan_World_Official';
 
 async function getCurrentUsername() {
     try {
@@ -71,7 +71,7 @@ function displayMessage(message, id) {
   messageList.appendChild(messageElement);
 
   if (message.photo) {
-    const photoURL = `/photos/${message.photo}`;
+    const photoURL = `/photos/${selectedChannel}/${message.photo}`;
     const img = document.createElement('img');
     img.src = photoURL;
     img.alt = `Фото повідомлення ID ${id}`;
