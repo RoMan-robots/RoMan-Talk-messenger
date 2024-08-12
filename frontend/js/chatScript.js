@@ -557,8 +557,6 @@ function editMessage(messageId) {
 }
 
 function deleteMessage(messageId) {
-  console.log(`Deleting message with ID: ${messageId}`, selectedChannel);
-
   fetch(`/delete-message/${messageId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -566,12 +564,16 @@ function deleteMessage(messageId) {
   })
   .then(response => response.json())
   .then(data => {
+    console.log(data)
     if (data.success) {
       alertify.success('Повідомлення видалено!');
 
       const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
       if (messageElement) {
         messageElement.remove();
+        if (messageElement.nextElementSibling) {
+          messageElement.nextElementSibling.remove();
+        }
       }
     } else {
       alertify.error(data.message || 'Не вдалося видалити повідомлення');
