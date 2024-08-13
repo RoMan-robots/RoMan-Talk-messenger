@@ -749,11 +749,11 @@ app.post('/upload-photo-message', async (req, res) => {
         const fileExtension = photo.name.split('.').pop().toLowerCase();
   
         if (!validExtensions.includes(`.${fileExtension}`)) {
-          return res.status(400).send('Відправляти можна лише фотографії!');
+            return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!'});
         }
   
         if (photo.size > 10 * 1024 * 1024) {
-          return res.status(400).send('Фотографія повинна важити до 10мб!');
+            return res.status(400).json({success: false, message: 'Фотографія повинна важити до 10мб!'});
         }
   
         messageObject.image = photo;
@@ -762,11 +762,11 @@ app.post('/upload-photo-message', async (req, res) => {
         const fileExtension = photos.name.split('.').pop().toLowerCase();
   
         if (!validExtensions.includes(`.${fileExtension}`)) {
-          return res.status(400).send('Відправляти можна лише фотографії!');
+          return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!'});
         }
   
         if (photos.size > 10 * 1024 * 1024) {
-          return res.status(400).send('Фотографія повинна важити до 10мб!');
+          return res.status(400).json({success: false, message: 'Фотографія повинна важити до 10мб!'});
         }
   
         messageObject.image = photos;

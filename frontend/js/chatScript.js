@@ -17,7 +17,7 @@ let isDropdownActive = true;
 let currentUsername;
 
 let editMode = false;
-let selectedPhotoFile = null;
+let selectedPhotoFiles = [];
 let selectedChannel = 'RoMan_World_Official';
 
 async function getCurrentUsername() {
@@ -173,86 +173,130 @@ async function loadMessages(channelName) {
     alertify.error(`Канал ${channelName} не знайдено`);
   }
 }
-
 async function sendMessage() {
   const message = messageInput.value.trim();
   const messageId = messageInput.dataset.editId;
+
   if (message) {
-    if (editMode) {
-      fetch(`/update-message/${messageId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelName: selectedChannel, newContent: message })
-      })
-      .then(response => response.json())
-      .then(data => {
+    try {
+      if (editMode) {
+        const response = await fetch(`/update-message/${messageId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelName: selectedChannel, newContent: message })
+        });
+        const data = await response.json();
+
         if (data.success) {
           alertify.success('Повідомлення відредаговано!');
           editMode = false;
 
           messageInput.value = '';
 
-          const editMessage = document.getElementById("edit-message")
+          const editMessage = document.getElementById("edit-message");
           let messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-          
+
           const currentText = messageElement.textContent;
-
           const colonIndex = currentText.indexOf(':');
-          
+
           if (colonIndex !== -1) {
-
             const textBeforeColon = currentText.substring(0, colonIndex + 1);
-            
-
             messageElement.textContent = textBeforeColon + ' ' + message;
 
             messageInput.placeholder = 'Напишіть повідомлення';
 
-            editMessage.classList.add("edit-message-invisible")
-            editMessage.classList.remove ("edit-message-visible")
+            editMessage.classList.add("edit-message-invisible");
+            editMessage.classList.remove("edit-message-visible");
           } else {
-            messageElement.textContent = newContent;
+            messageElement.textContent = message;
           }
         } else {
           alertify.error(data.message);
         }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alertify.error('Помилка під час оновлення повідомлення');
-    })} else if(selectedPhotoFile){
-      const formData = new FormData();
-      formData.append('channelName', selectedChannel);
-      formData.append('author', currentUsername);
-      formData.append('context', message);
-      formData.append('photo', selectedPhotoFile);
+      } else if (selectedPhotoFiles.length > 0) {
+        const formData = new FormData();
+        formData.append('channelName', selectedChannel);
+        formData.append('author', currentUsername);
+        formData.append('context', message);
 
-      await fetch('/upload-photo-message', {
-        method: 'POST',
-        body: formData
-      });
+        selectedPhotoFiles.forEach(file => {
+          formData.append('photos', file);
+        });
 
-      selectedPhotoFile = null; 
-      fileInput.value = ''; 
-    }else {
-      try {
-        const messageObject = 
-        { author: currentUsername, 
-          context: message, 
-          channel: selectedChannel };
-        await fetch('/messages', {
+        const response = await fetch('/upload-photo-message', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alertify.success('Повідомлення з фото відправлено!');
+        } else {
+          alertify.error(data.message || 'Не вдалося відправити фото!');
+        }
+
+        selectedPhotoFiles = [];
+        const uploadFilesDiv = document.getElementById("upload-files");
+        const fileList = uploadFilesDiv.querySelector("ul");
+        fileList.innerHTML = ''; 
+
+        uploadFilesDiv.classList.remove("upload-files-visible");
+        uploadFilesDiv.classList.add("upload-files-invisible");
+
+      } else {
+        const messageObject = {
+          author: currentUsername,
+          context: message,
+          channel: selectedChannel
+        };
+        const response = await fetch('/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(messageObject)
         });
-        messageInput.value = '';
-      } catch (error) {
-        console.error('Помилка при відправленні повідомлення:', error);
-        alertify.error('Помилка при відправленні повідомлення:', error);
-      }}
+
+        const data = await response.json();
+        if (data.success) {
+          alertify.success('Повідомлення відправлено!');
+          messageInput.value = '';
+        } else {
+          alertify.error(data.message || 'Не вдалося відправити повідомлення!');
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alertify.error('Виникла помилка під час обробки вашого запиту.');
+    }
   } else {
-    alertify.error("Не можна відправляти пусті повідомлення!")
+    alertify.error("Не можна відправляти пусті повідомлення!");
   }
+}
+
+function showUploadFilesSection(fileName, fileIndex) {
+  const uploadFilesDiv = document.getElementById("upload-files");
+  const fileList = uploadFilesDiv.querySelector("ul");
+
+  const listItem = document.createElement("li");
+  listItem.textContent = fileName;
+  listItem.dataset.fileIndex = fileIndex;
+
+  listItem.addEventListener("click", function () {
+    const index = listItem.dataset.fileIndex;
+
+    selectedPhotoFiles = selectedPhotoFiles.filter((_, i) => i != index);
+
+    listItem.remove();
+
+    if (selectedPhotoFiles.length === 0) {
+      uploadFilesDiv.classList.remove("upload-files-visible");
+      uploadFilesDiv.classList.add("upload-files-invisible");
+    }
+  });
+
+  fileList.appendChild(listItem);
+
+  uploadFilesDiv.classList.remove("upload-files-invisible");
+  uploadFilesDiv.classList.add("upload-files-visible");
 }
   
 messageInput.addEventListener('keypress', (event) => {
@@ -615,14 +659,16 @@ function copyMessageId(buttonElement) {
 getCurrentUsername();
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.");
 
-fileInput.addEventListener('change', function(event) {
-  const file = event.target.files[0];
-  
-  if (file && file.type.startsWith('image/')) {
-    selectedPhotoFile = file;
-    alertify.success(`Завантажено зображення: ${file.name}`);
-  } else {
-    alertify.error('Будь ласка, виберіть зображення.');
+fileInput.addEventListener("change", function () {
+  if (fileInput.files && fileInput.files.length > 0) {
+    for (let i = 0; i < fileInput.files.length; i++) {
+      const fileName = fileInput.files[i].name;
+      selectedPhotoFiles.push(fileInput.files[i]);
+
+      alertify.success(`Завантажено зображення: ${fileName}`);
+      showUploadFilesSection(fileName, selectedPhotoFiles.length - 1);
+    }
+    fileInput.value = '';
   }
 });
 

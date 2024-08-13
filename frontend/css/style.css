@@ -286,6 +286,17 @@ color: #adadad;
   padding: 0;
 }
 
+#upload-files h5{
+  color: var(--text-color);
+}
+
+.upload-files-invisible {
+  display: none;
+}
+.upload-files-visible {
+  display: block;
+}
+
 .message-photo {
   width: 100%;
   max-width: 100%;
