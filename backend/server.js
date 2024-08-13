@@ -419,6 +419,29 @@ async function uploadImage(imageFile, imageFileName, channelName) {
     }
   }  
 
+  async function deletePhoto(channelName, fileName) {
+    const filePath = `images/${channelName}/${fileName}`;
+  
+    try {
+      const { data: fileInfo } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: filePath,
+      });
+  
+      await octokit.repos.deleteFile({
+        owner,
+        repo,
+        path: filePath,
+        message: `Delete image ${fileName}`,
+        sha: fileInfo.sha,
+      });
+    } catch (error) {
+      console.error('Error deleting file from GitHub:', error);
+      throw error;
+    }
+  } 
+
 async function downloadImages(channelName) {
     const channelDir = path.join(localDir, channelName);
   
@@ -710,35 +733,53 @@ app.post('/messages', checkUserExists, async (req, res) => {
 });
 
 app.post('/upload-photo-message', async (req, res) => {
-  try {
-    const { channelName, author, context } = req.body;
-    const photo = req.files?.photo;
-
-    let messageObject = { author, context };
-
-    if (photo) {
-      const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
-      const fileExtension = photo.name.split('.').pop().toLowerCase();
-
-      if (!validExtensions.includes(`.${fileExtension}`)) {
-        return res.status(400).send('Invalid file type.');
+    try {
+      const { channelName, author, context } = req.body;
+      const photos = req.files?.photo;
+  
+      let messageObject = { author, context };
+  
+      if (Array.isArray(photos)) {
+        if (photos.length > 1) {
+          return res.status(400).send('Можна відправляти лише одну фотографію за раз!');
+        }
+  
+        const photo = photos[0];
+        const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
+        const fileExtension = photo.name.split('.').pop().toLowerCase();
+  
+        if (!validExtensions.includes(`.${fileExtension}`)) {
+          return res.status(400).send('Відправляти можна лише фотографії!');
+        }
+  
+        if (photo.size > 10 * 1024 * 1024) {
+          return res.status(400).send('Фотографія повинна важити до 10мб!');
+        }
+  
+        messageObject.image = photo;
+      } else if (photos) {
+        const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
+        const fileExtension = photos.name.split('.').pop().toLowerCase();
+  
+        if (!validExtensions.includes(`.${fileExtension}`)) {
+          return res.status(400).send('Відправляти можна лише фотографії!');
+        }
+  
+        if (photos.size > 10 * 1024 * 1024) {
+          return res.status(400).send('Фотографія повинна важити до 10мб!');
+        }
+  
+        messageObject.image = photos;
       }
-
-      if (photo.size > 10 * 1024 * 1024) {
-        return res.status(400).send('File size exceeds 10MB.');
-      }
-
-      messageObject.image = photo;
+  
+      await saveMessages(channelName, messageObject, messageObject.image ? 'photo' : 'classic');
+  
+      res.status(200).json({ success: true, message: 'Message saved successfully.' });
+    } catch (error) {
+      console.error('Error saving photo and message:', error);
+      res.status(500).json({ success: false, message: 'Server error.' });
     }
-
-    await saveMessages(channelName, messageObject, messageObject.image ? 'photo' : 'classic');
-
-    res.status(200).json({ success: true, message: 'Message saved successfully.' });
-  } catch (error) {
-    console.error('Error saving photo and message:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
-  }
-});
+  });  
 
 app.get("/session-status", async (req, res) => {
   const isSupportedVersion = await checkVersion();
@@ -1044,16 +1085,22 @@ app.post('/delete-message/:id', async (req, res) => {
   try {
     const messages = await getMessages(channelName);
     const messageToDelete = messages.find(message => message.id === messageId);
-    console.log(messageToDelete)
 
     if (messageToDelete.author !== req.session.username) {
       return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його видалити!' });
     }
 
+    if (messageToDelete.photo) {
+        await fs.unlink(`${localDir}/${channelName}/${messageToDelete.photo}`); 
+        
+        await deletePhoto(channelName, messageToDelete.photo);
+      }
+
     await deleteMessage(channelName, messageId);
 
     res.json({ success: true });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ success: false, message: error.message });
   }
 });

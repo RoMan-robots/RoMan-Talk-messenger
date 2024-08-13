@@ -76,6 +76,7 @@ function displayMessage(message, id) {
     img.src = photoURL;
     img.alt = `Фото повідомлення ID ${id}`;
     img.classList.add('message-photo'); 
+    img.dataset.index = id
     img.classList.add('message'); 
     messageList.appendChild(img);
   }
@@ -564,15 +565,15 @@ function deleteMessage(messageId) {
   })
   .then(response => response.json())
   .then(data => {
-    console.log(data)
     if (data.success) {
       alertify.success('Повідомлення видалено!');
 
       const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
+      const photoElement = document.querySelector(`img[data-index='${messageId}']`);
       if (messageElement) {
         messageElement.remove();
-        if (messageElement.nextElementSibling) {
-          messageElement.nextElementSibling.remove();
+        if(photoElement){
+          photoElement.remove();
         }
       }
     } else {
