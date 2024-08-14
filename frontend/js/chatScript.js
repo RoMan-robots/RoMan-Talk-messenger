@@ -220,12 +220,12 @@ async function sendMessage() {
         formData.append('context', message);
 
         selectedPhotoFiles.forEach(file => {
-          formData.append('photos', file);
+          formData.append('photo', file);
         });
 
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
-          body: formData
+          body: formData,
         });
 
         const data = await response.json();
@@ -674,7 +674,11 @@ fileInput.addEventListener("change", function () {
 
 socket.on('chat message', (channel, msg) => {
   if (msg.author && msg.context && channel == selectedChannel) {
-    displayMessage({ context: `${msg.author}: ${msg.context}`, photo: msg.photo }, msg.id);
+    if (msg.photo) {
+      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.id}--${msg.photo}` }, msg.id);
+    } else {
+      displayMessage({ context: `${msg.author}: ${msg.context}` }, msg.id);
+    }
   }
   if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
     newMessageSound.play();

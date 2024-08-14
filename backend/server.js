@@ -255,7 +255,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
 
         const imageFileName = `${newMessageId}--${sanitizedFileName}`;
         newMessage.photo = imageFileName;
-        await uploadImage(messageObject.image, imageFileName);
+        await uploadImage(messageObject.image, imageFileName, channelName);
 
         newMessage.photo = `${imageFileName}`;
       }
@@ -744,9 +744,11 @@ app.post('/upload-photo-message', async (req, res) => {
           return res.status(400).send('Можна відправляти лише одну фотографію за раз!');
         }
   
-        const photo = photos[0];
+        let photo = photos[0];
         const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
         const fileExtension = photo.name.split('.').pop().toLowerCase();
+  
+        const sanitizedFileName = photo.name.replace(/[^\w\s.,-]/g, '');
   
         if (!validExtensions.includes(`.${fileExtension}`)) {
             return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!'});
@@ -756,23 +758,40 @@ app.post('/upload-photo-message', async (req, res) => {
             return res.status(400).json({success: false, message: 'Фотографія повинна важити до 10мб!'});
         }
   
+        photo.name = sanitizedFileName;
+  
         messageObject.image = photo;
       } else if (photos) {
+        let photo = photos;
         const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
-        const fileExtension = photos.name.split('.').pop().toLowerCase();
+        const fileExtension = photo.name.split('.').pop().toLowerCase();  
+
+        const sanitizedFileName = photo.name.replace(/[^\w\s.,-]/g, '');
   
         if (!validExtensions.includes(`.${fileExtension}`)) {
           return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!'});
         }
   
-        if (photos.size > 10 * 1024 * 1024) {
+        if (photo.size > 10 * 1024 * 1024) {
           return res.status(400).json({success: false, message: 'Фотографія повинна важити до 10мб!'});
         }
   
-        messageObject.image = photos;
+        photo.name = sanitizedFileName;
+  
+        messageObject.image = photo;
       }
   
       await saveMessages(channelName, messageObject, messageObject.image ? 'photo' : 'classic');
+
+      const messages = await getMessages(channelName);
+      const id = messages.length;
+      messageObject.id = id;
+      messageObject.photo = messageObject.image.name;
+  
+      setTimeout(() => {
+        io.emit('chat message', channelName, messageObject);
+        downloadImages(channelName);
+      }, 900);
   
       res.status(200).json({ success: true, message: 'Message saved successfully.' });
     } catch (error) {
