@@ -389,7 +389,7 @@ async function deleteMessage(channelName, messageId) {
 async function addedUserMessage(eventMessage) {
     try {
         const newMessageId = await getMessages("RoMan_World_Official")
-            .then(messages => messages.length + 1)
+            .then(messages => messages.length)
             .catch(error => { throw error; });
         const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
 
@@ -581,6 +581,24 @@ io.on('connection', (socket) => {
             io.emit('chat message', channel, messageData, id);
         } catch (error) {
             console.error('Error handling new message:', error);
+        }
+    });
+
+    socket.on('delete message', async (channelName, messageId) => {
+        try {
+            await deleteMessage(channelName, messageId);
+            io.emit('message deleted', channelName, messageId);
+        } catch (error) {
+            console.error('Помилка при видаленні повідомлення:', error);
+        }
+    });
+
+    socket.on('edit message', async (channelName, messageId, newContent) => {
+        try {
+            await editMessage(channelName, messageId, newContent);
+            io.emit('message edited', channelName, messageId, newContent);
+        } catch (error) {
+            console.error('Помилка при редагуванні повідомлення:', error);
         }
     });
 });
@@ -782,12 +800,12 @@ app.post('/upload-photo-message', async (req, res) => {
         setTimeout(() => {
             downloadImages(channelName).then(() => {
                 const filePath = path.join(__dirname, 'backend', 'images', 'message-images', channelName, messageObject.photo);
-                
+
                 fs.access(filePath, fs.constants.F_OK, (err) => {
                     if (err) {
                         console.error(`Файл ${messageObject.photo} ще не доступний!`);
                         console.log(err);
-                        
+
                         io.emit('chat message', channelName, messageObject);
                     } else {
                         io.emit('chat message', channelName, messageObject);
@@ -1097,6 +1115,8 @@ app.post('/update-message/:id', async (req, res) => {
         await editMessage(channelName, messageId, newContent);
 
         res.json({ success: true });
+
+        io.emit('message edited', channelName, messageId, newContent);
     } catch (error) {
         console.error('Помилка при оновленні повідомлення:', error);
         res.status(500).json({ success: false, message: 'Внутрішня помилка сервера' });
@@ -1124,6 +1144,8 @@ app.post('/delete-message/:id', async (req, res) => {
         await deleteMessage(channelName, messageId);
 
         res.json({ success: true });
+
+        io.emit('message deleted', channelName, messageId);
     } catch (error) {
         console.log(error)
         res.status(500).json({ success: false, message: error.message });

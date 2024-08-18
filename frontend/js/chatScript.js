@@ -21,37 +21,37 @@ let selectedPhotoFiles = [];
 let selectedChannel = 'RoMan_World_Official';
 
 async function getCurrentUsername() {
-    try {
-        const response = await fetch('/username', {
-          credentials: 'include'
-        });
-        const data = await response.json();
+  try {
+    const response = await fetch('/username', {
+      credentials: 'include'
+    });
+    const data = await response.json();
 
-        if (response.status === 403) {
-            window.location.href = '/';
-            return;
-        }
-
-        if (data.username) {
-            currentUsername = data.username;
-            applyTheme(data.theme);
-            loadMessages(selectedChannel);
-            loadUserChannels();
-            loadChannelButtons();
-            messageInput.focus();
-        } else {
-            window.location.href = '/';
-        }
-    } catch (error) {
-        console.error('Помилка при отриманні імені користувача:', error);
-        window.location.href = '/';
+    if (response.status === 403) {
+      window.location.href = '/';
+      return;
     }
+
+    if (data.username) {
+      currentUsername = data.username;
+      applyTheme(data.theme);
+      loadMessages(selectedChannel);
+      loadUserChannels();
+      loadChannelButtons();
+      messageInput.focus();
+    } else {
+      window.location.href = '/';
+    }
+  } catch (error) {
+    console.error('Помилка при отриманні імені користувача:', error);
+    window.location.href = '/';
+  }
 }
 
 function displayMessage(message, id) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('message');
-  messageElement.dataset.index = id; 
+  messageElement.dataset.index = id;
 
   const messageP = document.createElement('p');
   messageP.textContent = message.context;
@@ -60,9 +60,9 @@ function displayMessage(message, id) {
   messageOptions.classList.add('message-options');
   messageOptions.textContent = '...';
   messageOptions.onclick = () => {
-    openMessageOptionsMenu(id) 
+    openMessageOptionsMenu(id)
     setTimeout(() => {
-      openMessageOptionsMenu(id) 
+      openMessageOptionsMenu(id)
     }, 10);
   };
 
@@ -75,9 +75,9 @@ function displayMessage(message, id) {
     const img = document.createElement('img');
     img.src = photoURL;
     img.alt = `Фото повідомлення ID ${id}`;
-    img.classList.add('message-photo'); 
+    img.classList.add('message-photo');
     img.dataset.index = id
-    img.classList.add('message'); 
+    img.classList.add('message');
     messageList.appendChild(img);
   }
 }
@@ -122,7 +122,7 @@ document.addEventListener('click', (event) => {
   }
 });
 
-document.getElementById("message-options-menu").addEventListener("click", function(event) {
+document.getElementById("message-options-menu").addEventListener("click", function (event) {
   const messageId = event.currentTarget.dataset.messageId;
   if (event.target.tagName === "BUTTON") {
     const action = event.target.textContent;
@@ -158,8 +158,8 @@ async function loadMessages(channelName) {
 
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
-          displayMessage({context: `${message.author}: ${message.context}`, photo: message.photo}, message.id);
-        });        
+          displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
+        });
       } else {
         console.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
         alertify.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
@@ -238,7 +238,7 @@ async function sendMessage() {
         selectedPhotoFiles = [];
         const uploadFilesDiv = document.getElementById("upload-files");
         const fileList = uploadFilesDiv.querySelector("ul");
-        fileList.innerHTML = ''; 
+        fileList.innerHTML = '';
 
         uploadFilesDiv.classList.remove("upload-files-visible");
         uploadFilesDiv.classList.add("upload-files-invisible");
@@ -257,7 +257,6 @@ async function sendMessage() {
 
         const data = await response.json();
         if (data.success) {
-          alertify.success('Повідомлення відправлено!');
           messageInput.value = '';
         } else {
           alertify.error(data.message || 'Не вдалося відправити повідомлення!');
@@ -298,17 +297,17 @@ function showUploadFilesSection(fileName, fileIndex) {
   uploadFilesDiv.classList.remove("upload-files-invisible");
   uploadFilesDiv.classList.add("upload-files-visible");
 }
-  
+
 messageInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        sendMessage();
-    }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    sendMessage();
+  }
 });
 
 function toggleDropdown() {
-    isDropdownActive = !isDropdownActive;
-    channelList.classList.toggle('active', isDropdownActive);
+  isDropdownActive = !isDropdownActive;
+  channelList.classList.toggle('active', isDropdownActive);
 }
 
 function loadChannelManagementButtons() {
@@ -336,11 +335,11 @@ function loadChannelManagementButtons() {
   sortChannelsButton.addEventListener('click', () => {
     sortModal.style.display = 'block';
   });
-  
+
   sortModalClose.addEventListener('click', () => {
     sortModal.style.display = 'none';
   });
-} 
+}
 
 async function loadUserChannels() {
   try {
@@ -430,20 +429,20 @@ function createNewChannel() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ channelName: channelName })
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      loadUserChannels();
-      loadMessages(channelName);
-    } else {
-      console.error(data.message);
-      alertify.error(data.message);
-    }
-  })
-  .catch(error => {
-    console.error('Помилка при створенні каналу:', error);
-    alertify.error('Помилка при створенні каналу:', error);
-  });
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadUserChannels();
+        loadMessages(channelName);
+      } else {
+        console.error(data.message);
+        alertify.error(data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Помилка при створенні каналу:', error);
+      alertify.error('Помилка при створенні каналу:', error);
+    });
   closeModal();
 }
 
@@ -501,14 +500,14 @@ function applyTheme(theme) {
 }
 
 function changeUrlToSettings(url) {
-    window.location.href = url;
+  window.location.href = url;
 }
 
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   if (messageElement) {
     try {
-      const originalText = messageElement.textContent.split(': ')[1]; 
+      const originalText = messageElement.textContent.split(': ')[1];
 
       const response = await fetch('/translate', {
         method: 'POST',
@@ -524,7 +523,7 @@ async function translateMessage(messageId) {
       const data = await response.json();
 
       if (data.translatedText) {
-        messageElement.dataset.originalText = originalText; 
+        messageElement.dataset.originalText = originalText;
         messageElement.textContent = messageElement.textContent.split(': ')[0] + ': ' + data.translatedText;
         alertify.success('Повідомлення перекладено!');
       } else {
@@ -541,7 +540,7 @@ async function compressMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   if (messageElement) {
     try {
-      const originalText = messageElement.textContent.split(': ')[1]; 
+      const originalText = messageElement.textContent.split(': ')[1];
 
       const response = await fetch('/summarize', {
         method: 'POST',
@@ -557,7 +556,7 @@ async function compressMessage(messageId) {
       const data = await response.json();
 
       if (data.summaryText) {
-        messageElement.dataset.originalText = originalText; 
+        messageElement.dataset.originalText = originalText;
         messageElement.textContent = messageElement.textContent.split(': ')[0] + ': ' + data.summaryText;
         alertify.success('Повідомлення стиснено!');
       } else {
@@ -574,7 +573,7 @@ function getOriginalMessage() {
   const menu = document.getElementById("message-options-menu");
   const messageId = menu.dataset.messageId;
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  
+
   if (messageElement && messageElement.dataset.originalText) {
     messageElement.textContent = messageElement.textContent.split(': ')[0] + ': ' + messageElement.dataset.originalText;
     alertify.success('Повернуто оригінальне повідомлення!');
@@ -589,7 +588,7 @@ function editMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   const editMessage = document.getElementById("edit-message")
   const editMessageSpan = document.getElementById("edit-message-span")
-  const oldContent = messageElement.textContent.split(': ')[1]; 
+  const oldContent = messageElement.textContent.split(': ')[1];
 
   editMessageSpan.textContent = oldContent
   messageInput.value = oldContent;
@@ -607,27 +606,27 @@ function deleteMessage(messageId) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ channelName: selectedChannel })
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      alertify.success('Повідомлення видалено!');
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alertify.success('Повідомлення видалено!');
 
-      const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
-      const photoElement = document.querySelector(`img[data-index='${messageId}']`);
-      if (messageElement) {
-        messageElement.remove();
-        if(photoElement){
-          photoElement.remove();
+        const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
+        const photoElement = document.querySelector(`img[data-index='${messageId}']`);
+        if (messageElement) {
+          messageElement.remove();
+          if (photoElement) {
+            photoElement.remove();
+          }
         }
+      } else {
+        alertify.error(data.message || 'Не вдалося видалити повідомлення');
       }
-    } else {
-      alertify.error(data.message || 'Не вдалося видалити повідомлення');
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alertify.error('Помилка під час видалення повідомлення');
-  });
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alertify.error('Помилка під час видалення повідомлення');
+    });
 }
 
 function copyText(buttonElement) {
@@ -688,5 +687,35 @@ socket.on('chat message', (channel, msg) => {
 
   if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
     welcomeSound.play();
+  }
+});
+
+socket.on('message deleted', (channelName, messageId) => {
+  if (channelName === selectedChannel) {
+      const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
+      const photoElement = document.querySelector(`img[data-index='${messageId}']`);
+      if (messageElement) {
+          messageElement.remove();
+          if (photoElement) {
+              photoElement.remove();
+          }
+      }
+  }
+});
+
+socket.on('message edited', (channelName, messageId, newContent) => {
+  if (channelName === selectedChannel) {
+      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+      if (messageElement) {
+          const existingText = messageElement.textContent;
+          
+          const colonIndex = existingText.indexOf(':');
+
+          if (colonIndex !== -1) {
+              messageElement.textContent = existingText.substring(0, colonIndex + 1) + " " + newContent;
+          } else {
+              messageElement.textContent = newContent;
+          }
+      }
   }
 });
