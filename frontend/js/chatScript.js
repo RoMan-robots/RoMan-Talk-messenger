@@ -230,7 +230,7 @@ async function sendMessage() {
 
         const data = await response.json();
         if (data.success) {
-          alertify.success('Повідомлення з фото відправлено!');
+          messageInput.value = '';
         } else {
           alertify.error(data.message || 'Не вдалося відправити фото!');
         }
@@ -675,7 +675,7 @@ fileInput.addEventListener("change", function () {
 socket.on('chat message', (channel, msg) => {
   if (msg.author && msg.context && channel == selectedChannel) {
     if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.id}--${msg.photo}` }, msg.id);
+      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}` }, msg.id);
     } else {
       displayMessage({ context: `${msg.author}: ${msg.context}` }, msg.id);
     }

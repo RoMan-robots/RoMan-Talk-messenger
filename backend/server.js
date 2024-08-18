@@ -777,21 +777,25 @@ app.post('/upload-photo-message', async (req, res) => {
         const messages = await getMessages(channelName);
         const id = messages.length;
         messageObject.id = id;
-        messageObject.photo = messageObject.image.name;
+        messageObject.photo = `${messageObject.id}--${messageObject.image.name}`;
 
         setTimeout(() => {
-            downloadImages(channelName);
-            const filePath = ("/Users/roman/Desktop/RoMan-Talk-messenger/backend/images/message-images/cringe.jpg");
-            
-            fs.access(filePath, fs.constants.F_OK, (err) => {
-                if (err) {
-                    console.error(`Файл ${messageObject.photo} ще не доступний!`)
-                    console.log(err);
-                    clearTimeout()
-                    io.emit('chat message', channelName, messageObject);
-                } else {
-                    io.emit('chat message', channelName, messageObject);
-                }
+            downloadImages(channelName).then(() => {
+                const filePath = path.join(__dirname, 'backend', 'images', 'message-images', channelName, messageObject.photo);
+                
+                fs.access(filePath, fs.constants.F_OK, (err) => {
+                    if (err) {
+                        console.error(`Файл ${messageObject.photo} ще не доступний!`);
+                        console.log(err);
+                        
+                        io.emit('chat message', channelName, messageObject);
+                    } else {
+                        io.emit('chat message', channelName, messageObject);
+                    }
+                });
+            }).catch((error) => {
+                console.error('Помилка при завантаженні зображень:', error);
+                alertify.error('Помилка при завантаженні зображень.');
             });
         }, 10000);
 
