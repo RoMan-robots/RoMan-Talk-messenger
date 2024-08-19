@@ -623,9 +623,16 @@ app.get('/set-bg', (req, res) => {
     const randomImage = shuffledImages[currentIndex];
     const imagePath = path.join(imagesDir, randomImage);
 
-    currentIndex = (currentIndex + 1) % shuffledImages.length;
+    fs.access(imagePath, fs.constants.F_OK, (err) => {
+        if (err) {
+            console.error(`File not found: ${imagePath}`);
+            return res.status(404).send('Image not found');
+        }
 
-    res.sendFile(imagePath);
+        res.sendFile(imagePath);
+    });
+
+    currentIndex = (currentIndex + 1) % shuffledImages.length;
 });
 
 app.post('/login', async (req, res) => {
@@ -1601,16 +1608,27 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
+// httpServer.listen(port, 'localhost', () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     });
+//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+// });
+
+httpServer.listen(port, () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
             return;
         }
-    
+
         shuffledImages = shuffleArray(files);
     });
-    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-});
 
-// httpServer.listen(port, () => console.log(`App listening on port ${port}!`)); 
+    console.log(`App listening on port ${port}!`)
+}); 
