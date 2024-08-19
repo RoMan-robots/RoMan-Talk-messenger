@@ -64,6 +64,9 @@ app.use('/photos', express.static(localDir));
 
 const imagesDir = path.join(__dirname, '/images/bg');
 
+let shuffledImages = [];
+let currentIndex = 0;
+
 app.use('/favicon.ico', express.static(path.join(__dirname, '/images/favicon.ico')));
 
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
@@ -93,6 +96,15 @@ async function checkVersion() {
         }
         return false;
     }
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    console.log("Shuffled array")
+    return array;
 }
 
 async function getUsers() {
@@ -604,16 +616,16 @@ io.on('connection', (socket) => {
 });
 
 app.get('/set-bg', (req, res) => {
-    fs.readdir(imagesDir, (err, files) => {
-        if (err) {
-            return res.status(500).send('Unable to scan directory');
-        }
+    if (shuffledImages.length === 0) {
+        return res.status(500).send('No images found');
+    }
 
-        const randomImage = files[Math.floor(Math.random() * files.length)];
-        const imagePath = path.join(imagesDir, randomImage);
+    const randomImage = shuffledImages[currentIndex];
+    const imagePath = path.join(imagesDir, randomImage);
 
-        res.sendFile(imagePath);
-    });
+    currentIndex = (currentIndex + 1) % shuffledImages.length;
+
+    res.sendFile(imagePath);
 });
 
 app.post('/login', async (req, res) => {
@@ -1590,6 +1602,14 @@ app.get("/settings.html", (req, res) => {
 });
 
 httpServer.listen(port, 'localhost', () => {
+    fs.readdir(imagesDir, (err, files) => {
+        if (err) {
+            console.error('Unable to scan directory:', err);
+            return;
+        }
+    
+        shuffledImages = shuffleArray(files);
+    });
     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
 });
 
