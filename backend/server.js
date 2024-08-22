@@ -759,7 +759,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
 
         const messages = await getMessages(channelName);
         const id = messages.length;
-        messageObject.id = id;
+        messageObject.id = id+1;
 
         io.emit('chat message', channelName, messageObject);
 
@@ -1608,19 +1608,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1629,6 +1617,18 @@ httpServer.listen(port, () => {
 
         shuffledImages = shuffleArray(files);
     });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     });
+
+//     console.log(`App listening on port ${port}!`)
+// }); 

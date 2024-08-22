@@ -35,10 +35,10 @@ async function getCurrentUsername() {
     if (data.username) {
       currentUsername = data.username;
       applyTheme(data.theme);
-      loadMessages(selectedChannel);
+      loadMessages(selectedChannel)
       loadUserChannels();
       loadChannelButtons();
-      messageInput.focus();
+      messageInput.focus()
     } else {
       window.location.href = '/';
     }
@@ -159,7 +159,10 @@ async function loadMessages(channelName) {
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
           displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
-        });
+        })
+        setTimeout(()=>{
+          messageList.scrollTop = messageList.scrollHeight;
+        })
       } else {
         console.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
         alertify.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
@@ -174,7 +177,7 @@ async function loadMessages(channelName) {
   }
 }
 async function sendMessage() {
-  const message = messageInput.value.trim();
+  const message = messageInput.value.trim()
   const messageId = messageInput.dataset.editId;
 
   if (message) {
@@ -692,30 +695,30 @@ socket.on('chat message', (channel, msg) => {
 
 socket.on('message deleted', (channelName, messageId) => {
   if (channelName === selectedChannel) {
-      const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
-      const photoElement = document.querySelector(`img[data-index='${messageId}']`);
-      if (messageElement) {
-          messageElement.remove();
-          if (photoElement) {
-              photoElement.remove();
-          }
+    const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
+    const photoElement = document.querySelector(`img[data-index='${messageId}']`);
+    if (messageElement) {
+      messageElement.remove();
+      if (photoElement) {
+        photoElement.remove();
       }
+    }
   }
 });
 
 socket.on('message edited', (channelName, messageId, newContent) => {
   if (channelName === selectedChannel) {
-      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-      if (messageElement) {
-          const existingText = messageElement.textContent;
-          
-          const colonIndex = existingText.indexOf(':');
+    const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+    if (messageElement) {
+      const existingText = messageElement.textContent;
 
-          if (colonIndex !== -1) {
-              messageElement.textContent = existingText.substring(0, colonIndex + 1) + " " + newContent;
-          } else {
-              messageElement.textContent = newContent;
-          }
+      const colonIndex = existingText.indexOf(':');
+
+      if (colonIndex !== -1) {
+        messageElement.textContent = existingText.substring(0, colonIndex + 1) + " " + newContent;
+      } else {
+        messageElement.textContent = newContent;
       }
+    }
   }
 });
