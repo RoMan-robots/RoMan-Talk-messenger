@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,44 +8,77 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script src="../js/registerScript.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
 </head>
+
 <body>
-<div id="register-screen" class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
-    <div id="register-text">
-        <h2 class="classic" id="register-title" class="test-up">Реєстрація в RoMan Talk</h2>
-        <div id="register-inputs">
-            <div id="step-1">
-                <h3 class="classic">Крок 1. Збір інформації</h3>
-                <input type="text" id="register-username-input" placeholder="Ім'я користувача">
-                <input type="password" id="register-password-input" placeholder="Пароль">
-                <p class="classic">Продовжуючи, я погоджуюсь з <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
-                <button onclick="nextStep(2)">Далі</button>
-            </div>
-            
-            <div id="step-2" style="display: none;">
-                <h3 class="classic">Крок 2. Підтвердження</h3>
-                <input type="password" id="confirm-password-input" placeholder="Повторіть пароль">
-                
-                <button onclick="nextStep(1)">Назад</button>
-                <button onclick="nextStep(3)">Далі</button>
-            </div>                 
+    <div id="register-screen"
+        class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
+        <div id="register-text">
+            <h2 class="classic" id="register-title">Реєстрація в RoMan Talk</h2>
+            <div id="register-inputs">
+                <div id="step-1">
+                    <h3 class="classic">Крок 1. Збір інформації</h3>
+                    <input type="text" id="register-username-input" placeholder="Ім'я користувача">
+                    <input type="password" id="register-password-input" placeholder="Пароль">
+                    <div class="button-group" role="group">
+                        <button onclick="changeUrlToChat('')" class="btn btn-secondary">Назад</button>
+                        <button onclick="nextStep(2)" class="btn btn-light">Далі</button>
+                    </div>
+                </div>
 
-            <div id="step-3" style="display: none;">
-                <h3 class="classic">Крок 3. Кастомізація</h3>
-                <button onclick="nextStep(2)">Назад</button>
-                <button onclick="nextStep(4)">Далі</button>
-            </div>
+                <div id="step-2" style="display: none;">
+                    <h3 class="classic">Крок 2. Підтвердження</h3>
+                    <input type="password" id="confirm-password-input" placeholder="Повторіть пароль">
+                    <div class="button-group" role="group">
+                        <button onclick="nextStep(1)" class="btn btn-secondary">Назад</button>
+                        <button onclick="nextStep(3)" class="btn btn-light">Готово</button>
+                    </div>
+                    <p class="classic">Продовжуючи, я погоджуюсь з <a href="tos.html" class="footer-a">
+                            умовами використання месенжера</a></p>
+                </div>
 
-            <div id="step-4" style="display: none;">
-                <h3 class="classic">Крок 4. Туторіал і перший вхід</h3>
-                <button onclick="nextStep(3)">Назад</button>
-                <button onclick="register(event)">Готово</button>
+                <div id="step-3" style="display: none;">
+                    <h3 class="classic">Крок 3. Вибір теми</h3>
+                    <p class="classic">Оберіть тему для вашого інтерфейсу:</p>
+                    <div class="button-group" role="group">
+                        <button onclick="nextStep(4)" class="btn btn-light">Далі</button>
+                    </div>
+                </div>
+
+                <div id="step-4" style="display: none;">
+                    <h3 class="classic">Крок 4. Туторіал по використанню RoMan Talk</h3>
+
+                    <p class="classic">P.S. Якщо натиснути на картинку, вона буде на повний екран</p>
+
+                    <img src="/tutorial1.png" alt="Туторіал 1" class="tutorial-image" onclick="openFullscreen(this)">
+                    <img src="/tutorial2.png" alt="Туторіал 2" class="tutorial-image" onclick="openFullscreen(this)">
+                    <p class="classic">Це головне вікно. Натисніть "Сервери" зверху, щоб побачити доступні, знайти нові,
+                        відсортувати або створити власний.</p>
+
+                    <p class="classic">Вводьте повідомлення внизу. Ви можете прикріплювати фото, натискаючи на +.</p>
+
+                    <p class="classic">Кнопка "⚙️" зверху відкриває налаштування вашого профілю.</p>
+
+                    <img src="/tutorial3.png" alt="Туторіал 2" class="tutorial-image" onclick="openFullscreen(this)">
+                    <p class="classic">Керування повідомленнями: натисніть на кнопку справа для редагування, видалення,
+                        або використання AI функцій.</p>
+
+                    <img src="/tutorial4.png" alt="Туторіал 5" class="tutorial-image" onclick="openFullscreen(this)">
+                    <p class="classic">В налаштуваннях можна змінити пароль, видалити акаунт та редагувати або видаляти
+                        власні канали. Зверніть увагу на різні кольори на скріншотах — це теми, які ви обрали на 3
+                        кроці. Їх можна змінити пізніше в налаштуваннях.</p>
+
+                    <div class="button-group">
+                        <button onclick="register(event)" class="btn btn-success">Завершити</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

@@ -69,6 +69,11 @@ let currentIndex = 0;
 
 app.use('/favicon.ico', express.static(path.join(__dirname, '/images/favicon.ico')));
 
+app.use('/tutorial1.png', express.static(path.join(__dirname, '/images/tutorial1.png')));
+app.use('/tutorial2.png', express.static(path.join(__dirname, '/images/tutorial2.png')));
+app.use('/tutorial3.png', express.static(path.join(__dirname, '/images/tutorial3.png')));
+app.use('/tutorial4.png', express.static(path.join(__dirname, '/images/tutorial4.png')));
+
 app.use('/welcomeSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/welcomeSound.mp3')));
 app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newMessageSound.mp3')));
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));

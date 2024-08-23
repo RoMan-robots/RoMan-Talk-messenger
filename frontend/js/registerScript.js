@@ -1,6 +1,4 @@
 let currentStep = 1;
-const enteredUsername = document.getElementById('register-username-input').value;
-
 const tutorialSound = new Audio("/tutorialSound.mp3");
 
 function changeUrlToChat(url) {
@@ -10,32 +8,59 @@ function changeUrlToChat(url) {
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 fetch('/set-bg')
-.then(response => response.blob())
-.then(imageBlob => {
-  const imageURL = URL.createObjectURL(imageBlob);
-  document.body.style.backgroundImage = `url(${imageURL})`;
-})
-.catch(error => console.error('Error fetching the random image:', error));
+  .then(response => response.blob())
+  .then(imageBlob => {
+    const imageURL = URL.createObjectURL(imageBlob);
+    document.body.style.backgroundImage = `url(${imageURL})`;
+  })
+  .catch(error => console.error('Error fetching the random image:', error));
 
 function nextStep(step) {
-  if(step == 3){  
-  const enteredPassword = document.getElementById('register-password-input').value;
-  const enteredPasswordDuplicate = document.getElementById('confirm-password-input').value;
-    if (enteredPassword !== enteredPasswordDuplicate) {
-      alertify.error('Пароль не співпадає');
-      return;
-    }
+  if (step === 3) {
+    alertify.confirm("Ви дійсно хочете продовжити? Потім не можна буде змінити ім'я користувача, лише пароль", function () {
+      const enteredUsername = document.getElementById('register-username-input').value;
+      const enteredPassword = document.getElementById('register-password-input').value;
+      if (!enteredUsername || !enteredPassword) {
+        alertify.error('Ім\'я користувача та пароль не можуть бути порожніми!');
+        return;
+      }
+
+      document.getElementById(`step-${currentStep}`).style.display = 'none';
+      currentStep = step;
+      document.getElementById(`step-${currentStep}`).style.display = 'block';
+    });
+  } else {
+    document.getElementById(`step-${currentStep}`).style.display = 'none';
+    currentStep = step;
+    document.getElementById(`step-${currentStep}`).style.display = 'block';
   }
-  document.getElementById(`step-${currentStep}`).style.display = 'none';
-  currentStep = step;
-  document.getElementById(`step-${currentStep}`).style.display = 'block';
-  if(step == 4){
+
+  if (step === 4) {
     tutorialSound.play();
   } else {
-    tutorialSound.pause()
+    tutorialSound.pause();
     tutorialSound.currentTime = 0;
   }
 }
+
+function openFullscreen(imgElement) {
+  const fullscreenDiv = document.createElement('div');
+  fullscreenDiv.classList.add('fullscreen-img');
+  fullscreenDiv.innerHTML = `
+        <span class="close-btn" onclick="closeFullscreen()">×</span>
+        <img src="${imgElement.src}" alt="${imgElement.alt}">
+    `;
+  document.body.appendChild(fullscreenDiv);
+}
+
+function closeFullscreen() {
+  const fullscreenDiv = document.querySelector('.fullscreen-img');
+  if (fullscreenDiv) {
+    fullscreenDiv.remove();
+  }
+}
+
+
 
 async function register(event) {
   event.preventDefault();
@@ -49,7 +74,7 @@ async function register(event) {
   }
 
   if (enteredPassword !== enteredPasswordDuplicate) {
-    alertify.error('Пароль не співпадає');
+    alertify.error('Паролі не співпадають');
     return;
   }
 
