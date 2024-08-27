@@ -3,6 +3,8 @@ import fileUpload from "express-fileupload"
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
+import uaParser from 'ua-parser-js';
+import geoip from 'geoip-lite';
 import { Octokit } from '@octokit/rest';
 import sharedsession from 'express-socket.io-session';
 import cookieParser from 'cookie-parser';
@@ -147,6 +149,59 @@ async function saveUsers(users) {
     } catch (error) {
         throw new Error('Error saving users: ' + error.message);
     }
+}
+
+async function alertSecurity(req, username, messageText) {
+    const security = await getSecurity();
+
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    const parser = uaParser(userAgent);
+    const deviceInfo = parser.os.name;
+
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+    const geo = geoip.lookup(ip);
+    let location;
+    if (geo) {
+        const { city, country, timezone } = geo;
+
+        if (city) {
+            location = `${city}, ${country}`;
+        } else if (timezone) {
+            const tzParts = timezone.split('/');
+            location = tzParts.length === 2 ? `${tzParts[1].replace('_', ' ')}, ${country}` : country;
+        } else {
+            location = 'невідоме';
+        }
+    } else {
+        location = 'невідоме';
+    }
+
+    const message = {
+        message: messageText,
+        device: deviceInfo,
+        location: location,
+        when: formattedDateTime
+    };
+
+    const userSecurityLogs = security.find(entry => Object.keys(entry)[0] === username);
+    if (userSecurityLogs) {
+        userSecurityLogs[username].unshift(message);
+    } else {
+        security.unshift({ [username]: [message] });
+    }
+
+    await saveSecurity(security);
 }
 
 async function getChannels() {
@@ -654,32 +709,35 @@ app.post('/login', async (req, res) => {
         const now = Date.now();
         const userAttempts = loginAttempts[username] || [];
         const recentAttempts = userAttempts.filter(attemptTime => now - attemptTime < 60000);
+
         if (recentAttempts.length >= 5) {
-            const security = await getSecurity();
-            const message = { message: "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я." };
-            security.push({ [username]: [message] });
-            await saveSecurity(security);
+            await alertSecurity(req, username, "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.");
 
             return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
         }
 
         const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
+
         if (isPasswordMatch) {
             if (foundUser.rank === 'banned') {
                 return res.status(423).send({ success: false, message: 'Користувач заблокований' });
             }
+
             req.session.username = foundUser.username;
             req.session.userId = foundUser.id;
+
             req.session.save(async (err) => {
                 if (err) {
                     console.error(err);
                     return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
                 }
+
                 res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
                 res.send({ success: true, redirectUrl: '/chat.html' });
 
                 await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
             });
+
         } else {
             loginAttempts[username] = [...userAttempts, now];
             res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -764,7 +822,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
 
         const messages = await getMessages(channelName);
         const id = messages.length;
-        messageObject.id = id+1;
+        messageObject.id = id + 1;
 
         io.emit('chat message', channelName, messageObject);
 
@@ -931,7 +989,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
         await updateUserChannels(username, channelName);
 
         res.send({ success: true, message: 'Канал створено успішно.' });
-
+        await alertSecurity(req, username, `Створено канал під вашим акаунтом з ім'ям ${channelName}`);
     } catch (error) {
         console.error('Помилка при створенні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -977,6 +1035,9 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
             channels[channelIndex].isPrivate = isPrivate;
             await saveChannels(channels);
             res.send({ success: true, message: 'Приватність каналу оновлено.' });
+
+            const privacyStatus = isPrivate ? 'приватний' : 'публічний';
+            await alertSecurity(req, username, `Канал "${channelName}" тепер ${privacyStatus}.`);
         } else {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
         }
@@ -1226,6 +1287,7 @@ app.post('/save-rank', async (req, res) => {
     if (userRank === 'owner' || userRank === 'admin') {
         const { userId, newRank } = req.body;
         const targetUser = users.find(u => u.id === userId);
+        const oldRank = targetUser.rank
 
         if (!targetUser) {
             return res.status(404).json({ error: 'Користувач не знайдений' });
@@ -1235,6 +1297,8 @@ app.post('/save-rank', async (req, res) => {
         await saveUsers(users);
 
         res.json({ message: 'Ранг користувача збережено' });
+        await alertSecurity(req, username, `Змінено ранг користувачу ${targetUser} (ранг ${oldRank}) на ${newRank}`);
+        await alertSecurity(req, targetUser.username, `Адміністратор ${username} змінив вам ранг на ${newRank}`);
     } else {
         user.rank = 'banned';
         await saveUsers(users);
@@ -1303,10 +1367,18 @@ app.post('/delete-appeal', async (req, res) => {
 app.get("/get-security", async (req, res) => {
     const username = req.session.username;
     const securityData = await getSecurity();
-    const security = securityData.find(obj => Object.keys(obj)[0] === username);
 
-    res.status(200).json({ success: true, security })
-})
+    const security = securityData.reduce((acc, obj) => {
+        const user = Object.keys(obj)[0];
+        const messages = obj[user];
+        if (messages.length > 0) {
+            acc[user] = messages;
+        }
+        return acc;
+    }, {});
+
+    res.status(200).json({ success: true, security });
+});
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {
     const { userId, channelName } = req.body;
@@ -1458,6 +1530,7 @@ app.post('/update-user-channels', checkUserExists, async (req, res) => {
 });
 
 app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
+    const username = req.session.username;
     const { channelName } = req.body;
     try {
         const channels = await getChannels();
@@ -1466,6 +1539,7 @@ app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
             channels[channelIndex].subs = [];
             await saveChannels(channels);
             res.send({ success: true, message: 'Список підписників каналу очищено.' });
+            await alertSecurity(req, username, `У вашому каналі ${channelName} очищені всі підписники`)
         } else {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
         }
@@ -1500,7 +1574,7 @@ app.post('/channel/delete', checkUserExists, async (req, res) => {
         const updatedChannels = channels.filter(c => c.name !== currentChannelName);
         await saveChannels(updatedChannels);
         res.send({ success: true, message: 'Канал видалено.' });
-
+        await alertSecurity(req, username, `Ваш канал ${currentChannelName} видалено`)
     } catch (error) {
         console.error('Помилка при видаленні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -1545,6 +1619,7 @@ app.post('/change-password', checkUserExists, async (req, res) => {
         await saveUsers(users);
 
         res.send({ success: true, message: 'Пароль успішно змінено.' });
+        await alertSecurity(req, username, `На вашому акаунті змінено пароль`)
     } catch (error) {
         console.error(error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });

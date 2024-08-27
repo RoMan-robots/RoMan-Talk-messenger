@@ -338,25 +338,39 @@ async function loadAppeals() {
 
 async function loadSecurityRecomendations() {
   const securityDiv = document.getElementById("security-recomendations");
+  securityDiv.innerHTML = '';
+
   const response = await fetch('/get-security', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+      method: 'GET',
+      headers: {
+          'Content-Type': 'application/json'
+      }
   });
+
   const data = await response.json();
 
-  if(data.success) {
-    const ol = document.createElement('ol');
-    const securityObj = data.security;
+  if (data.success && data.security) {
+      const ol = document.createElement('ol');
+      const securityObj = data.security;
 
-    Object.keys(securityObj).forEach((username, index) => {
-      const li = document.createElement('li');
-      li.textContent = securityObj[username][0];
-      ol.appendChild(li);
-    });
+      Object.keys(securityObj).forEach((username) => {
+          const messages = securityObj[username];
+          if (messages.length > 0) {
+              messages.forEach((message) => {
+                  const li = document.createElement('li');
+                  li.textContent = `${message.when}: ${message.message} (Клієнт: ${message.device}, Місцезнаходження: ${message.location})`;
+                  ol.appendChild(li);
+              });
+          }
+      });
 
-    securityDiv.appendChild(ol);
+      if (ol.childNodes.length > 0) {
+          securityDiv.appendChild(ol);
+      } else {
+          securityDiv.textContent = 'Немає нових повідомлень безпеки.';
+      }
+  } else {
+      securityDiv.textContent = 'Не вдалося завантажити дані безпеки.';
   }
 }
 

@@ -31,13 +31,17 @@
     "franc": "^6.2.0",
     "fs": "^0.0.1-security",
     "fs-extra": "^11.2.0",
+    "geoip-lite": "^1.4.10",
     "gpt-2": "^0.0.1",
     "languagedetect": "^2.0.0",
     "mongoose": "^8.1.2",
     "node-fetch": "^3.3.2",
+    "satelize": "^0.2.0",
     "sentiment": "^5.0.2",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4",
-    "string-similarity": "^4.0.4"
+    "string-similarity": "^4.0.4",
+    "ua-parser-js": "^1.0.38",
+    "useragent": "^2.3.0"
   }
 }
