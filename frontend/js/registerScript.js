@@ -20,8 +20,14 @@ function nextStep(step) {
     alertify.confirm("Ви дійсно хочете продовжити? Потім не можна буде змінити ім'я користувача, лише пароль", function () {
       const enteredUsername = document.getElementById('register-username-input').value;
       const enteredPassword = document.getElementById('register-password-input').value;
+      const enteredPasswordDuplicate = document.getElementById('confirm-password-input').value;
       if (!enteredUsername || !enteredPassword) {
         alertify.error('Ім\'я користувача та пароль не можуть бути порожніми!');
+        return;
+      }
+
+      if (enteredPassword !== enteredPasswordDuplicate) {
+        alertify.error('Паролі не співпадають');
         return;
       }
 
@@ -60,31 +66,16 @@ function closeFullscreen() {
   }
 }
 
-
-
 async function register(event) {
   event.preventDefault();
-  const enteredUsername = document.getElementById('register-username-input').value;
-  const enteredPassword = document.getElementById('register-password-input').value;
-  const enteredPasswordDuplicate = document.getElementById('confirm-password-input').value;
-
-  if (!enteredUsername || !enteredPassword) {
-    alertify.error('Ім\'я користувача та пароль не можуть бути порожніми');
-    return;
-  }
-
-  if (enteredPassword !== enteredPasswordDuplicate) {
-    alertify.error('Паролі не співпадають');
-    return;
-  }
-
+  const selectedTheme = document.getElementById("theme select").value
   try {
     const response = await fetch('/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: enteredUsername, password: enteredPassword })
+      body: JSON.stringify({ username: enteredUsername, password: enteredPassword, theme: selectedTheme })
     });
 
     const data = await response.json();

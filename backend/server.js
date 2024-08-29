@@ -151,59 +151,6 @@ async function saveUsers(users) {
     }
 }
 
-async function alertSecurity(req, username, messageText) {
-    const security = await getSecurity();
-
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-    const parser = uaParser(userAgent);
-    const deviceInfo = parser.os.name;
-
-    const now = new Date();
-
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-
-    const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
-
-    const geo = geoip.lookup(ip);
-    let location;
-    if (geo) {
-        const { city, country, timezone } = geo;
-
-        if (city) {
-            location = `${city}, ${country}`;
-        } else if (timezone) {
-            const tzParts = timezone.split('/');
-            location = tzParts.length === 2 ? `${tzParts[1].replace('_', ' ')}, ${country}` : country;
-        } else {
-            location = 'невідоме';
-        }
-    } else {
-        location = 'невідоме';
-    }
-
-    const message = {
-        message: messageText,
-        device: deviceInfo,
-        location: location,
-        when: formattedDateTime
-    };
-
-    const userSecurityLogs = security.find(entry => Object.keys(entry)[0] === username);
-    if (userSecurityLogs) {
-        userSecurityLogs[username].unshift(message);
-    } else {
-        security.unshift({ [username]: [message] });
-    }
-
-    await saveSecurity(security);
-}
-
 async function getChannels() {
     try {
         const response = await octokit.repos.getContent({
@@ -621,6 +568,69 @@ async function saveSecurity(security) {
     }
 }
 
+async function alertSecurity(req, username, messageText) {
+    const security = await getSecurity();
+
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    const parser = uaParser(userAgent);
+    const deviceInfo = parser.os.name;
+
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+    const geo = geoip.lookup(ip);
+    let location;
+    if (geo) {
+        const { city, country, timezone } = geo;
+
+        if (city) {
+            location = `${city}, ${country}`;
+        } else if (timezone) {
+            const tzParts = timezone.split('/');
+            location = tzParts.length === 2 ? `${tzParts[1].replace('_', ' ')}, ${country}` : country;
+        } else {
+            location = 'невідоме';
+        }
+    } else {
+        location = 'невідоме';
+    }
+
+    const message = {
+        message: messageText,
+        device: deviceInfo,
+        location: location,
+        when: formattedDateTime
+    };
+
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const userSecurityLogs = security.find(entry => Object.keys(entry)[0] === username);
+    if (userSecurityLogs) {
+
+        userSecurityLogs[username] = userSecurityLogs[username].filter(log => {
+            const logDate = log.when.split(' ')[0].split('.');
+            const logDateTime = new Date(logDate[2], logDate[1] - 1, logDate[0]);
+            return logDateTime >= oneWeekAgo;
+        });
+
+        userSecurityLogs[username].unshift(message);
+    } else {
+        security.unshift({ [username]: [message] });
+    }
+
+    await saveSecurity(security);
+}
+
 async function checkUserExists(req, res, next) {
     const username = req.session.username;
 
@@ -736,6 +746,7 @@ app.post('/login', async (req, res) => {
                 res.send({ success: true, redirectUrl: '/chat.html' });
 
                 await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+                await alertSecurity(req, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
             });
 
         } else {
@@ -770,7 +781,7 @@ app.get('/username', checkUserExists, (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    let { username, password } = req.body;
+    let { username, password, theme } = req.body;
 
     if (!username || !password) {
         return res.status(400).send({ success: false, message: 'Ім\'я користувача та пароль не можуть бути порожніми.' });
@@ -788,7 +799,7 @@ app.post('/register', async (req, res) => {
         id: users.length + 1,
         username,
         password,
-        'selected theme': 'light',
+        'selected theme': theme,
         'rank': 'user',
         channels: ['RoMan_World_Official']
     };
