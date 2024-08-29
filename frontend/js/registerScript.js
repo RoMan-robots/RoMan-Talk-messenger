@@ -68,7 +68,10 @@ function closeFullscreen() {
 
 async function register(event) {
   event.preventDefault();
-  const selectedTheme = document.getElementById("theme select").value
+
+  const enteredUsername = document.getElementById('register-username-input').value;
+  const enteredPassword = document.getElementById('register-password-input').value;
+  const selectedTheme = document.getElementById("theme-select").value
   try {
     const response = await fetch('/register', {
       method: 'POST',
@@ -87,6 +90,7 @@ async function register(event) {
     }
   } catch (error) {
     alertify.error('Помилка сервера при реєстрації');
+    console.error(error)
   }
 }
 

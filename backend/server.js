@@ -487,7 +487,6 @@ async function downloadImages(channelName) {
                 const fileBuffer = Buffer.from(fileContent.content, 'base64');
                 const localFilePath = path.join(channelDir, fileName);
                 await fs.writeFile(localFilePath, fileBuffer);
-                console.log(`Downloaded and saved: ${fileName} for channel: ${channelName}`);
             }
         }
     } catch (error) {
