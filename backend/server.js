@@ -706,7 +706,7 @@ app.get('/set-bg', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, checked } = req.body;
 
     try {
         const users = await getUsers();
@@ -745,7 +745,10 @@ app.post('/login', async (req, res) => {
                 res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
                 res.send({ success: true, redirectUrl: '/chat.html' });
 
-                await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+                if (!checked) {
+                    await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+                }
+
                 await alertSecurity(req, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
             });
 

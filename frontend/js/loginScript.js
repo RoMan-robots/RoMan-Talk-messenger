@@ -1,26 +1,27 @@
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 fetch('/set-bg')
-.then(response => response.blob())
-.then(imageBlob => {
-  const imageURL = URL.createObjectURL(imageBlob);
-  document.body.style.backgroundImage = `url(${imageURL})`;
-})
-.catch(error => console.error('Error fetching the random image:', error));
+  .then(response => response.blob())
+  .then(imageBlob => {
+    const imageURL = URL.createObjectURL(imageBlob);
+    document.body.style.backgroundImage = `url(${imageURL})`;
+  })
+  .catch(error => console.error('Error fetching the random image:', error));
 
 async function login(event) {
   event.preventDefault();
   const enteredUsername = document.getElementById('username-input').value;
   const enteredPassword = document.getElementById('password-input').value;
+  const isChecked = document.getElementById("anonymousLogin").checked;
 
   try {
     const response = await fetch('/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      credentials: 'include'
+        credentials: 'include'
       },
-      body: JSON.stringify({ username: enteredUsername, password: enteredPassword })
+      body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked })
     });
 
     const data = await response.json();
@@ -34,8 +35,10 @@ async function login(event) {
         document.getElementById('login-footer').style.display = 'none';
       } else {
         alertify.error(data.message || 'Неправильний логін або пароль.');
-      }}} 
-    catch (error) {
+      }
+    }
+  }
+  catch (error) {
     console.error('Помилка:', error);
     alertify.error('Помилка сервера');
   }
