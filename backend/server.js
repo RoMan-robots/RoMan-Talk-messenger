@@ -343,7 +343,7 @@ app.post('/login', async (req, res) => {
               return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
           }
           res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-          res.send({ success: true, redirectUrl: '/chat.html' });
+          res.send({ success: true, redirectUrl: 'chat.html' });
 
           await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
       });
