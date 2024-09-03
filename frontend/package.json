@@ -1,0 +1,24 @@
+{
+    "name": "roman_talk",
+    "version": "2.0",
+    "description": "My messenger, called RoMan Talk, here is code from it",
+    "main": "electron.js",
+    "type": "module",
+    "scripts": {
+       "start-electron": " electron .",
+        "package-mac": "electron-packager . RoManTalk --platform=darwin --arch=x64 --out=dist --overwrite --icon=/images/favicon.icns"
+    },
+    "keywords": [
+      "RoMan",
+      "Talk",
+      "RoMan Talk",
+      "Messenger"
+    ],
+    "author": "RoMan",
+    "license": "ISC",
+    "dependencies": {
+      "electron": "^32.0.1",
+      "electron-packager": "^17.1.2"
+    }
+  }
+  

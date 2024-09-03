@@ -1,3 +1,16 @@
+const originalFetch = window.fetch;
+
+const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
+const baseURL = isElectron ? 'http://roman-tal.onrender.com' : '';
+
+window.fetch = function (...args) {
+  if (typeof args[0] === 'string' && !args[0].startsWith('http')) {
+    args[0] = `${baseURL}${args[0].startsWith('/') ? args[0] : '/' + args[0]}`;
+  }
+  console.log('Modified URL:', args[0]);
+  return originalFetch(...args);
+};
+
 function changeUrlToIndex(url) {
     window.location.href = url;
 }

@@ -22,7 +22,7 @@ import {
     loadModels,
     translateTextInParts
 } from './ai.js';
-
+    
 dotenv.config();
 
 const __dirname = path.resolve();
@@ -741,8 +741,8 @@ app.post('/login', async (req, res) => {
                     return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
                 }
 
-                res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-                res.send({ success: true, redirectUrl: '/chat.html' });
+                res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 2629800000 });
+                res.send({ success: true, redirectUrl: 'chat.html' });
 
                 if (!checked) {
                     await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);

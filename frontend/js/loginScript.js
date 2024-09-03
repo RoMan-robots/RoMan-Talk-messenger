@@ -1,3 +1,16 @@
+const originalFetch = window.fetch;
+
+const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
+const baseURL = isElectron ? 'http://roman-tal.onrender.com' : '';
+
+window.fetch = function (...args) {
+  if (typeof args[0] === 'string' && !args[0].startsWith('http')) {
+    args[0] = `${baseURL}${args[0].startsWith('/') ? args[0] : '/' + args[0]}`;
+  }
+  console.log('Modified URL:', args[0]);
+  return originalFetch(...args);
+};
+
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 fetch('/set-bg')
@@ -27,7 +40,7 @@ async function login(event) {
     const data = await response.json();
 
     if (data.success) {
-      window.location.href = data.redirectUrl;
+      window.location.href = 'chat.html';
     } else {
       if (data.message.includes("заблокований")) {
         document.getElementById("login-screen").style.display = 'none'
