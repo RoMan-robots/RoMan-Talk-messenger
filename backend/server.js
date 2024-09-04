@@ -741,7 +741,13 @@ app.post('/login', async (req, res) => {
                     return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
                 }
 
-                res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 2629800000 });
+                res.cookie('isLoggedIn', true, {
+                    httpOnly: true,
+                    maxAge: 2629800000,
+                    sameSite: 'None',
+                    secure: true
+                  });
+
                 res.send({ success: true, redirectUrl: 'chat.html' });
 
                 if (!checked) {
