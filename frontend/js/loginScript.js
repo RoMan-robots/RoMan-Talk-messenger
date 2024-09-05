@@ -32,7 +32,6 @@ async function login(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        credentials: 'include'
       },
       body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked })
     });
@@ -41,6 +40,7 @@ async function login(event) {
 
     if (data.success) {
       window.location.href = 'chat.html';
+      localStorage.setItem('token', data.token);
     } else {
       if (data.message.includes("заблокований")) {
         document.getElementById("login-screen").style.display = 'none'

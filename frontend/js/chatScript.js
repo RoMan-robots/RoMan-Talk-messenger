@@ -21,6 +21,8 @@ const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
 const fileInput = document.getElementById('file-input');
 
+const token = localStorage.getItem('token');
+
 const socket = io();
 const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
@@ -36,7 +38,9 @@ let selectedChannel = 'RoMan_World_Official';
 async function getCurrentUsername() {
   try {
     const response = await fetch('/username', {
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     const data = await response.json();
 
@@ -158,7 +162,11 @@ document.getElementById("message-options-menu").addEventListener("click", functi
 
 async function loadMessages(channelName) {
   try {
-    const response = await fetch(`/channel-messages/${channelName}`);
+    const response = await fetch(`/channel-messages/${channelName}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     if (!response.ok) {
       throw new Error(await response.text());
     }
@@ -359,7 +367,11 @@ function loadChannelManagementButtons() {
 
 async function loadUserChannels() {
   try {
-    const response = await fetch('/user-channels');
+    const response = await fetch('/user-channels', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     const data = await response.json();
 
     if (response.ok) {

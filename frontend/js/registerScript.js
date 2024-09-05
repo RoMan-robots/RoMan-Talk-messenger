@@ -98,6 +98,7 @@ async function register(event) {
 
     if (data.success) {
       changeUrlToChat('chat.html');
+      localStorage.setItem('token', data.token);
     } else {
       alertify.error(data.message || 'Помилка реєстрації.');
     }

@@ -7,7 +7,7 @@ import uaParser from 'ua-parser-js';
 import geoip from 'geoip-lite';
 import { Octokit } from '@octokit/rest';
 import sharedsession from 'express-socket.io-session';
-import cookieParser from 'cookie-parser';
+import jwt from 'jsonwebtoken'
 import path from 'path';
 import LanguageDetect from 'languagedetect';
 import fs from "fs-extra"
@@ -53,7 +53,6 @@ const sessionMiddleware = session({
 app.use(fileUpload());
 app.use(sessionMiddleware);
 app.use(express.json());
-app.use(cookieParser());
 
 io.use(sharedsession(sessionMiddleware, {
     autoSave: true
@@ -631,25 +630,31 @@ async function alertSecurity(req, username, messageText) {
 }
 
 async function checkUserExists(req, res, next) {
-    const username = req.session.username;
-
-    if (!username) {
+    const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+    if (!token) {
         return res.status(403).send({ success: false, message: 'Необхідна авторизація.' });
     }
 
     try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const users = await getUsers();
-        const userExists = users.some(user => user.username === username);
+
+        const userExists = users.some(user => user.id === decoded.userId);
 
         if (!userExists) {
-            req.session.destroy(() => {
-                res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
-            });
-        } else {
-            next();
+            return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
         }
+
+        req.user = users.find(user => user.id === decoded.userId);
+
+        next();
     } catch (error) {
-        res.status(500).send({ success: false, message: 'Помилка сервера.' });
+        console.log(error)
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(403).send({ success: false, message: 'Невірний токен.' });
+        } else {
+            return res.status(500).send({ success: false, message: 'Помилка сервера.' });
+        }
     }
 }
 
@@ -741,14 +746,13 @@ app.post('/login', async (req, res) => {
                     return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
                 }
 
-                res.cookie('isLoggedIn', true, {
-                    httpOnly: true,
-                    maxAge: 2629800000,
-                    sameSite: 'None',
-                    secure: true
-                  });
+                const token = jwt.sign(
+                    { userId: foundUser.id, username: foundUser.username },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '30d' }
+                );
 
-                res.send({ success: true, redirectUrl: 'chat.html' });
+                res.send({ success: true, redirectUrl: 'chat.html', token: token });
 
                 if (!checked) {
                     await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
@@ -826,9 +830,11 @@ app.post('/register', async (req, res) => {
     req.session.username = username;
     req.session.userId = newUser.id;
 
+    const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
+
     res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
 
-    res.send({ success: true, message: 'Реєстрація успішна.', redirectUrl: '/chat.html' });
+    res.send({ success: true, message: 'Реєстрація успішна.', token });
     await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
 });
 
@@ -1661,7 +1667,6 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-    res.clearCookie('isLoggedIn');
     req.session.destroy();
     res.send({ success: true, redirectUrl: '/' });
 });
@@ -1707,19 +1712,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1728,6 +1721,18 @@ httpServer.listen(port, () => {
 
         shuffledImages = shuffleArray(files);
     });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     });
+
+//     console.log(`App listening on port ${port}!`)
+// }); 
