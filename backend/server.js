@@ -632,7 +632,7 @@ async function alertSecurity(req, username, messageText) {
 async function checkUserExists(req, res, next) {
     const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
     if (!token) {
-        return res.status(403).send({ success: false, message: 'Необхідна авторизація.' });
+        return res.status(408).send({ success: false, message: 'Необхідна авторизація.' });
     }
 
     try {
@@ -1712,19 +1712,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1733,6 +1721,18 @@ httpServer.listen(port, () => {
 
         shuffledImages = shuffleArray(files);
     });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     });
+
+//     console.log(`App listening on port ${port}!`)
+// }); 
