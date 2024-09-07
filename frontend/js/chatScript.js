@@ -21,8 +21,6 @@ const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
 const fileInput = document.getElementById('file-input');
 
-const token = localStorage.getItem('token');
-
 const socket = io();
 const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
@@ -37,6 +35,8 @@ let selectedChannel = 'RoMan_World_Official';
 
 async function getCurrentUsername() {
   try {
+    const token = localStorage.getItem('token');
+    console.log(token)
     const response = await fetch('/username', {
       headers: {
         'Authorization': `Bearer ${token}`
