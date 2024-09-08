@@ -629,32 +629,18 @@ async function alertSecurity(req, username, messageText) {
     await saveSecurity(security);
 }
 
-async function checkUserExists(req, res, next) {
-    const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-    if (!token) {
-        return res.status(408).send({ success: false, message: 'Необхідна авторизація.' });
-    }
+function checkUserExists(req, res, next) {
+    const token = req.headers.authorization.split(' ')[1];
 
+    if (!token) {
+        return res.status(401).send({ success: false, message: 'Токен не надано.' });
+    }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const users = await getUsers();
-
-        const userExists = users.some(user => user.id === decoded.userId);
-
-        if (!userExists) {
-            return res.status(404).send({ success: false, message: 'Користувач не знайдений.', redirectUrl: '/' });
-        }
-
-        req.user = users.find(user => user.id === decoded.userId);
-
+        req.username = decoded.username; 
         next();
-    } catch (error) {
-        console.log(error)
-        if (error instanceof jwt.JsonWebTokenError) {
-            return res.status(403).send({ success: false, message: 'Невірний токен.' });
-        } else {
-            return res.status(500).send({ success: false, message: 'Помилка сервера.' });
-        }
+    } catch (err) {
+        return res.status(401).send({ success: false, message: 'Невірний або прострочений токен.' });
     }
 }
 
@@ -737,30 +723,19 @@ app.post('/login', async (req, res) => {
                 return res.status(423).send({ success: false, message: 'Користувач заблокований' });
             }
 
-            req.session.username = foundUser.username;
-            req.session.userId = foundUser.id;
+            const token = jwt.sign(
+                { userId: foundUser.id, username: foundUser.username },
+                process.env.JWT_SECRET,
+                { expiresIn: '30d' }
+            );
 
-            req.session.save(async (err) => {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).send({ success: false, message: 'Помилка збереження сесії' });
-                }
+            res.send({ success: true, redirectUrl: 'chat.html', token: token });
 
-                const token = jwt.sign(
-                    { userId: foundUser.id, username: foundUser.username },
-                    process.env.JWT_SECRET,
-                    { expiresIn: '30d' }
-                );
+            if (!checked) {
+                await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
+            }
 
-                res.send({ success: true, redirectUrl: 'chat.html', token: token });
-
-                if (!checked) {
-                    await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
-                }
-
-                await alertSecurity(req, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
-            });
-
+            await alertSecurity(req, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
         } else {
             loginAttempts[username] = [...userAttempts, now];
             res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -773,7 +748,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/username', checkUserExists, (req, res) => {
-    const username = req.session.username;
+    const username = req.username;
     getUsers().then(users => {
         const user = users.find(u => u.username === username);
         if (user) {
@@ -820,15 +795,8 @@ app.post('/register', async (req, res) => {
     await saveUsers(users);
 
     const security = await getSecurity();
-
     security.push({ [username]: [] });
-
     await saveSecurity(security);
-
-    users.push(newUser);
-
-    req.session.username = username;
-    req.session.userId = newUser.id;
 
     const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
@@ -933,9 +901,22 @@ app.post('/upload-photo-message', async (req, res) => {
 
 app.get("/session-status", async (req, res) => {
     const isSupportedVersion = await checkVersion();
+    const token = req.headers.authorization?.split(' ')[1]; 
+
+    let username = null; 
+
+    if (token) { 
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            username = decoded.username; 
+        } catch (err) {
+            return res.status(401).send({ success: false, message: 'Неправильний або просрочений токен.' });
+        }
+    }
+
     if (!isSupportedVersion) {
         res.send({ success: false, message: "Оновіть версію додатку" })
-    } else if (req.session.username) {
+    } else if (username) {
         await addedUserMessage(`${req.session.username} залогінився в RoMan Talk. Вітаємо!`);
         res.send({ loggedIn: true, success: true });
     } else {
@@ -944,7 +925,7 @@ app.get("/session-status", async (req, res) => {
 });
 
 app.get('/user-channels', checkUserExists, async (req, res) => {
-    const username = req.session.username;
+    const username = req.username;
     await updateUserChannelList(username);
     const users = await getUsers();
     const user = users.find(u => u.username === username);
@@ -957,7 +938,7 @@ app.get('/user-channels', checkUserExists, async (req, res) => {
 });
 
 app.get('/my-channels', checkUserExists, async (req, res) => {
-    const username = req.session.username;
+    const username = req.username;
     try {
         const channels = await getChannels();
         const myChannels = channels.filter(channel => channel.owner === username);
@@ -987,7 +968,7 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
 
 app.post('/create-channel', checkUserExists, async (req, res) => {
     const { channelName } = req.body;
-    const username = req.session.username;
+    const username = req.username;
 
     try {
         const channels = await getChannels();
@@ -1021,9 +1002,9 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
     }
 });
 
-app.get('/get-channels', async (req, res) => {
+app.get('/get-channels', checkUserExists, async (req, res) => {
     try {
-        const username = req.session.username;
+        const username = req.username;
         const users = await getUsers();
         const user = users.find(u => u.username === username);
         const userId = user.id;
@@ -1040,7 +1021,7 @@ app.get('/get-channels', async (req, res) => {
 
 app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
     const { channelName } = req.body;
-    const username = req.session.username;
+    const username = req.username;
 
     try {
         await updateUserChannels(username, channelName);
@@ -1105,10 +1086,7 @@ app.post('/translate', async (req, res) => {
     try {
         await ensureModelsLoaded();
 
-        console.log('Received text:', text);
-
         const detectedLanguages = lngDetector.detect(text, 3);
-        console.log('Detected languages:', detectedLanguages);
 
         let direction;
         const isEnglish = detectedLanguages.some(([language]) => language === 'english');
@@ -1199,13 +1177,9 @@ app.post('/summarize', async (req, res) => {
     }
 });
 
-app.post('/update-message/:id', async (req, res) => {
+app.post('/update-message/:id',  checkUserExists, async (req, res) => {
     const messageId = parseInt(req.params.id, 10);
     const { channelName, newContent } = req.body;
-
-    if (!req.session.username) {
-        return res.status(403).json({ success: false, message: 'Неавторизований доступ' });
-    }
 
     try {
         const messages = await getMessages(channelName);
@@ -1216,7 +1190,7 @@ app.post('/update-message/:id', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
         }
 
-        if (message.author !== req.session.username) {
+        if (message.author !== req.username) {
             return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його редагувати!' });
         }
 
@@ -1233,7 +1207,7 @@ app.post('/update-message/:id', async (req, res) => {
     }
 });
 
-app.post('/delete-message/:id', async (req, res) => {
+app.post('/delete-message/:id', checkUserExists, async (req, res) => {
     const messageId = parseInt(req.params.id, 10);
     const channelName = req.body.channelName;
 
@@ -1241,7 +1215,7 @@ app.post('/delete-message/:id', async (req, res) => {
         const messages = await getMessages(channelName);
         const messageToDelete = messages.find(message => message.id === messageId);
 
-        if (messageToDelete.author !== req.session.username) {
+        if (messageToDelete.author !== req.username) {
             return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його видалити!' });
         }
 
@@ -1303,11 +1277,11 @@ app.get('/user-info-by-name/:username', async (req, res) => {
     }
 });
 
-app.post('/save-rank', async (req, res) => {
-    const username = req.session.username;
+app.post('/save-rank', checkUserExists, async (req, res) => {
+    const username = req.username;
     const users = await getUsers();
     const user = users.find(user => user.username === username);
-    const userRank = req.session.rank;
+    const userRank = req.rank;
 
     if (userRank === 'owner' || userRank === 'admin') {
         const { userId, newRank } = req.body;
@@ -1327,14 +1301,13 @@ app.post('/save-rank', async (req, res) => {
     } else {
         user.rank = 'banned';
         await saveUsers(users);
-        req.session.destroy();
         res.json({ message: 'Використання адміністраторських можливостей користувачам заборонено' });
     }
 });
 
-app.post("/block-account", async (req, res) => {
+app.post("/block-account", checkUserExists, async (req, res) => {
     try {
-        const username = req.session.username;
+        const username = req.username;
         const users = await getUsers();
         const user = Object.values(users).find(user => user.username === username);
 
@@ -1390,7 +1363,6 @@ app.post('/delete-appeal', async (req, res) => {
 });
 
 app.get("/get-security", async (req, res) => {
-    const username = req.session.username;
     const securityData = await getSecurity();
 
     const security = securityData.reduce((acc, obj) => {
@@ -1502,13 +1474,9 @@ app.get('/get-channel-privacy/:channelName', checkUserExists, async (req, res) =
     }
 });
 
-app.get('/sorted-channels/:type', async (req, res) => {
+app.get('/sorted-channels/:type', checkUserExists, async (req, res) => {
     const { type } = req.params;
-    const username = req.session.username;
-
-    if (!username) {
-        return res.status(403).json({ message: 'Потрібно увійти в акаунт для доступу до каналів.' });
-    }
+    const username = req.username;
 
     try {
         const users = await getUsers();
@@ -1555,7 +1523,7 @@ app.post('/update-user-channels', checkUserExists, async (req, res) => {
 });
 
 app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
-    const username = req.session.username;
+    const username = req.username;
     const { channelName } = req.body;
     try {
         const channels = await getChannels();
@@ -1577,7 +1545,7 @@ app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
 
 app.post('/channel/delete', checkUserExists, async (req, res) => {
     const { currentChannelName, password } = req.body;
-    const username = req.session.username;
+    const username = req.username;
 
     try {
         const users = await getUsers();
@@ -1606,17 +1574,9 @@ app.post('/channel/delete', checkUserExists, async (req, res) => {
     }
 });
 
-app.get('/check-session', (req, res) => {
-    if (req.session.username) {
-        res.send({ isLoggedIn: true });
-    } else {
-        res.send({ isLoggedIn: false });
-    }
-});
-
-app.post("/get-rank", async (req, res) => {
+app.post("/get-rank", checkUserExists, async (req, res) => {
     try {
-        const username = req.session.username;
+        const username = req.username;
         const users = await getUsers();
 
         const user = Object.values(users).find(user => user.username === username);
@@ -1628,7 +1588,7 @@ app.post("/get-rank", async (req, res) => {
 
 app.post('/change-password', checkUserExists, async (req, res) => {
     const { oldPassword, newPassword } = req.body;
-    const username = req.session.username;
+    const username = req.username;
 
     try {
         const users = await getUsers();
@@ -1652,7 +1612,7 @@ app.post('/change-password', checkUserExists, async (req, res) => {
 });
 
 app.post('/save-theme', checkUserExists, async (req, res) => {
-    const username = req.session.username;
+    const username = req.username;
     const { theme } = req.body;
 
     try {
@@ -1680,8 +1640,6 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
     if (isPasswordMatch) {
         users = users.filter(user => user.id !== req.session.userId);
         await saveUsers(users);
-        res.clearCookie('isLoggedIn');
-        req.session.destroy();
         res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
     } else {
         res.status(401).send({ success: false, message: 'Невірний пароль.' });
