@@ -786,8 +786,6 @@ app.post('/register', async (req, res) => {
 
     const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
-    res.cookie('isLoggedIn', true, { httpOnly: true, maxAge: 3600000 });
-
     res.send({ success: true, message: 'Реєстрація успішна.', token });
     await addedUserMessage(`${username} зареєструвався в RoMan Talk. Вітаємо!`);
 });
@@ -903,7 +901,7 @@ app.get("/session-status", async (req, res) => {
     if (!isSupportedVersion) {
         res.send({ success: false, message: "Оновіть версію додатку" })
     } else if (username) {
-        await addedUserMessage(`${req.session.username} залогінився в RoMan Talk. Вітаємо!`);
+        await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
         res.send({ loggedIn: true, success: true });
     } else {
         res.send({ loggedIn: false, success: true });
