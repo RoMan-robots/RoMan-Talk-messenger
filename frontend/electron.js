@@ -13,7 +13,9 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
+      allowRunningInsecureContent: true,
       sandbox: false,
+      experimentalFeatures: true
     }
   });
 

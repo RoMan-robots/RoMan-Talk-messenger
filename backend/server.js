@@ -22,7 +22,7 @@ import {
     loadModels,
     translateTextInParts
 } from './ai.js';
-    
+
 dotenv.config();
 
 const __dirname = path.resolve();
@@ -1721,7 +1721,7 @@ httpServer.listen(port, 'localhost', () => {
 
         shuffledImages = shuffleArray(files);
     });
-    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+    console.log(`Server is running on port ${port}. Test at: https://localhost:${port}/`);
 });
 
 // httpServer.listen(port, () => {

@@ -1,7 +1,7 @@
 const originalFetch = window.fetch;
 
 const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
-const baseURL = isElectron ? 'http://roman-tal.onrender.com' : '';
+const baseURL = isElectron ? 'https://roman-tal.onrender.com' : '';
 
 window.fetch = function (...args) {
   if (typeof args[0] === 'string' && !args[0].startsWith('http')) {
@@ -39,7 +39,9 @@ async function getCurrentUsername() {
     console.log(token)
     const response = await fetch('/username', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
     });
     const data = await response.json();
