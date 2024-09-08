@@ -885,6 +885,7 @@ app.post('/upload-photo-message', async (req, res) => {
 
 app.get("/session-status", async (req, res) => {
     const isSupportedVersion = await checkVersion();
+    console.log(isSupportedVersion)
     const token = req.headers.authorization?.split(' ')[1]; 
 
     let username = null; 
@@ -899,7 +900,7 @@ app.get("/session-status", async (req, res) => {
     }
 
     if (!isSupportedVersion) {
-        res.send({ success: false, message: "Оновіть версію додатку" })
+        res.send({ success: false, message: "Оновіть версію додатку", isSupportedVersion })
     } else if (username) {
         await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
         res.send({ loggedIn: true, success: true });
