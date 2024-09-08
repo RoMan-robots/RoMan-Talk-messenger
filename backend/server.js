@@ -1,12 +1,10 @@
 import express from 'express';
 import fileUpload from "express-fileupload"
-import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import uaParser from 'ua-parser-js';
 import geoip from 'geoip-lite';
 import { Octokit } from '@octokit/rest';
-import sharedsession from 'express-socket.io-session';
 import jwt from 'jsonwebtoken'
 import path from 'path';
 import LanguageDetect from 'languagedetect';
@@ -43,20 +41,8 @@ const lngDetector = new LanguageDetect();
 let modelsLoaded = false;
 let models = {}
 
-const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { httpOnly: true }
-});
-
 app.use(fileUpload());
-app.use(sessionMiddleware);
 app.use(express.json());
-
-io.use(sharedsession(sessionMiddleware, {
-    autoSave: true
-}));
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
