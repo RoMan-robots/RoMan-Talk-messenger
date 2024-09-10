@@ -1,9 +1,16 @@
 FROM vm/ubuntu:22.04
 
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash && \
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash && \
     apt install -y nodejs
 
 COPY / /root
 WORKDIR ./backend
+
+SECRET ENV SESSION_SECRET
+SECRET ENV JWT_SECRET
+SECRET ENV TOKEN_REPO
+SECRET ENV OWNER_REPO
+SECRET ENV NAME_REPO
+
 RUN BACKGROUND npm run start-install
 EXPOSE WEBSITE localhost:8080
