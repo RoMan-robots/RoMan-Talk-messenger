@@ -1,4 +1,4 @@
-FROM webapp.io/node:18
+FROM webapp.io/node:16
 
 COPY / /root
 WORKDIR ./backend
