@@ -1,7 +1,7 @@
 FROM vm/ubuntu:18.04
 
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
-RUN sudo apt-get install -y nodejs
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash && \
+    apt install -y nodejs
 
 COPY / /root
 WORKDIR ./backend
