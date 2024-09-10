@@ -1,7 +1,9 @@
 FROM vm/ubuntu:22.04
 
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash && \
-    apt install -y nodejs
+RUN apt update && \
+    apt install -y curl && \
+    curl -sL https://deb.nodesource.com/setup_16.x | bash && \
+    apt install -y nodejs nginx
 
 COPY / /root
 WORKDIR ./backend
@@ -11,6 +13,20 @@ SECRET ENV JWT_SECRET
 SECRET ENV TOKEN_REPO
 SECRET ENV OWNER_REPO
 SECRET ENV NAME_REPO
+
+RUN echo 'server {' > /etc/nginx/sites-available/default && \
+    echo '    listen 80;' >> /etc/nginx/sites-available/default && \
+    echo '    server_name roman-talk.onwebapp.io;' >> /etc/nginx/sites-available/default && \
+    echo '    location / {' >> /etc/nginx/sites-available/default && \
+    echo '        proxy_pass http://localhost:8080;' >> /etc/nginx/sites-available/default && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/sites-available/default && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/sites-available/default && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/sites-available/default && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/sites-available/default && \
+    echo '    }' >> /etc/nginx/sites-available/default && \
+    echo '}' >> /etc/nginx/sites-available/default
+
+RUN service nginx start
 
 RUN BACKGROUND npm run start-install
 EXPOSE WEBSITE localhost:8080
