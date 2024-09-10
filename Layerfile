@@ -1,13 +1,6 @@
-FROM vm/ubuntu:18.04
+FROM webapp.io/node:16
 
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash && \
-    apt install -y nodejs
-
-COPY . .
-
+COPY / /root
 WORKDIR ./backend
-
-
-RUN npm run start-install
-
-EXPOSE WEBSITE http://localhost:8080
+RUN BACKGROUND npm run start-install
+EXPOSE WEBSITE localhost:8080
