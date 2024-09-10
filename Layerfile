@@ -1,0 +1,13 @@
+FROM layerhub/ubuntu:20.04
+
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash && \
+    apt install -y nodejs
+
+COPY . .
+
+WORKDIR ./backend
+
+
+RUN npm run start-install
+
+EXPOSE WEBSITE http://localhost:8080
