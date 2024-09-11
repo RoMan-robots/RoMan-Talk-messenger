@@ -28,7 +28,7 @@ RUN echo 'server {' > /etc/nginx/sites-available/default && \
 
 RUN service nginx start
 
-CMD ["npm", "run", "start-install"]
+RUN BACKGROUND npm run start-install
 
 EXPOSE 80
 EXPOSE 8080
