@@ -31,6 +31,5 @@ RUN service nginx start
 RUN BACKGROUND npm run start-install
 
 EXPOSE 80
-EXPOSE 8080
 
 EXPOSE WEBSITE localhost:8080
