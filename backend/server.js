@@ -987,7 +987,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
     }
 });
 
-app.get('/get-channels', async (req, res) => {
+app.get('/get-channels', checkUserExists, async (req, res) => {
     try {
         const username = req.username;
         const users = await getUsers();
