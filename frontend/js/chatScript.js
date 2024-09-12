@@ -478,9 +478,7 @@ function createNewChannel() {
 
 async function loadChannelButtons() {
   try {
-    const response = await fetch('/get-channels', {
-      'Authorization': `Bearer ${token}`
-    });
+    const response = await fetch('/get-channels');
     const data = await response.json();
     if (response.ok) {
       const channelButtonsContainer = document.getElementById('channel-buttons');
