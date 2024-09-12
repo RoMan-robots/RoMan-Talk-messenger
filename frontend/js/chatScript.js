@@ -26,6 +26,8 @@ const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
 const newUserSound = new Audio("/newUserSound.mp3");
 
+const token = localStorage.getItem('token');
+
 let isDropdownActive = true;
 let currentUsername;
 
@@ -35,8 +37,6 @@ let selectedChannel = 'RoMan_World_Official';
 
 async function getCurrentUsername() {
   try {
-    const token = localStorage.getItem('token');
-    console.log(token)
     const response = await fetch('/username', {
       headers: {
         'Authorization': `Bearer ${token}`,
