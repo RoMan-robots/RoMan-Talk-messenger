@@ -666,7 +666,11 @@ function editMessage(messageId) {
 function deleteMessage(messageId) {
   fetch(`/delete-message/${messageId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ channelName: selectedChannel })
   })
     .then(response => response.json())
