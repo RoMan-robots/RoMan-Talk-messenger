@@ -183,7 +183,7 @@ async function loadMessages(channelName) {
         channel.messages.forEach(message => {
           displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
         })
-        setTimeout(()=>{
+        setTimeout(() => {
           messageList.scrollTop = messageList.scrollHeight;
         })
       } else {
@@ -479,7 +479,11 @@ function createNewChannel() {
 async function loadChannelButtons() {
   try {
     const response = await fetch('/get-channels', {
-      'Authorization': `Bearer ${token}`
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
     const data = await response.json();
     if (response.ok) {
