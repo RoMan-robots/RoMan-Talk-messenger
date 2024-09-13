@@ -208,7 +208,11 @@ async function sendMessage() {
       if (editMode) {
         const response = await fetch(`/update-message/${messageId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
         const data = await response.json();
@@ -252,6 +256,11 @@ async function sendMessage() {
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
           body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
         });
 
         const data = await response.json();
@@ -277,7 +286,11 @@ async function sendMessage() {
         };
         const response = await fetch('/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(messageObject)
         });
 
@@ -403,7 +416,13 @@ async function loadUserChannels() {
 
 async function sortChannels(type) {
   try {
-    const response = await fetch(`/sorted-channels/${type}`);
+    const response = await fetch(`/sorted-channels/${type}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
     const data = await response.json();
 
     if (data.success) {
@@ -456,7 +475,11 @@ function createNewChannel() {
 
   fetch('/create-channel', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ channelName: channelName })
   })
     .then(response => response.json())
@@ -510,7 +533,11 @@ async function joinChannel(channelName) {
   try {
     const response = await fetch('/add-channel-to-user', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ channelName: channelName })
     });
     const data = await response.json();
