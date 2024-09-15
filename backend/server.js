@@ -626,6 +626,7 @@ function checkUserExists(req, res, next) {
         req.username = decoded.username; 
         next();
     } catch (err) {
+        console.log(err)
         return res.status(401).send({ success: false, message: 'Невірний або прострочений токен.' });
     }
 }
@@ -1664,7 +1665,7 @@ app.get("/settings.html", (req, res) => {
 
 //         shuffledImages = shuffleArray(files);
 //     });
-//     console.log(`Server is running on port ${port}. Test at: https://localhost:${port}/`);
+//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
 // });
 
 httpServer.listen(port, () => {

@@ -1,7 +1,7 @@
 const originalFetch = window.fetch;
 
 const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
-const baseURL = isElectron ? 'https://roman-tal.onrender.com' : '';
+const baseURL = isElectron ? 'https://roman-talk-beta.onrender.com' : '';
 
 window.fetch = function (...args) {
   if (typeof args[0] === 'string' && !args[0].startsWith('http')) {
@@ -89,8 +89,14 @@ function displayMessage(message, id) {
   messageElement.appendChild(messageOptions);
   messageList.appendChild(messageElement);
 
+  let photoURL;
+
   if (message.photo) {
-    const photoURL = `/photos/${selectedChannel}/${message.photo}`;
+    if(isElectron){
+      photoURL = `https://roman-talk-beta.onrender.com/photos/${selectedChannel}/${message.photo}`;
+    } else {
+      photoURL = `/photos/${selectedChannel}/${message.photo}`;
+    }
     const img = document.createElement('img');
     img.src = photoURL;
     img.alt = `Фото повідомлення ID ${id}`;

@@ -1,7 +1,7 @@
 const originalFetch = window.fetch;
 
 const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
-const baseURL = isElectron ? 'http://roman-tal.onrender.com' : '';
+const baseURL = isElectron ? 'https://roman-talk-beta.onrender.com' : '';
 
 window.fetch = function (...args) {
   if (typeof args[0] === 'string' && !args[0].startsWith('http')) {

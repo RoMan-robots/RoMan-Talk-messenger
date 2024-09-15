@@ -1,7 +1,7 @@
 const originalFetch = window.fetch;
 
 const isElectron = typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
-const baseURL = isElectron ? 'http://roman-tal.onrender.com' : '';
+const baseURL = isElectron ? 'https://roman-talk-beta.onrender.com' : '';
 
 window.fetch = function (...args) {
   if (typeof args[0] === 'string' && !args[0].startsWith('http')) {
@@ -563,7 +563,8 @@ async function saveRank() {
     const response = await fetch('/save-rank', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
         userId: selectedUserId,
@@ -591,7 +592,10 @@ async function changePassword() {
   try {
     const response = await fetch('/change-password', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ oldPassword, newPassword })
     });
     const data = await response.json();
@@ -645,7 +649,10 @@ async function deleteAccount() {
       try {
         const response = await fetch('/delete-account', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ password })
         });
 
@@ -676,7 +683,10 @@ async function saveSettings() {
   try {
     const response = await fetch('/save-theme', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ theme: selectedTheme })
     });
     const data = await response.json();
@@ -711,7 +721,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const response = await fetch('/get-rank', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
     });
     const data = await response.json();
     if (data.success) {
