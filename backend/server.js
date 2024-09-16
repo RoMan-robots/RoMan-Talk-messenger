@@ -1608,6 +1608,7 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
         await saveUsers(users);
         res.send({ success: true, message: 'Тема збережена.' });
     } catch (error) {
+        console.log(error);
         res.status(500).send({ success: false, message: 'Помилка сервера при збереженні теми.' });
     }
 });
