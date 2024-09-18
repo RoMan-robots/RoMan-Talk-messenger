@@ -6,7 +6,8 @@
     "type": "module",
     "scripts": {
         "start-electron": " electron .",
-        "package-mac": "electron-packager . RoManTalk --platform=darwin --arch=x64 --out=dist --overwrite --icon=/images/favicon.icns"
+        "package-mac": "electron-packager . RoManTalk --platform=darwin --arch=x64 --out=dist --overwrite --icon=/images/favicon.icns",
+        "package-linux": "electron-packager . RoManTalk --platform=linux --arch=x64 --out=dist --overwrite --icon=/images/favicon.icns"
     },
     "keywords": [
         "RoMan",
@@ -17,6 +18,7 @@
     "author": "RoMan",
     "license": "ISC",
     "dependencies": {
+        "cordova": "^12.0.0",
         "electron": "^32.0.1",
         "electron-packager": "^17.1.2"
     }

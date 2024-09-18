@@ -21,7 +21,7 @@ const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
 const fileInput = document.getElementById('file-input');
 
-const socket = io();
+const socket = io(baseURL);
 const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
 const newUserSound = new Audio("/newUserSound.mp3");
@@ -92,11 +92,8 @@ function displayMessage(message, id) {
   let photoURL;
 
   if (message.photo) {
-    if(isElectron){
-      photoURL = `https://roman-talk-beta.onrender.com/photos/${selectedChannel}/${message.photo}`;
-    } else {
-      photoURL = `/photos/${selectedChannel}/${message.photo}`;
-    }
+    photoURL = `${baseURL}/photos/${selectedChannel}/${message.photo}`;
+
     const img = document.createElement('img');
     img.src = photoURL;
     img.alt = `Фото повідомлення ID ${id}`;

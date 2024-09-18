@@ -623,7 +623,7 @@ function checkUserExists(req, res, next) {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.username = decoded.username; 
+        req.username = decoded.username;
         next();
     } catch (err) {
         console.log(err)
@@ -887,14 +887,14 @@ app.post('/upload-photo-message', async (req, res) => {
 app.get("/session-status", async (req, res) => {
     const isSupportedVersion = await checkVersion();
     console.log(isSupportedVersion)
-    const token = req.headers.authorization?.split(' ')[1]; 
+    const token = req.headers.authorization?.split(' ')[1];
 
-    let username = null; 
+    let username = null;
 
-    if (token) { 
+    if (token) {
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            username = decoded.username; 
+            username = decoded.username;
         } catch (err) {
             return res.status(401).send({ success: false, message: 'Неправильний або просрочений токен.' });
         }
@@ -1163,7 +1163,7 @@ app.post('/summarize', async (req, res) => {
     }
 });
 
-app.post('/update-message/:id',  checkUserExists, async (req, res) => {
+app.post('/update-message/:id', checkUserExists, async (req, res) => {
     const messageId = parseInt(req.params.id, 10);
     const { channelName, newContent } = req.body;
 
@@ -1632,8 +1632,12 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
     }
 });
 
-app.get("/", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
+app.get("/", checkUserExists, (req, res) => {
+    if (req.username) {
+        res.sendFile(path.resolve(__dirname, "../frontend/html", "chat.html"));
+    } else {
+        res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
+    }
 });
 
 app.get("/login.html", (req, res) => {

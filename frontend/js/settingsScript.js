@@ -30,8 +30,6 @@ const token = localStorage.getItem('token');
 let display = false;
 let currentChannelName;
 
-saveSettingsButton.addEventListener('click', saveSettings);
-
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 fetch('/set-bg')
@@ -691,7 +689,6 @@ async function saveSettings() {
     });
     const data = await response.json();
     if (data.success) {
-      alertify.success('Налаштування збережено.');
       applyTheme(selectedTheme);
       changeUrlToChat('chat.html');
     } else {
