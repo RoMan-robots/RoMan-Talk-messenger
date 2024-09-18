@@ -18,7 +18,6 @@
     "author": "RoMan",
     "license": "ISC",
     "dependencies": {
-        "cordova": "^12.0.0",
         "electron": "^32.0.1",
         "electron-packager": "^17.1.2"
     }

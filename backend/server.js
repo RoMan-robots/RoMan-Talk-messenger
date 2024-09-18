@@ -886,7 +886,6 @@ app.post('/upload-photo-message', async (req, res) => {
 
 app.get("/session-status", async (req, res) => {
     const isSupportedVersion = await checkVersion();
-    console.log(isSupportedVersion)
     const token = req.headers.authorization?.split(' ')[1];
 
     let username = null;
@@ -903,7 +902,6 @@ app.get("/session-status", async (req, res) => {
     if (!isSupportedVersion) {
         res.send({ success: false, message: "Оновіть версію додатку", isSupportedVersion })
     } else if (username) {
-        await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
         res.send({ loggedIn: true, success: true });
     } else {
         res.send({ loggedIn: false, success: true });
@@ -1614,7 +1612,6 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-    req.session.destroy();
     res.send({ success: true, redirectUrl: '/' });
 });
 
@@ -1633,12 +1630,8 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
     }
 });
 
-app.get("/", checkUserExists, (req, res) => {
-    if (req.username) {
-        res.sendFile(path.resolve(__dirname, "../frontend/html", "chat.html"));
-    } else {
-        res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
-    }
+app.get("/", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend/html", "index.html"));
 });
 
 app.get("/login.html", (req, res) => {

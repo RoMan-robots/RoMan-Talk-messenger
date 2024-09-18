@@ -33,7 +33,11 @@ async function checkSessionStatus() {
         console.error('Error fetching the random image:', response.statusText);
       }
       
-      response = await fetch('/session-status');
+      response = await fetch('/session-status', {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      });
       const data = await response.json();
       if (!data.success) {
         alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {

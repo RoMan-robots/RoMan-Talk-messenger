@@ -59,11 +59,15 @@ async function login(event) {
 
 async function checkSessionStatus() {
   try {
-    const response = await fetch('/session-status');
+    const response = await fetch('/session-status', {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
+    });
     const data = await response.json();
 
     if (data.loggedIn) {
-      window.location.href = '/chat.html';
+      window.location.href = 'chat.html';
     }
   } catch (error) {
     console.error('Помилка при перевірці статусу сесії:', error);
