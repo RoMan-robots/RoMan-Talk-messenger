@@ -6,6 +6,12 @@
     <title>Налаштування RoMan Talk</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <script>
+        window.nodeRequire = require;
+        delete window.require;
+        delete window.exports;
+        delete window.module;
+      </script>
     <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
     <script src="../js/settingsScript.js" defer></script>
@@ -97,7 +103,6 @@
             <div id="security-modal" class="modal2 modal-content2" style="display: none;">
                 <span class="close" onclick="closeSecurityModal()">&times;</span>
                 <h3 class="classic">Безпека акаунта</h3>
-                <p class="classic">Не забувайте, безпека це дуже важливо та може зберегти від поганих наслідків.</p>
                 <p class="classic">Ось рекомендації та попередження, як захистити акаунт:</p>
                 <div id="security-recomendations"></div>
             </div>

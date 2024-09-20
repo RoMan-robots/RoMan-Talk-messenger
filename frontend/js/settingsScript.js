@@ -630,7 +630,7 @@ async function logout() {
     const data = await response.json();
     if (data.success) {
       window.location.href = '/';
-      localStorage.setItem('token', data.token);
+      localStorage.removeItem('token');
     } else {
       alertify.error('Помилка при виході з акаунту.');
     }

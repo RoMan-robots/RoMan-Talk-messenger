@@ -68,13 +68,10 @@ app.use('/tutorialSound.mp3', express.static(path.join(__dirname, '../frontend/s
 
 async function checkVersion() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'versions.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        const versions = JSON.parse(data).versions;
+        const versions = {
+            "1.2.1": false,
+            "2.0": true
+        }
 
         let isSupported = false;
         if (versions[version.toString()] === true) {
@@ -885,8 +882,17 @@ app.post('/upload-photo-message', async (req, res) => {
 });
 
 app.get("/session-status", async (req, res) => {
-    const isSupportedVersion = await checkVersion();
     const token = req.headers.authorization?.split(' ')[1];
+    const version = req.body.ver;
+
+    const supportedVersions = {
+        "1.2.1": false,
+        "2.0": true
+    };
+
+    if (!supportedVersions[version]) {
+        return res.status(401).send({ success: false, message: 'Ця версія RoMan Talk застаріла. Спробуйте оновити додаток' });
+    }
 
     let username = null;
 
@@ -895,13 +901,11 @@ app.get("/session-status", async (req, res) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             username = decoded.username;
         } catch (err) {
-            return res.status(401).send({ success: false, message: 'Неправильний або просрочений токен.' });
+            return res.status(401).send({ success: false, message: 'Неправильний або прострочений токен.' });
         }
     }
 
-    if (!isSupportedVersion) {
-        res.send({ success: false, message: "Оновіть версію додатку", isSupportedVersion })
-    } else if (username) {
+    if (username) {
         res.send({ loggedIn: true, success: true });
     } else {
         res.send({ loggedIn: false, success: true });

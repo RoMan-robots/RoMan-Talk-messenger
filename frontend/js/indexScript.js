@@ -15,6 +15,8 @@ const loginScreenButton = document.getElementById('login-screen-button');
 const registerScreenButton = document.getElementById('register-screen-button');
 const helloScreen = document.getElementById('hello-screen');
 
+const version = "1.2.1"
+
 function changeUrlToLogin(url) {
     window.location.href = url;
   }
@@ -36,6 +38,9 @@ async function checkSessionStatus() {
       response = await fetch('/session-status', {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }, 
+        body: {
+          "ver": version
         }
       });
       const data = await response.json();
