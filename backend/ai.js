@@ -16,10 +16,31 @@ fs.readFile(badWordsFilePath, 'utf8', (err, data) => {
     }
 });
 
+function normalizeText(text) {
+    const latinToCyrillicMap = {
+        'A': 'А', 'a': 'а',
+        'E': 'Е', 'e': 'е',
+        'O': 'О', 'o': 'о',
+        'P': 'Р', 'p': 'р',
+        'C': 'С', 'c': 'с',
+        'T': 'Т', 't': 'т',
+        'X': 'Х', 'x': 'х',
+        'B': 'В', 'b': 'в',
+        'H': 'Н', 'h': 'н',
+        'M': 'М', 'm': 'м',
+        'K': 'К', 'k': 'к'
+    };
+
+    return text.split('').map(char => latinToCyrillicMap[char] || char).join('');
+}
+
 export function filterText(text) {
+    text = normalizeText(text)
     let words = text.split(" ");
     let filteredWords = words.map(word => {
-        return badWords.includes(word) ? '*'.repeat(word.length) : word;
+        return badWords.some(badWord => word.toLowerCase().includes(badWord.toLowerCase()))
+            ? '*'.repeat(word.length)
+            : word;
     });
     return filteredWords.join(' ');
 }
@@ -170,7 +191,7 @@ export async function loadModels() {
     const translatorToOriginalLanguage = await createTranslator('Xenova/opus-mt-en-uk');
     const summarizer = await createSummarizer();
 
-    return {translatorToEnglish, translatorToOriginalLanguage, summarizer} ;
+    return { translatorToEnglish, translatorToOriginalLanguage, summarizer };
 }
 
 function splitText(text, parts) {
@@ -228,14 +249,14 @@ export async function processRequest(text, style) {
     let finalText = summaryText;
 
     if (originalLanguage !== 'eng') {
-        const parts = 
-        summaryText.length >= 100000 ? 1000 :
-        summaryText.length >= 50000 ? 500 :
-        summaryText.length >= 25000 ? 250 :
-        summaryText.length >= 10000 ? 100 : 
-        summaryText.length >= 1000 ? 50 : 
-        summaryText.length >= 500 ? 10 : 
-        summaryText.length >= 100 ? 3 : 2
+        const parts =
+            summaryText.length >= 100000 ? 1000 :
+                summaryText.length >= 50000 ? 500 :
+                    summaryText.length >= 25000 ? 250 :
+                        summaryText.length >= 10000 ? 100 :
+                            summaryText.length >= 1000 ? 50 :
+                                summaryText.length >= 500 ? 10 :
+                                    summaryText.length >= 100 ? 3 : 2
         console.log(`Translating summary back to original language in ${parts} parts...`);
         finalText = await translateTextInParts(summaryText, translatorToOriginalLanguage, parts);
         console.log(`Translated back to original language: ${finalText}`);

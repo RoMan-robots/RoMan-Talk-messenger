@@ -571,6 +571,7 @@ function changeUrlToSettings(url) {
 
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+  messageElement.textContent = "Перекладання повідомлення, будь ласка, зачекайте..."
   if (messageElement) {
     try {
       const originalText = messageElement.textContent.split(': ')[1];
@@ -604,6 +605,7 @@ async function translateMessage(messageId) {
 
 async function compressMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+  messageElement.textContent = "Стиснення повідомлення, будь ласка, зачекайте..."
   if (messageElement) {
     try {
       const originalText = messageElement.textContent.split(': ')[1];

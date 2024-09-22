@@ -66,27 +66,6 @@ app.use('/newMessageSound.mp3', express.static(path.join(__dirname, '../frontend
 app.use('/newUserSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/newUserSound.mp3')));
 app.use('/tutorialSound.mp3', express.static(path.join(__dirname, '../frontend/sounds/tutorialSound.mp3')));
 
-async function checkVersion() {
-    try {
-        const versions = {
-            "1.2.1": false,
-            "2.0": true
-        }
-
-        let isSupported = false;
-        if (versions[version.toString()] === true) {
-            isSupported = true;
-        }
-
-        return isSupported;
-    } catch (error) {
-        if (error.message != "getaddrinfo ENOTFOUND api.github.com") {
-            console.error('Помилка при перевірці версії:', error.message);
-        }
-        return false;
-    }
-}
-
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -793,17 +772,21 @@ app.post('/messages', checkUserExists, async (req, res) => {
         const messageObject = req.body;
         const channelName = messageObject.channel;
 
+        const filteredText = filterText(messageObject.context);
+        messageObject.context = filteredText;
+
         await saveMessages(channelName, messageObject);
 
         const messages = await getMessages(channelName);
-        const id = messages.length;
+        const id = messages.length ? messages.length : 0;
         messageObject.id = id + 1;
 
         io.emit('chat message', channelName, messageObject);
 
-        res.send({ success: true, message: 'Повідомлення відправлено.' });
+        res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
     } catch (error) {
-        res.status(500).send({ success: false, message: error });
+        console.error('Error sending message:', error);
+        res.status(500).send({ success: false, message: 'Сталася помилка під час відправки повідомлення.' });
     }
 });
 
@@ -1041,12 +1024,6 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
     }
 });
 
-app.post('/filter', (req, res) => {
-    const { text } = req.body;
-    const filteredText = filterText(text);
-    res.json({ filteredText });
-});
-
 app.post('/check-grammar', async (req, res) => {
     const { text } = req.body;
     const correctedText = await checkGrammar(text, language);
@@ -1182,9 +1159,11 @@ app.post('/update-message/:id', checkUserExists, async (req, res) => {
             return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його редагувати!' });
         }
 
-        message.context = newContent;
+        const filteredText = filterText(newContent);
 
-        await editMessage(channelName, messageId, newContent);
+        message.context = filteredText;
+
+        await editMessage(channelName, messageId, filteredText);
 
         res.json({ success: true });
 
