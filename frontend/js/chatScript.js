@@ -573,6 +573,7 @@ async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   if (messageElement) {
     try {
+      const author = messageElement.textContent.split(': ')[0];
       const originalText = messageElement.textContent.split(': ')[1];
       messageElement.textContent = "Перекладання повідомлення, будь ласка, зачекайте..."
 
@@ -591,7 +592,7 @@ async function translateMessage(messageId) {
 
       if (data.translatedText) {
         messageElement.dataset.originalText = originalText;
-        messageElement.textContent = messageElement.textContent.split(': ')[0] + ': ' + data.translatedText;
+        messageElement.textContent = author + ': ' + data.translatedText;
         alertify.success('Повідомлення перекладено!');
       } else {
         alertify.error('Error in response');
@@ -607,6 +608,7 @@ async function compressMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   if (messageElement) {
     try {
+      const author = messageElement.textContent.split(': ')[0];
       const originalText = messageElement.textContent.split(': ')[1];
       messageElement.textContent = "Стиснення повідомлення, будь ласка, зачекайте..."
 
@@ -624,8 +626,8 @@ async function compressMessage(messageId) {
       const data = await response.json();
 
       if (data.summaryText) {
-        messageElement.dataset.originalText = originalText;
-        messageElement.textContent = messageElement.textContent.split(': ')[0] + ': ' + data.summaryText;
+        messageElement.dataset.originalText = originalText; 
+        messageElement.textContent = author + ': ' + data.summaryText;
         alertify.success('Повідомлення стиснено!');
       } else {
         alertify.error('Error in response');
