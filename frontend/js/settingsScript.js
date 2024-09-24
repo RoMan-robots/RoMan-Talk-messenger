@@ -117,7 +117,10 @@ async function setChannelPrivacy(channelName, isPrivate) {
   try {
     const response = await fetch('/channel/set-privacy', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ channelName, isPrivate })
     });
     const data = await response.json();
@@ -129,7 +132,7 @@ async function setChannelPrivacy(channelName, isPrivate) {
       } else {
         const clearResponse = await fetch('/channel/clear-subscribers', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ channelName })
         });
         const clearData = await clearResponse.json();
@@ -157,7 +160,10 @@ async function updateSubscribersChannels(channelName) {
     const { subscribers } = await response.json();
     await fetch('/update-user-channels', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ subscribers, channelName })
     });
   } catch (error) {
@@ -177,7 +183,12 @@ async function loadSubscribers(channelName) {
     subscribersListElement.innerHTML = '';
 
     for (const userId of subscribers) {
-      const userInfoResponse = await fetch(`/user-info/${userId}`);
+      const userInfoResponse = await fetch(`/user-info/${userId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!userInfoResponse.ok) {
         console.error(`Не вдалося отримати дані користувача з ID ${userId}`);
         continue;
@@ -207,7 +218,7 @@ async function addSubscriber() {
 
     const addSubscriberResponse = await fetch('/add-subscriber', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ userId: subscriberId, channelName })
     });
     const data = await addSubscriberResponse.json();
@@ -228,7 +239,7 @@ async function removeSubscriber(userId, channelName) {
   try {
     const response = await fetch('/remove-subscriber', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ userId, channelName })
     });
     const data = await response.json();
@@ -272,7 +283,7 @@ async function deleteChannel() {
   try {
     const response = await fetch('/channel/delete', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ channelName: currentChannelName, password })
     });
     const data = await response.json();
@@ -313,7 +324,8 @@ async function loadAppeals() {
           const response = await fetch('/delete-appeal', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ index })
           });
@@ -360,7 +372,8 @@ async function loadSecurityRecomendations() {
   const response = await fetch('/get-security', {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     }
   });
 
@@ -535,7 +548,10 @@ async function saveRank() {
 
   const response = await fetch('/get-rank', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
   });
   const data = await response.json();
 
@@ -545,7 +561,7 @@ async function saveRank() {
     setTimeout(async () => {
       const response = await fetch('/block-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       window.location.href = "/"

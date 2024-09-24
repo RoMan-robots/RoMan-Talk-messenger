@@ -7,7 +7,7 @@
     "scripts": {
         "start-electron": "electron .",
         "package-mac": "electron-packager . RoManTalk --platform=darwin --arch=arm64 --out=dist --overwrite --icon=../backend/images/favicon.icns",
-        "package-win": "electron-packager . RoManTalk --platform=win32 --arch=ia32,x64 --out=dist --overwrite --icon=../backend/images/favicon.ico"
+        "package-win": "electron-packager . RoManTalk --platform=win32 --arch=arm64 --out=dist --overwrite --icon=../backend/images/favicon.ico"
     },
     "keywords": [
         "RoMan",
