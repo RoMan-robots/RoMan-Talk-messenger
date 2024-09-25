@@ -874,7 +874,7 @@ app.post("/session-status", async (req, res) => {
     };
 
     if (!supportedVersions[version]) {
-        return res.status(401).send({ success: false, message: 'Ця версія RoMan Talk застаріла. Спробуйте оновити додаток' });
+        return res.status(426).send({ success: false, message: 'Ця версія RoMan Talk застаріла. Спробуйте оновити додаток' });
     }
 
     let username = null;
