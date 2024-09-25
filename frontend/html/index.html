@@ -20,18 +20,41 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
 </head>
 
-<body style="height: 205vh !important;" id="background">
+<body style="height: 210vh !important;" id="background">
   <div class="text-center" id="hello-screen">
     <div id="hello-screen-container">
       <h1 class="classic">Вітаємо в RoMan Talk 2.0 UC!</h1>
       <div class="btn-group" role="group">
         <button class="btn btn-light" id="login-screen-button" onclick="changeUrlToLogin('login.html')">Увійти</button>
+        <button class="btn btn-secondary" id="download-button" onclick="showDownloadMenu()">Завантажити як програму</button>
         <button class="btn btn-light" id="register-screen-button"
           onclick="changeUrlToRegister('register.html')">Зареєструватись</button>
       </div>
     </div>
   </div>
-
+  <div id="download-screen">
+    <div id="download">
+      <h3>Завантажити RoMan Talk як програму</h3>
+      <div class="macos">
+        <h4>Mac OS(.app)</h4>
+        <div class="btn-group" role="group">
+          <button class="btn btn-light">ARM(Apple Silicon)</button>
+          <button class="btn btn-light">X86(Intel)</button>
+        </div>
+      </div>
+      <div class="windows">
+        <h4>Windows(.exe)</h4>
+        <div class="btn-group" role="group">
+          <button class="btn btn-light">ARM(Snapdragon)</button>
+          <button class="btn btn-light">X86(Intel/AMD)</button>
+        </div>
+      </div>
+      <div class="android">
+        <h4>Android(.apk)</h4>
+        <button class="btn btn-light">Завантажити</button>
+      </div>
+    </div>
+  </div>
   <div id="whats-new-screen" class="text-center">
     <div id="whats-new-text">
       <h3 class="classic">Що нового в RoMan Talk</h3>

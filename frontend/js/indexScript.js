@@ -36,12 +36,14 @@ async function checkSessionStatus() {
       }
       
       response = await fetch('/session-status', {
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }, 
-        body: {
-          "ver": version
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          ver: version
+        })
       });
       const data = await response.json();
       if (!data.success) {
@@ -62,6 +64,8 @@ async function checkSessionStatus() {
       }
     }
   }
-  
+  function showDownloadMenu(){
+    document.getElementById("download").style.display = "flex"
+  }
 
 document.addEventListener('DOMContentLoaded', checkSessionStatus);

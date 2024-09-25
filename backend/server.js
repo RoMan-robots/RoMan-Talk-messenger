@@ -864,7 +864,7 @@ app.post('/upload-photo-message', async (req, res) => {
     }
 });
 
-app.get("/session-status", async (req, res) => {
+app.post("/session-status", async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     const version = req.body.ver;
 
