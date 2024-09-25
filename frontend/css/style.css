@@ -8,6 +8,22 @@ body {
   background-size: cover;
 }
 
+#background {
+  height: 210vh;
+}
+
+@media (max-width: 600px) {
+  #background {
+    height: 250vh;
+  }
+}
+
+@media (max-width: 400px) {
+  #background {
+    height: 300vh;
+  }
+}
+
 #hello-screen {
   flex-grow: 1;
   display: flex;
@@ -123,7 +139,27 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   width: 550px;
+}
 
+@media (max-width: 768px) {
+  #register-text {
+    width: 100%;
+    max-width: 450px; 
+  }
+
+  .tutorial-image {
+    max-width: 100%; 
+  }
+}
+
+@media (max-width: 550px) {
+  #register-text {
+    max-width: 100%;
+  }
+
+  .tutorial-image {
+    max-width: 100%; 
+  }
 }
 
 #register-inputs {

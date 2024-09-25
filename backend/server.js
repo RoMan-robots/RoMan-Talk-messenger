@@ -595,7 +595,7 @@ function checkUserExists(req, res, next) {
     const token = req.headers.authorization.split(' ')[1];
 
     if (!token) {
-        return res.status(401).send({ success: false, message: 'Токен не надано.' });
+        return res.status(499).send({ success: false, message: 'Токен не надано.' });
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -603,7 +603,7 @@ function checkUserExists(req, res, next) {
         next();
     } catch (err) {
         console.log(err)
-        return res.status(401).send({ success: false, message: 'Невірний або прострочений токен.' });
+        return res.status(499).send({ success: false, message: 'Невірний або прострочений токен.' });
     }
 }
 

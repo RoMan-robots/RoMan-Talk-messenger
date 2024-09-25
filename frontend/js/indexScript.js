@@ -46,7 +46,7 @@ async function checkSessionStatus() {
         })
       });
       const data = await response.json();
-      if (!data.success) {
+      if (response.status == "426") {
         alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
           checkSessionStatus();
         });
@@ -65,7 +65,7 @@ async function checkSessionStatus() {
     }
   }
   function showDownloadMenu(){
-    document.getElementById("download").style.display = "flex"
+    document.getElementById("download-screen").style.display = "flex"
   }
 
 document.addEventListener('DOMContentLoaded', checkSessionStatus);
