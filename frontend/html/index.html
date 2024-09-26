@@ -38,20 +38,20 @@
       <div class="macos">
         <h4>Mac OS(.app)</h4>
         <div class="btn-group" role="group">
-          <button class="btn btn-light">ARM(Apple Silicon)</button>
-          <button class="btn btn-light">X86(Intel)</button>
+          <button class="btn btn-light" onclick="downloadApp('mac-arm')">ARM(Apple Silicon)</button>
+          <button class="btn btn-light" onclick="downloadApp('mac-x86')">X86(Intel)</button>
         </div>
       </div>
       <div class="windows">
         <h4>Windows(.exe)</h4>
         <div class="btn-group" role="group">
-          <button class="btn btn-light">ARM(Snapdragon)</button>
-          <button class="btn btn-light">X86(Intel/AMD)</button>
+          <button class="btn btn-light" onclick="downloadApp('win-arm')">ARM(Snapdragon)</button>
+          <button class="btn btn-light" onclick="downloadApp('win-x86')">X86(Intel/AMD)</button>
         </div>
       </div>
       <div class="android">
         <h4>Android(.apk)</h4>
-        <button class="btn btn-light">Завантажити</button>
+        <button class="btn btn-light" onclick="downloadApp('mobile')">Завантажити</button>
       </div>
     </div>
   </div>
