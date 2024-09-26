@@ -60,9 +60,14 @@ async function login(event) {
 async function checkSessionStatus() {
   try {
     const response = await fetch('/session-status', {
+      method: "POST",
       headers: {
+        'Content-Type': 'application/json',
         "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
+      },
+      body: JSON.stringify({
+        ver: version
+      })
     });
     const data = await response.json();
 
