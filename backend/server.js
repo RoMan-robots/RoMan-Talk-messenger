@@ -30,7 +30,6 @@ const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
 const localDir = path.join(__dirname, 'images/message-images');
-const version = "2.0";
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
@@ -1043,6 +1042,7 @@ app.post('/rephrase', async (req, res) => {
 });
 
 app.post('/translate', async (req, res) => {
+    console.log("test1:", process.memoryUsage());
     const { text } = req.body;
     if (!text) {
         return res.status(400).json({ error: 'Text is required' });
@@ -1050,6 +1050,7 @@ app.post('/translate', async (req, res) => {
 
     try {
         await ensureModelsLoaded();
+        console.log("test2:", process.memoryUsage());
 
         const detectedLanguages = lngDetector.detect(text, 3);
 
@@ -1074,14 +1075,16 @@ app.post('/translate', async (req, res) => {
                             text.length >= 1000 ? 50 :
                                 text.length >= 500 ? 10 :
                                     text.length >= 100 ? 3 : 2;
-
+        console.log("test3:", process.memoryUsage());
         let translatedText;
         if (direction === 'toEnglish') {
             translatedText = await translateTextInParts(text, models.translatorToEnglish, parts);
+            console.log("test4:", process.memoryUsage());
         } else if (direction === 'toOriginal') {
             translatedText = await translateTextInParts(text, models.translatorToOriginalLanguage, parts);
+            console.log("test4:", process.memoryUsage());
         }
-
+        console.log("test5:", process.memoryUsage());
         console.log('Translated text:', translatedText);
 
         res.json({ translatedText });
