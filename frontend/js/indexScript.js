@@ -65,11 +65,15 @@ async function checkSessionStatus() {
   }
 }
 function showDownloadMenu() {
+  if(isElectron){
+    alertify.error("А нащо завантажувати програму коли ти ітак в програмі?")
+    return;
+  }
   document.getElementById("download-screen").style.display = "flex"
 }
 function downloadApp(platform) {
   const downloadLinks = {
-    'mac-arm': 'https://www.dropbox.com/scl/fi/6dbm08uxt5rflh8wggc4z/RoManTalk.app.zip?rlkey=i1igy6ty9jjkx6e949rm9ojxr&st=ucoxsf9m&dl=1',
+    'mac-arm': 'https://www.dropbox.com/scl/fi/4xu625j6klag9ytc5n3nm/RoManTalk.app.zip?rlkey=y8by6u7kgi4jfpjzygf2ke3mm&st=npw0lt48&dl=1',
     'mac-x86': 'https://www.dropbox.com/s/link_to_mac_x86?dl=1',
     'win-arm': 'https://www.dropbox.com/s/link_to_win_arm?dl=1',
     'win-x86': 'https://www.dropbox.com/s/link_to_win_x86?dl=1',
