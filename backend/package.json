@@ -6,9 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start-install": "npm install && node server.js",
-    "start-electron": " electron .",
-    "package-mac": "electron-packager . RoManTalk --platform=darwin --arch=x64 --out=dist --overwrite --icon=/images/favicon.icns"
+    "start-install": "npm install && node --max-old-space-size=400 server.js",
+    "start-electron": " electron ."
   },
   "keywords": [
     "RoMan",
