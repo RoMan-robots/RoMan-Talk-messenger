@@ -6,13 +6,19 @@
     <title>Налаштування RoMan Talk</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
+    <script>
+        window.nodeRequire = require;
+        delete window.require;
+        delete window.exports;
+        delete window.module;
+      </script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
     <script src="../js/settingsScript.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 </head>
-<body>
-    <div id="settings-screen" class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
+<body id="settings-screen">
+    <div class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
         <h2 id="settings-title" class="text-center">Налаштування</h2>
         <div class="settings-option w-100 text-center">
             <label for="theme-select">Виберіть тему:</label>
@@ -31,6 +37,7 @@
         </div>
         <div class="settings-buttons w-100 text-center">
             <button id="copy-user-id-button" class="btn btn-secondary" onclick="copyUserId()">Копіювати мій ID</button>
+            <button id="security-button" class="btn btn-secondary" onclick="openSecurityModal()">Безпека акаунта</button>
             <button id="my-channels-button" class="btn btn-secondary" onclick="fetchUserChannels()">Мої канали</button>
             <button id='requests-button' class="btn btn-secondary" style="display: none;" onclick="openRequestsModal()">Заявки</button>
             <button id="change-rank-button" class="btn btn-danger" style="display: none;" onclick="openChangeRankModal()">Змінити ранг</button>
@@ -93,7 +100,14 @@
             <div class="modal2 modal-content2" style="display:none;" id="requests-modal">
                 <h1 class="classic">Заявки:</h1>
             </div>
+            <div id="security-modal" class="modal2 modal-content2" style="display: none;">
+                <span class="close" onclick="closeSecurityModal()">&times;</span>
+                <h3 class="classic">Безпека акаунта</h3>
+                <p class="classic">Ось рекомендації та попередження, як захистити акаунт:</p>
+                <div id="security-recomendations"></div>
+            </div>
     </div>
-    <p class="footer">RoMan Talk 1.2.1 Official Release(OR). Від RoMan Devs Inc. 2024-2024. Усі права захищені</p>
+    <p class="footer">Користуючись RoMan Talk, ви приймаєте <a href="tos.html" class="footer-a"> умови використання месенжера</a></p>
+    <p class="footer">RoMan Talk 2.0 Official Release. Від RoMan. 2024-2024. Усі права захищені</p>
 </body>
 </html>
