@@ -37,6 +37,7 @@ async function login(event) {
       headers: {
         'Content-Type': 'application/json',
       credentials: 'include'
+      credentials: 'include'
       },
       body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked, ip: ip })
     });

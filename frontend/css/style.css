@@ -357,6 +357,10 @@ body {
   color: #fff;
   margin-bottom: 5px;
 }
+.channel {
+  color: #fff;
+  margin-bottom: 5px;
+}
 
 #management-buttons {
   border-bottom: 1px solid var(--text-color);

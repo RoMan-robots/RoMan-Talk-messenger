@@ -350,6 +350,8 @@ messageInput.addEventListener('keypress', (event) => {
 function toggleDropdown() {
     isDropdownActive = !isDropdownActive;
     channelList.classList.toggle('active', isDropdownActive);
+    isDropdownActive = !isDropdownActive;
+    channelList.classList.toggle('active', isDropdownActive);
 }
 
 function loadChannelManagementButtons() {
@@ -577,6 +579,7 @@ function applyTheme(theme) {
 }
 
 function changeUrlToSettings(url) {
+    window.location.href = url;
     window.location.href = url;
 }
 
