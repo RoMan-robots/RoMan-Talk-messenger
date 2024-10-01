@@ -571,12 +571,12 @@ function changeUrlToSettings(url) {
 
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+  
   if (messageElement) {
+    const [author, ...textParts] = messageElement.textContent.split(': ');
+    const originalText = textParts.join(': ');
     try {
-      const author = messageElement.textContent.split(': ')[0];
-      const originalText = messageElement.textContent.split(': ')[1];
-      messageElement.textContent = "Перекладання повідомлення, будь ласка, зачекайте..."
-
+      messageElement.textContent = "Перекладання повідомлення, будь ласка, зачекайте...";
       const response = await fetch('/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -585,7 +585,11 @@ async function translateMessage(messageId) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Network response was not ok');
+        if (errorData.error === 'Ліміт API вичерпано, спробуйте через 1 годину.') {
+          alertify.error('Ліміт API вичерпано, спробуйте пізніше.');
+        } else {
+          throw new Error(errorData.error || 'Network response was not ok');
+        }
       }
 
       const data = await response.json();
@@ -595,11 +599,12 @@ async function translateMessage(messageId) {
         messageElement.textContent = author + ': ' + data.translatedText;
         alertify.success('Повідомлення перекладено!');
       } else {
-        alertify.error('Error in response');
+        alertify.error('Помилка в відповіді');
       }
     } catch (error) {
       console.error('Помилка при перекладі повідомлення:', error);
-      alertify.error(error.message);
+      messageElement.textContent = author + ': ' + originalText;
+      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
     }
   }
 }
@@ -607,10 +612,10 @@ async function translateMessage(messageId) {
 async function compressMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   if (messageElement) {
+    const [author, ...textParts] = messageElement.textContent.split(': ');
+    const originalText = textParts.join(': ');
     try {
-      const author = messageElement.textContent.split(': ')[0];
-      const originalText = messageElement.textContent.split(': ')[1];
-      messageElement.textContent = "Стиснення повідомлення, будь ласка, зачекайте..."
+      messageElement.textContent = "Стиснення повідомлення, будь ласка, зачекайте...";
 
       const response = await fetch('/summarize', {
         method: 'POST',
@@ -620,21 +625,26 @@ async function compressMessage(messageId) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Network response was not ok');
+        if (errorData.error === 'Ліміт API вичерпано, спробуйте через 1 годину.') {
+          alertify.error('Ліміт API вичерпано, спробуйте пізніше.');
+        } else {
+          throw new Error(errorData.error || 'Network response was not ok');
+        }
       }
 
       const data = await response.json();
 
       if (data.summaryText) {
-        messageElement.dataset.originalText = originalText; 
+        messageElement.dataset.originalText = originalText;
         messageElement.textContent = author + ': ' + data.summaryText;
         alertify.success('Повідомлення стиснено!');
       } else {
-        alertify.error('Error in response');
+        alertify.error('Помилка в відповіді');
       }
     } catch (error) {
       console.error('Помилка при стисненні повідомлення:', error);
-      alertify.error(error.message);
+      messageElement.textContent = author + ': ' + originalText;
+      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
     }
   }
 }

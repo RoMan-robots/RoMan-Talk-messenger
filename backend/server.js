@@ -1041,6 +1041,7 @@ app.post('/rephrase', async (req, res) => {
     res.json({ rephrasedText });
 });
 
+
 app.post('/translate', async (req, res) => {
     console.log("test1:", process.memoryUsage());
     const { text } = req.body;
@@ -1113,12 +1114,12 @@ app.post('/summarize', async (req, res) => {
         const isRussian = detectedLanguages.some(([language]) => language === 'russian');
 
         if (isUkrainian || isRussian) {
-            const parts =
-                text.length >= 10000 ? 1000 :
-                    text.length >= 1000 ? 100 :
-                        text.length >= 500 ? 50 :
-                            text.length >= 250 ? 30 : 2;
-            processedText = await translateTextInParts(text, models.translatorToEnglish, parts);
+            const parts = summaryText.length >= 100000 ? 200 :
+                summaryText.length >= 50000 ? 120 :
+                    summaryText.length >= 25000 ? 65 :
+                        summaryText.length >= 10000 ? 25 :
+                            summaryText.length >= 1000 ? 3 :
+                                processedText = await translateTextInParts(text, models.translatorToEnglish, parts);
         } else if (!isEnglish) {
             return res.status(400).json({ error: "Мова тексту не підтримується цією функцією. Лише українська, російська та англійська" });
         }
@@ -1126,14 +1127,12 @@ app.post('/summarize', async (req, res) => {
         const summaryText = await models.summarizer(processedText);
 
         if (isUkrainian) {
-            const parts = summaryText.length >= 100000 ? 1000 :
-                summaryText.length >= 50000 ? 500 :
-                    summaryText.length >= 25000 ? 250 :
-                        summaryText.length >= 10000 ? 100 :
-                            summaryText.length >= 1000 ? 50 :
-                                summaryText.length >= 500 ? 10 :
-                                    summaryText.length >= 100 ? 3 : 2;
-            processedText = await translateTextInParts(summaryText, models.translatorToOriginalLanguage, parts);
+            const parts = summaryText.length >= 100000 ? 200 :
+                summaryText.length >= 50000 ? 120 :
+                    summaryText.length >= 25000 ? 65 :
+                        summaryText.length >= 10000 ? 25 :
+                            summaryText.length >= 1000 ? 3 :
+                                processedText = await translateTextInParts(summaryText, models.translatorToOriginalLanguage, parts);
         } else {
             processedText = summaryText;
         }

@@ -1,10 +1,11 @@
 import fs from 'fs';
 import nlp from "compromise";
-import { franc } from "franc";
 import fetch from 'node-fetch';
 import Sentiment from 'sentiment';
-import { pipeline } from '@xenova/transformers';
+import dotenv from 'dotenv';
+dotenv.config();
 
+const apiKey = process.env.HUGGING_FACE_TOKEN
 const badWordsFilePath = 'bad-words.txt';
 let badWords = [];
 
@@ -30,17 +31,27 @@ function normalizeText(text) {
         'M': 'М', 'm': 'м',
         'K': 'К', 'k': 'к'
     };
-
+    console.log(text);
     return text.split('').map(char => latinToCyrillicMap[char] || char).join('');
 }
 
 export function filterText(text) {
-    text = normalizeText(text)
-    let words = text.split(" ");
+    console.log(text);
+    const originalText = text;
+    const normalizedText = normalizeText(text)
+
+    let words = normalizedText.split(" ");
     let filteredWords = words.map(word => {
-        return badWords.some(badWord => word.toLowerCase().includes(badWord.toLowerCase()))
-            ? '*'.repeat(word.length)
-            : word;
+        const lowerCaseWord = word.toLowerCase();
+        
+        const isBadWord = badWords.some(badWord => lowerCaseWord.includes(badWord.toLowerCase()));
+
+        if (isBadWord) {
+            const originalWord = originalText.split(" ").find(w => normalizeText(w).toLowerCase() === lowerCaseWord);
+            return originalWord ? '*'.repeat(originalWord.length) : word;
+        } else {
+            return originalText.split(" ").find(w => normalizeText(w).toLowerCase() === lowerCaseWord) || word;
+        }
     });
     return filteredWords.join(' ');
 }
@@ -131,64 +142,92 @@ export async function rephraseText(text, language, style) {
 }
 
 async function createSummarizer() {
-    try {
-        const pipelineInstance = await pipeline("summarization");
-        return async function summarizeText(text) {
-            try {
-                const textLength = text.length;
-                const minLength = Math.ceil(textLength / 2.5);
-                const maxLength = Math.ceil(textLength / 1.5);
+    const apiUrl = 'https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6';
 
-                const summaryResult = await pipelineInstance(text, {
-                    max_length: maxLength,
-                    min_length: minLength
-                });
+    return async function summarizeText(text) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ inputs: text })
+            });
 
-                let summarizedText = summaryResult[0].summary_text;
+            const summaryResult = await response.json();
+            let summarizedText = summaryResult[0]?.summary_text || '';
 
-                let doc = nlp(summarizedText);
+            let doc = nlp(summarizedText);
 
-                let adjectives = doc.adjectives();
-                adjectives = adjectives.slice(0, Math.floor(adjectives.length / 2));
-                adjectives.delete();
+            let adjectives = doc.adjectives();
+            adjectives = adjectives.slice(0, Math.floor(adjectives.length / 2));
+            adjectives.delete();
 
-                let keySentences = doc.sentences().out('array').slice(0, Math.min(3, doc.sentences().length));
+            let keySentences = doc.sentences().out('array').slice(0, Math.min(3, doc.sentences().length));
 
-                let simplifiedText = keySentences.join(' ');
+            let simplifiedText = keySentences.join(' ');
 
-                return simplifiedText;
-            } catch (error) {
-                console.error("Summarization Error:", error);
-                throw error;
-            }
-        };
-    } catch (error) {
-        console.error("Error loading summarizer model:", error);
-        throw error;
-    }
+            return simplifiedText;
+        } catch (error) {
+            console.error("Summarization Error:", error);
+            throw error;
+        }
+    };
 }
 
-async function createTranslator(model) {
-    try {
-        const pipelineInstance = await pipeline("translation", model);
-        return async function translateText(text) {
-            try {
-                const translationResult = await pipelineInstance(text);
-                return translationResult[0].translation_text;
-            } catch (error) {
-                console.error("Translation Error:", error);
-                throw error;
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function createTranslator(srcLang, tgtLang) {
+    const apiUrl = `https://api-inference.huggingface.co/models/facebook/nllb-200-distilled-600M`;
+
+    return async function translateText(text, retries = 3, delayMs = 30000) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: text,
+                    parameters: {
+                        src_lang: srcLang, 
+                        tgt_lang: tgtLang 
+                    }
+                })
+            });
+
+            const translationResult = await response.json();
+            if (translationResult.error) {
+                if(translationResult.error.includes("limit")){
+                    throw new Error("Ліміт API вичерпано, спробуйте через 1 годину."); 
+                }
+                if (retries > 0) {
+                    console.warn(`Помилка API, повторюємо спробу... Залишилось спроб: ${retries}`); 
+                    await delay(delayMs); 
+                    console.log(translationResult.error)
+                    return translateText(text, retries - 1, delayMs); 
+                } else {
+                    console.log(translationResult.error)
+                    throw new Error('Максимальна кількість спроб вичерпана'); 
+                }
             }
-        };
-    } catch (error) {
-        console.error("Error loading translator model:", error);
-        throw error;
-    }
+
+            console.log(translationResult);
+            return translationResult[0]?.translation_text || '';
+        } catch (error) {
+            console.error("Translation Error:", error);
+            throw error;
+        }
+    };
 }
 
 export async function loadModels() {
-    const translatorToEnglish = await createTranslator('Xenova/opus-mt-uk-en');
-    const translatorToOriginalLanguage = await createTranslator('Xenova/opus-mt-en-uk');
+    const translatorToEnglish = await createTranslator('uk_UA', 'en_XX');
+    const translatorToOriginalLanguage = await createTranslator('en_XX', 'uk_UA');
     const summarizer = await createSummarizer();
 
     return { translatorToEnglish, translatorToOriginalLanguage, summarizer };
@@ -212,55 +251,4 @@ export async function translateTextInParts(text, translator, parts) {
     const textParts = splitText(text, parts);
     const translatedParts = await Promise.all(textParts.map(part => translator(part)));
     return translatedParts.join(' ');
-}
-
-export async function processRequest(text, style) {
-    const { translatorToEnglish, translatorToOriginalLanguage, summarizer } = await loadModels();
-
-    console.log(`Original Text: ${text}`);
-
-    const filteredText = filterText(text);
-    console.log(`Filtered Text: ${filteredText}`);
-
-    const originalLanguage = franc(filteredText);
-    console.log(`Detected Original Language: ${originalLanguage}`);
-
-    let textToTranslate = filteredText;
-
-    if (originalLanguage !== 'eng') {
-        const parts = text.length >= 10000 ? 1000 : text.length >= 1000 ? 100 : text.length >= 500 ? 50 : text.length >= 250 ? 30 : 1;
-        console.log(T`ranslating text to English in ${parts} parts...`);
-        textToTranslate = await translateTextInParts(filteredText, translatorToEnglish, parts);
-        console.log(`Translated to English: ${textToTranslate}`);
-    }
-
-    const correctedText = await checkGrammar(textToTranslate, 'en');
-    console.log(`Corrected Text: ${correctedText}`);
-
-    const sentimentResult = analyzeSentiment(correctedText);
-    console.log(`Sentiment Analysis: ${sentimentResult}`);
-
-    const rephrasedText = await rephraseText(correctedText, 'en', style);
-    console.log(`Rephrased Text: ${rephrasedText}`);
-
-    const summaryText = await summarizer(rephrasedText);
-    console.log(`Generated Summary: ${summaryText}`);
-
-    let finalText = summaryText;
-
-    if (originalLanguage !== 'eng') {
-        const parts =
-            summaryText.length >= 100000 ? 1000 :
-                summaryText.length >= 50000 ? 500 :
-                    summaryText.length >= 25000 ? 250 :
-                        summaryText.length >= 10000 ? 100 :
-                            summaryText.length >= 1000 ? 50 :
-                                summaryText.length >= 500 ? 10 :
-                                    summaryText.length >= 100 ? 3 : 2
-        console.log(`Translating summary back to original language in ${parts} parts...`);
-        finalText = await translateTextInParts(summaryText, translatorToOriginalLanguage, parts);
-        console.log(`Translated back to original language: ${finalText}`);
-    }
-
-    return finalText;
 }
