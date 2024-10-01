@@ -88,7 +88,7 @@ async function fetchUserChannels() {
     settingsButtons.style.display = 'none';
     settingsOption.style.display = 'none';
     document.getElementById('channels-modal').style.display = 'block';
-    const response = await fetch('/my-channels');
+    const response = await fetch('/my-channels', { headers: {Authorization: `Bearer ${token}`} });
     const data = await response.json();
     if (response.ok && Array.isArray(data.myChannels)) {
       const channelsList = document.getElementById('channels-list');
@@ -108,7 +108,7 @@ async function fetchUserChannels() {
 }
 
 async function checkChannelPrivacy(channelName) {
-  const response = await fetch(`/get-channel-privacy/${channelName}`);
+  const response = await fetch(`/get-channel-privacy/${channelName}`, { headers: {Authorization: `Bearer ${token}`} });
   const { isPrivate } = await response.json();
   return isPrivate;
 }

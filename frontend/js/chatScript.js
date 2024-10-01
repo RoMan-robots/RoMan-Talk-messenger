@@ -476,29 +476,40 @@ function closeExploreModal() {
 function createNewChannel() {
   const channelName = document.getElementById("new-channel-name").value;
 
-  fetch('/create-channel', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ channelName: channelName })
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        loadUserChannels();
-        loadMessages(channelName);
-      } else {
-        console.error(data.message);
-        alertify.error(data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Помилка при створенні каналу:', error);
-      alertify.error('Помилка при створенні каналу:', error);
-    });
+  // Отримання IP-адреси
+  fetch("https://api.ipify.org?format=json")
+      .then(response => response.json())
+      .then(ipData => {
+          const ip = ipData.ip;
+
+          return fetch('/create-channel', {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                  channelName: channelName,
+                  ip: ip 
+              })
+          });
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              loadUserChannels();
+              loadMessages(channelName);
+          } else {
+              console.error(data.message);
+              alertify.error(data.message);
+          }
+      })
+      .catch(error => {
+          console.error('Помилка при створенні каналу:', error);
+          alertify.error('Помилка при створенні каналу:', error);
+      });
+
   closeModal();
 }
 

@@ -527,10 +527,8 @@ async function saveSecurity(security) {
     }
 }
 
-async function alertSecurity(req, username, messageText) {
+async function alertSecurity(req, ip, username, messageText) {
     const security = await getSecurity();
-
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const parser = uaParser(userAgent);
     const deviceInfo = parser.os.name;
@@ -658,7 +656,7 @@ app.get('/set-bg', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password, checked } = req.body;
+    const { username, password, checked, ip } = req.body;
 
     try {
         const users = await getUsers();
@@ -673,7 +671,7 @@ app.post('/login', async (req, res) => {
         const recentAttempts = userAttempts.filter(attemptTime => now - attemptTime < 60000);
 
         if (recentAttempts.length >= 5) {
-            await alertSecurity(req, username, "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.");
+            await alertSecurity(req, ip, username, "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.");
 
             return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
         }
@@ -697,7 +695,7 @@ app.post('/login', async (req, res) => {
                 await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
             }
 
-            await alertSecurity(req, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
+            await alertSecurity(req, ip, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
         } else {
             loginAttempts[username] = [...userAttempts, now];
             res.status(401).send({ success: false, message: 'Неправильний пароль' });
@@ -937,7 +935,7 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
 });
 
 app.post('/create-channel', checkUserExists, async (req, res) => {
-    const { channelName } = req.body;
+    const { channelName, ip } = req.body;
     const username = req.username;
 
     try {
@@ -965,7 +963,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
         await updateUserChannels(username, channelName);
 
         res.send({ success: true, message: 'Канал створено успішно.' });
-        await alertSecurity(req, username, `Створено канал під вашим акаунтом з ім'ям ${channelName}`);
+        await alertSecurity(req, ip, username, `Створено канал під вашим акаунтом з ім'ям ${channelName}`);
     } catch (error) {
         console.error('Помилка при створенні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -1003,7 +1001,7 @@ app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
 });
 
 app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
-    const { channelName, isPrivate } = req.body;
+    const { channelName, isPrivate} = req.body;
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(channel => channel.name === channelName);
@@ -1011,9 +1009,6 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
             channels[channelIndex].isPrivate = isPrivate;
             await saveChannels(channels);
             res.send({ success: true, message: 'Приватність каналу оновлено.' });
-
-            const privacyStatus = isPrivate ? 'приватний' : 'публічний';
-            await alertSecurity(req, username, `Канал "${channelName}" тепер ${privacyStatus}.`);
         } else {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
         }
@@ -1265,8 +1260,8 @@ app.post('/save-rank', checkUserExists, async (req, res) => {
         await saveUsers(users);
 
         res.json({ message: 'Ранг користувача збережено' });
-        await alertSecurity(req, username, `Змінено ранг користувачу ${targetUser} (ранг ${oldRank}) на ${newRank}`);
-        await alertSecurity(req, targetUser.username, `Адміністратор ${username} змінив вам ранг на ${newRank}`);
+        await alertSecurity(req, "", username, `Змінено ранг користувачу ${targetUser} (ранг ${oldRank}) на ${newRank}`);
+        await alertSecurity(req, ip, targetUser.username, `Адміністратор ${username} змінив вам ранг на ${newRank}`);
     } else {
         user.rank = 'banned';
         await saveUsers(users);
@@ -1501,7 +1496,6 @@ app.post('/channel/clear-subscribers', checkUserExists, async (req, res) => {
             channels[channelIndex].subs = [];
             await saveChannels(channels);
             res.send({ success: true, message: 'Список підписників каналу очищено.' });
-            await alertSecurity(req, username, `У вашому каналі ${channelName} очищені всі підписники`)
         } else {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
         }
@@ -1536,7 +1530,6 @@ app.post('/channel/delete', checkUserExists, async (req, res) => {
         const updatedChannels = channels.filter(c => c.name !== currentChannelName);
         await saveChannels(updatedChannels);
         res.send({ success: true, message: 'Канал видалено.' });
-        await alertSecurity(req, username, `Ваш канал ${currentChannelName} видалено`)
     } catch (error) {
         console.error('Помилка при видаленні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -1573,7 +1566,6 @@ app.post('/change-password', checkUserExists, async (req, res) => {
         await saveUsers(users);
 
         res.send({ success: true, message: 'Пароль успішно змінено.' });
-        await alertSecurity(req, username, `На вашому акаунті змінено пароль`)
     } catch (error) {
         console.error(error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -1639,19 +1631,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1659,7 +1639,19 @@ httpServer.listen(port, () => {
         }
 
         shuffledImages = shuffleArray(files);
-    }); 
+    });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     }); 
+
+//     console.log(`App listening on port ${port}!`)
+// }); 

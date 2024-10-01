@@ -12,7 +12,7 @@ window.fetch = function (...args) {
 };
 
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
-
+const version = "2.0"
 fetch('/set-bg')
   .then(response => response.blob())
   .then(imageBlob => {
@@ -27,13 +27,17 @@ async function login(event) {
   const enteredPassword = document.getElementById('password-input').value;
   const isChecked = document.getElementById("anonymousLogin").checked;
 
+  const response = await fetch("https://api.ipify.org?format=json");
+  const ipData = await response.json();
+  const ip = ipData.ip;
+
   try {
     const response = await fetch('/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked })
+      body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked, ip: ip })
     });
 
     const data = await response.json();
