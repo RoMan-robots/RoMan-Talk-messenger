@@ -36,6 +36,7 @@ async function login(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+      credentials: 'include'
       },
       body: JSON.stringify({ username: enteredUsername, password: enteredPassword, checked: isChecked, ip: ip })
     });
@@ -118,9 +119,16 @@ async function sendAppeal(event) {
   } catch (error) {
     console.error('Помилка:', error);
     alertify.error('Помилка сервера');
+    console.error('Помилка:', error);
+    alertify.error('Помилка сервера');
   }
 }
 
+function changeUrlTo(url) {
+  window.location.href = url;
+}
+
+document.addEventListener('DOMContentLoaded', checkSessionStatus);
 function changeUrlTo(url) {
   window.location.href = url;
 }
