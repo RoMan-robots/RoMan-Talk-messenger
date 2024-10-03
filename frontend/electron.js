@@ -14,6 +14,7 @@ function createWindow() {
       contextIsolation: false,
       webSecurity: true,
       sandbox: false,
+      devTools: false
     }
   });
 
