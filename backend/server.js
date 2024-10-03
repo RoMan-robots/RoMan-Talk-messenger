@@ -24,7 +24,7 @@ import {
 dotenv.config();
 
 const __dirname = path.resolve();
-const port = 10000;
+const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
 const io = new SocketIO(httpServer);
@@ -1661,4 +1661,5 @@ httpServer.listen(port, () => {
     }); 
 
     console.log(`App listening on port ${port}!`)
+    console.log("kok", process.memoryUsage())
 }); 

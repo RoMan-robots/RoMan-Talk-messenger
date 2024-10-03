@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import Sentiment from 'sentiment';
 import dotenv from 'dotenv';
 dotenv.config();
+console.log("ok", process.memoryUsage())
 
 const apiKey = process.env.HUGGING_FACE_TOKEN
 const badWordsFilePath = 'bad-words.txt';
