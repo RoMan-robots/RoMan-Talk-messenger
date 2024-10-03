@@ -276,7 +276,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
     }
 }
 
-async function editMessage(channelName, messageId, newContent) {
+async function editMessage(channelName, messageId, { newContent, newId }) {
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channelName);
@@ -286,32 +286,33 @@ async function editMessage(channelName, messageId, newContent) {
 
             channels[channelIndex].messages.forEach(message => {
                 if (message.id === messageId) {
-                    message.context = newContent;
+                    if (newContent !== undefined) {
+                        message.content = newContent; 
+                    }
+                    if (newId !== undefined) {
+                        message.id = newId; 
+                    }
                     messageFound = true;
                 }
             });
 
             if (messageFound) {
-                try {
-                    const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-                    const getChannelsResponse = await octokit.repos.getContent({
-                        owner,
-                        repo,
-                        path: 'messages.json',
-                    });
-                    const sha = getChannelsResponse.data.sha;
+                const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+                const getChannelsResponse = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: 'messages.json',
+                });
+                const sha = getChannelsResponse.data.sha;
 
-                    await octokit.repos.createOrUpdateFileContents({
-                        owner,
-                        repo,
-                        path: 'messages.json',
-                        message: `Updated message ${messageId} in channel ${channelName}`,
-                        content,
-                        sha,
-                    });
-                } catch (error) {
-                    throw new Error('Error saving channels: ' + error.message);
-                }
+                await octokit.repos.createOrUpdateFileContents({
+                    owner,
+                    repo,
+                    path: 'messages.json',
+                    message: `Updated message ${messageId} in channel ${channelName}`,
+                    content,
+                    sha,
+                });
             } else {
                 throw new Error(`Повідомлення з ID ${messageId} не знайдено у каналі "${channelName}".`);
             }
@@ -627,7 +628,7 @@ io.on('connection', (socket) => {
 
     socket.on('edit message', async (channelName, messageId, newContent) => {
         try {
-            await editMessage(channelName, messageId, newContent);
+            await editMessage(channelName, messageId, {newContent: newContent});
             io.emit('message edited', channelName, messageId, newContent);
         } catch (error) {
             console.error('Помилка при редагуванні повідомлення:', error);
@@ -1001,7 +1002,7 @@ app.post('/add-channel-to-user', checkUserExists, async (req, res) => {
 });
 
 app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
-    const { channelName, isPrivate} = req.body;
+    const { channelName, isPrivate } = req.body;
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(channel => channel.name === channelName);
@@ -1036,7 +1037,6 @@ app.post('/rephrase', async (req, res) => {
     res.json({ rephrasedText });
 });
 
-
 app.post('/translate', async (req, res) => {
     console.log("test1:", process.memoryUsage());
     const { text } = req.body;
@@ -1046,7 +1046,6 @@ app.post('/translate', async (req, res) => {
 
     try {
         await ensureModelsLoaded();
-        console.log("test2:", process.memoryUsage());
 
         const detectedLanguages = lngDetector.detect(text, 3);
 
@@ -1067,20 +1066,17 @@ app.post('/translate', async (req, res) => {
             text.length >= 100000 ? 1000 :
                 text.length >= 50000 ? 500 :
                     text.length >= 25000 ? 250 :
-                        text.length >= 10000 ? 100 :
-                            text.length >= 1000 ? 50 :
-                                text.length >= 500 ? 10 :
-                                    text.length >= 100 ? 3 : 2;
-        console.log("test3:", process.memoryUsage());
+                        text.length >= 10000 ? 70 :
+                            text.length >= 1000 ? 5 :
+                                text.length >= 500 ? 3 :
+                                    text.length >= 100 ? 2 : 1;
+
         let translatedText;
         if (direction === 'toEnglish') {
             translatedText = await translateTextInParts(text, models.translatorToEnglish, parts);
-            console.log("test4:", process.memoryUsage());
         } else if (direction === 'toOriginal') {
             translatedText = await translateTextInParts(text, models.translatorToOriginalLanguage, parts);
-            console.log("test4:", process.memoryUsage());
         }
-        console.log("test5:", process.memoryUsage());
         console.log('Translated text:', translatedText);
 
         res.json({ translatedText });
@@ -1100,7 +1096,6 @@ app.post('/summarize', async (req, res) => {
     await ensureModelsLoaded();
 
     const detectedLanguages = lngDetector.detect(text, 3);
-    console.log(detectedLanguages);
 
     try {
         let processedText = text;
@@ -1109,29 +1104,30 @@ app.post('/summarize', async (req, res) => {
         const isRussian = detectedLanguages.some(([language]) => language === 'russian');
 
         if (isUkrainian || isRussian) {
-            const parts = summaryText.length >= 100000 ? 200 :
-                summaryText.length >= 50000 ? 120 :
-                    summaryText.length >= 25000 ? 65 :
-                        summaryText.length >= 10000 ? 25 :
-                            summaryText.length >= 1000 ? 3 :
-                                processedText = await translateTextInParts(text, models.translatorToEnglish, parts);
+            const parts =
+                text.length >= 100000 ? 1000 :
+                    text.length >= 50000 ? 500 :
+                        text.length >= 25000 ? 250 :
+                            text.length >= 10000 ? 70 :
+                                text.length >= 1000 ? 5 :
+                                    text.length >= 500 ? 3 :
+                                        text.length >= 100 ? 2 : 1;
+
+            processedText = await translateTextInParts(text, models.translatorToEnglish, parts)
         } else if (!isEnglish) {
             return res.status(400).json({ error: "Мова тексту не підтримується цією функцією. Лише українська, російська та англійська" });
         }
 
         const summaryText = await models.summarizer(processedText);
 
-        if (isUkrainian) {
-            const parts = summaryText.length >= 100000 ? 200 :
-                summaryText.length >= 50000 ? 120 :
-                    summaryText.length >= 25000 ? 65 :
-                        summaryText.length >= 10000 ? 25 :
-                            summaryText.length >= 1000 ? 3 :
-                                processedText = await translateTextInParts(summaryText, models.translatorToOriginalLanguage, parts);
+        if (isUkrainian || isRussian) {
+            const parts =
+                text.length >= 1000 ? 5 :
+                    text.length >= 500 ? 3 : 2
+            processedText = await translateTextInParts(summaryText, models.translatorToOriginalLanguage, parts);
         } else {
             processedText = summaryText;
         }
-
         res.json({ summaryText: processedText });
     } catch (error) {
         console.error('Error summarizing text:', error);
@@ -1160,7 +1156,7 @@ app.post('/update-message/:id', checkUserExists, async (req, res) => {
 
         message.context = filteredText;
 
-        await editMessage(channelName, messageId, filteredText);
+        await editMessage(channelName, messageId, {newContent: filteredText});
 
         res.json({ success: true });
 
@@ -1190,6 +1186,17 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         }
 
         await deleteMessage(channelName, messageId);
+
+        const updatedMessages = messages
+            .filter(message => message.id > messageId)
+            .map(message => {
+                const newId = message.id - 1; 
+                return { ...message, id: newId }; 
+            });
+
+        for (const updatedMessage of updatedMessages) {
+            await editMessage(channelName, updatedMessage.id + 1, { newId: updatedMessage.id }); 
+        }
 
         res.json({ success: true });
 
@@ -1631,19 +1638,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
-    fs.readdir(imagesDir, (err, files) => {
-        if (err) {
-            console.error('Unable to scan directory:', err);
-            return;
-        }
-
-        shuffledImages = shuffleArray(files);
-    });
-    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-});
-
-// httpServer.listen(port, () => {
+// httpServer.listen(port, 'localhost', () => {
 //     fs.readdir(imagesDir, (err, files) => {
 //         if (err) {
 //             console.error('Unable to scan directory:', err);
@@ -1651,7 +1646,19 @@ httpServer.listen(port, 'localhost', () => {
 //         }
 
 //         shuffledImages = shuffleArray(files);
-//     }); 
+//     });
+//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+// });
 
-//     console.log(`App listening on port ${port}!`)
-// }); 
+httpServer.listen(port, () => {
+    fs.readdir(imagesDir, (err, files) => {
+        if (err) {
+            console.error('Unable to scan directory:', err);
+            return;
+        }
+
+        shuffledImages = shuffleArray(files);
+    }); 
+
+    console.log(`App listening on port ${port}!`)
+}); 

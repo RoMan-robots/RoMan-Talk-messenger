@@ -142,7 +142,7 @@ export async function rephraseText(text, language, style) {
 }
 
 async function createSummarizer() {
-    const apiUrl = 'https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6';
+    const apiUrl = 'https://api-inference.huggingface.co/models/facebook/bart-large-cnn';
 
     return async function summarizeText(text) {
         try {
@@ -180,8 +180,8 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function createTranslator(srcLang, tgtLang) {
-    const apiUrl = `https://api-inference.huggingface.co/models/facebook/nllb-200-distilled-600M`;
+async function createTranslator(model) {
+    const apiUrl = `https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-${model}`;
 
     return async function translateText(text, retries = 3, delayMs = 30000) {
         try {
@@ -193,10 +193,6 @@ async function createTranslator(srcLang, tgtLang) {
                 },
                 body: JSON.stringify({
                     inputs: text,
-                    parameters: {
-                        src_lang: srcLang, 
-                        tgt_lang: tgtLang 
-                    }
                 })
             });
 
@@ -226,8 +222,8 @@ async function createTranslator(srcLang, tgtLang) {
 }
 
 export async function loadModels() {
-    const translatorToEnglish = await createTranslator('uk_UA', 'en_XX');
-    const translatorToOriginalLanguage = await createTranslator('en_XX', 'uk_UA');
+    const translatorToEnglish = await createTranslator('uk-en');
+    const translatorToOriginalLanguage = await createTranslator('en-uk');
     const summarizer = await createSummarizer();
 
     return { translatorToEnglish, translatorToOriginalLanguage, summarizer };
