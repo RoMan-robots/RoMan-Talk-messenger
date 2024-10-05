@@ -37,7 +37,6 @@ function normalizeText(text) {
 }
 
 export function filterText(text) {
-    console.log(text);
     const originalText = text;
     const normalizedText = normalizeText(text)
 

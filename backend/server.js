@@ -1019,23 +1019,23 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
     }
 });
 
-app.post('/check-grammar', async (req, res) => {
-    const { text } = req.body;
-    const correctedText = await checkGrammar(text, language);
-    res.json({ correctedText });
-});
+// app.post('/check-grammar', async (req, res) => {
+//     const { text } = req.body;
+//     const correctedText = await checkGrammar(text, language);
+//     res.json({ correctedText });
+// });
 
-app.post('/analyze-sentiment', (req, res) => {
-    const { text } = req.body;
-    const sentimentResult = analyzeSentiment(text);
-    res.json({ sentimentResult });
-});
+// app.post('/analyze-sentiment', (req, res) => {
+//     const { text } = req.body;
+//     const sentimentResult = analyzeSentiment(text);
+//     res.json({ sentimentResult });
+// });
 
-app.post('/rephrase', async (req, res) => {
-    const { text, language, style } = req.body;
-    const rephrasedText = await rephraseText(text, language, style);
-    res.json({ rephrasedText });
-});
+// app.post('/rephrase', async (req, res) => {
+//     const { text, language, style } = req.body;
+//     const rephrasedText = await rephraseText(text, language, style);
+//     res.json({ rephrasedText });
+// });
 
 app.post('/translate', async (req, res) => {
     console.log("test1:", process.memoryUsage());
@@ -1661,5 +1661,4 @@ httpServer.listen(port, () => {
     }); 
 
     console.log(`App listening on port ${port}!`)
-    console.log("kok", process.memoryUsage())
 }); 
