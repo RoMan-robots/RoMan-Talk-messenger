@@ -214,7 +214,6 @@ async function sendMessage() {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
@@ -255,7 +254,6 @@ async function sendMessage() {
         selectedPhotoFiles.forEach(file => {
           formData.append('photo', file);
         });
-
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
           body: formData,
@@ -476,7 +474,6 @@ function closeExploreModal() {
 function createNewChannel() {
   const channelName = document.getElementById("new-channel-name").value;
 
-  // Отримання IP-адреси
   fetch("https://api.ipify.org?format=json")
       .then(response => response.json())
       .then(ipData => {
@@ -714,6 +711,17 @@ function deleteMessage(messageId) {
             photoElement.remove();
           }
         }
+        const messages = document.querySelectorAll('.message');
+        let currentIndex = 1;
+
+        messages.forEach((message) => {
+          if (message.classList.contains('message-photo')) {
+            message.dataset.index = currentIndex - 1;
+          } else {
+            message.dataset.index = currentIndex;
+            currentIndex++;
+          }
+        });
       } else {
         alertify.error(data.message || 'Не вдалося видалити повідомлення');
       }

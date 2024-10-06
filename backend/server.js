@@ -196,6 +196,20 @@ async function ensureModelsLoaded() {
         console.log('Models loaded successfully');
     }
 }
+async function rephormatMessagesID(channelName) {
+    try {
+        let messages = await getMessages(channelName);
+
+        const reformattedMessages = messages.map((message, index) => {
+            return { ...message, id: index + 1 };
+        });
+
+        await saveAllMessages(channelName, reformattedMessages);
+        console.log(`Повідомлення в каналі ${channelName} були успішно переформатовані.`);
+    } catch (error) {
+        console.error('Помилка при переформатуванні ID повідомлень:', error);
+    }
+}
 
 async function getMessages(channelName) {
     try {
@@ -276,6 +290,50 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
     }
 }
 
+async function saveAllMessages(channelName, reformattedMessages, retries = 3) {
+    try {
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channelName);
+
+        if (channelIndex !== -1) {
+            const channel = channels[channelIndex];
+            channel.messages = reformattedMessages;
+
+            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
+
+            try {
+                const getChannelsResponse = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: 'messages.json',
+                });
+                const sha = getChannelsResponse.data.sha;
+
+                await octokit.repos.createOrUpdateFileContents({
+                    owner,
+                    repo,
+                    path: 'messages.json',
+                    message: `Reformatted messages in ${channelName}`,
+                    content,
+                    sha,
+                });
+            } catch (error) {
+                if (retries > 0) {
+                    console.log(`Retrying saveAllMessages due to conflict... Attempts left: ${retries}`);
+                    return saveAllMessages(channelName, reformattedMessages, retries - 1);
+                } else {
+                    throw new Error('Error saving channels: ' + error.message);
+                }
+            }
+        } else {
+            throw new Error(`Канал "${channelName}" не знайдено.`);
+        }
+    } catch (error) {
+        console.error('Помилка при збереженні переформатованих повідомлень:', error);
+        throw error;
+    }
+}
+
 async function editMessage(channelName, messageId, { newContent, newId }) {
     try {
         const channels = await getChannels();
@@ -287,10 +345,10 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
             channels[channelIndex].messages.forEach(message => {
                 if (message.id === messageId) {
                     if (newContent !== undefined) {
-                        message.content = newContent; 
+                        message.content = newContent;
                     }
                     if (newId !== undefined) {
-                        message.id = newId; 
+                        message.id = newId;
                     }
                     messageFound = true;
                 }
@@ -628,7 +686,7 @@ io.on('connection', (socket) => {
 
     socket.on('edit message', async (channelName, messageId, newContent) => {
         try {
-            await editMessage(channelName, messageId, {newContent: newContent});
+            await editMessage(channelName, messageId, { newContent: newContent });
             io.emit('message edited', channelName, messageId, newContent);
         } catch (error) {
             console.error('Помилка при редагуванні повідомлення:', error);
@@ -773,12 +831,12 @@ app.post('/messages', checkUserExists, async (req, res) => {
         const filteredText = filterText(messageObject.context);
         messageObject.context = filteredText;
 
-        await saveMessages(channelName, messageObject);
-
         const messages = await getMessages(channelName);
         const id = messages.length ? messages.length : 0;
         messageObject.id = id + 1;
 
+        await saveMessages(channelName, messageObject);
+  
         io.emit('chat message', channelName, messageObject);
 
         res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
@@ -789,6 +847,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
 });
 
 app.post('/upload-photo-message', async (req, res) => {
+    console.log(req.body)
     try {
         const { channelName, author, context } = req.body;
         const photos = req.files?.photo;
@@ -1019,23 +1078,23 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
     }
 });
 
-// app.post('/check-grammar', async (req, res) => {
-//     const { text } = req.body;
-//     const correctedText = await checkGrammar(text, language);
-//     res.json({ correctedText });
-// });
+app.post('/check-grammar', async (req, res) => {
+    const { text } = req.body;
+    const correctedText = await checkGrammar(text, language);
+    res.json({ correctedText });
+});
 
-// app.post('/analyze-sentiment', (req, res) => {
-//     const { text } = req.body;
-//     const sentimentResult = analyzeSentiment(text);
-//     res.json({ sentimentResult });
-// });
+app.post('/analyze-sentiment', (req, res) => {
+    const { text } = req.body;
+    const sentimentResult = analyzeSentiment(text);
+    res.json({ sentimentResult });
+});
 
-// app.post('/rephrase', async (req, res) => {
-//     const { text, language, style } = req.body;
-//     const rephrasedText = await rephraseText(text, language, style);
-//     res.json({ rephrasedText });
-// });
+app.post('/rephrase', async (req, res) => {
+    const { text, language, style } = req.body;
+    const rephrasedText = await rephraseText(text, language, style);
+    res.json({ rephrasedText });
+});
 
 app.post('/translate', async (req, res) => {
     console.log("test1:", process.memoryUsage());
@@ -1156,7 +1215,7 @@ app.post('/update-message/:id', checkUserExists, async (req, res) => {
 
         message.context = filteredText;
 
-        await editMessage(channelName, messageId, {newContent: filteredText});
+        await editMessage(channelName, messageId, { newContent: filteredText });
 
         res.json({ success: true });
 
@@ -1190,12 +1249,12 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         const updatedMessages = messages
             .filter(message => message.id > messageId)
             .map(message => {
-                const newId = message.id - 1; 
-                return { ...message, id: newId }; 
+                const newId = message.id - 1;
+                return { ...message, id: newId };
             });
 
         for (const updatedMessage of updatedMessages) {
-            await editMessage(channelName, updatedMessage.id + 1, { newId: updatedMessage.id }); 
+            await editMessage(channelName, updatedMessage.id + 1, { newId: updatedMessage.id });
         }
 
         res.json({ success: true });
@@ -1267,8 +1326,6 @@ app.post('/save-rank', checkUserExists, async (req, res) => {
         await saveUsers(users);
 
         res.json({ message: 'Ранг користувача збережено' });
-        await alertSecurity(req, "", username, `Змінено ранг користувачу ${targetUser} (ранг ${oldRank}) на ${newRank}`);
-        await alertSecurity(req, ip, targetUser.username, `Адміністратор ${username} змінив вам ранг на ${newRank}`);
     } else {
         user.rank = 'banned';
         await saveUsers(users);
@@ -1333,17 +1390,15 @@ app.post('/delete-appeal', async (req, res) => {
     }
 });
 
-app.get("/get-security", async (req, res) => {
+app.get("/get-security", checkUserExists, async (req, res) => {
     const securityData = await getSecurity();
+    const username = req.username;
 
-    const security = securityData.reduce((acc, obj) => {
-        const user = Object.keys(obj)[0];
-        const messages = obj[user];
-        if (messages.length > 0) {
-            acc[user] = messages;
-        }
-        return acc;
-    }, {});
+    const userSecurityData = securityData.find(obj => Object.keys(obj)[0] === username);
+
+    const security = {
+        [username]: userSecurityData[username]
+    };
 
     res.status(200).json({ success: true, security });
 });
@@ -1595,7 +1650,9 @@ app.post('/save-theme', checkUserExists, async (req, res) => {
     }
 });
 
-app.post('/logout', (req, res) => {
+app.post('/logout', checkUserExists, (req, res) => {
+    const { ip } = req.body;
+    alertSecurity(req, ip, req.username, "Хтось вийшов з акаунту.")
     res.send({ success: true, redirectUrl: '/' });
 });
 

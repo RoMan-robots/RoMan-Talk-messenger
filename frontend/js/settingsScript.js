@@ -642,7 +642,18 @@ async function logout() {
   }
 
   try {
-    const response = await fetch('/logout', { method: 'POST' });
+    let response = await fetch("https://api.ipify.org?format=json");
+    const ipData = await response.json();
+    response = await fetch('/logout', { 
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      }, 
+      body: JSON.stringify({
+        ip: ipData.ip
+      })
+     });
     const data = await response.json();
     if (data.success) {
       window.location.href = '/';
