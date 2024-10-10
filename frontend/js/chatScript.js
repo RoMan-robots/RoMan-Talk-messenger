@@ -214,6 +214,7 @@ async function sendMessage() {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
@@ -259,8 +260,7 @@ async function sendMessage() {
           body: formData,
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           },
         });
 

@@ -847,77 +847,62 @@ app.post('/messages', checkUserExists, async (req, res) => {
 });
 
 app.post('/upload-photo-message', async (req, res) => {
-    console.log(req.body)
     try {
         const { channelName, author, context } = req.body;
         const photos = req.files?.photo;
-
         let messageObject = { author, context };
 
-        if (Array.isArray(photos)) {
-            if (photos.length > 1) {
-                return res.status(400).send('Можна відправляти лише одну фотографію за раз!');
-            }
-
-            const photo = photos[0];
+        const processPhoto = (photo) => {
             const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
-            const fileExtension = photo.name.split('.').pop().toLowerCase();
+            const trimmedPhotoName = photo.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
+            const fileExtension = trimmedPhotoName.split('.').pop().toLowerCase();
 
             if (!validExtensions.includes(`.${fileExtension}`)) {
-                return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!' });
+                throw new Error('Відправляти можна лише фотографії!');
             }
 
             if (photo.size > 10 * 1024 * 1024) {
-                return res.status(400).json({ success: false, message: 'Фотографія повинна важити до 10мб!' });
+                throw new Error('Фотографія повинна важити до 10мб!');
             }
 
+            return trimmedPhotoName;
+        };
+
+        if (Array.isArray(photos) && photos.length > 1) {
+            return res.status(400).send('Можна відправляти лише одну фотографію за раз!');
+        }
+
+        if (photos) {
+            const photo = Array.isArray(photos) ? photos[0] : photos;
             messageObject.image = photo;
-        } else if (photos) {
-            const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
-            const fileExtension = photos.name.split('.').pop().toLowerCase();
-
-            if (!validExtensions.includes(`.${fileExtension}`)) {
-                return res.status(400).json({ success: false, message: 'Відправляти можна лише фотографії!' });
-            }
-
-            if (photos.size > 10 * 1024 * 1024) {
-                return res.status(400).json({ success: false, message: 'Фотографія повинна важити до 10мб!' });
-            }
-
-            messageObject.image = photos;
+            messageObject.image.name = processPhoto(photo);
         }
 
         await saveMessages(channelName, messageObject, 'photo');
-
         const messages = await getMessages(channelName);
-        const id = messages.length;
-        messageObject.id = id;
+        messageObject.id = messages.length;
         messageObject.photo = `${messageObject.id}--${messageObject.image.name}`;
 
+        await downloadImages(channelName);
+
+        const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
+        const checkFileExistence = setInterval(() => {
+            if (fs.existsSync(filePath)) {
+                clearInterval(checkFileExistence);
+                io.emit('chat message', channelName, messageObject);
+                res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
+            }
+        }, 500);
+
         setTimeout(() => {
-            downloadImages(channelName).then(() => {
-                const filePath = path.join(__dirname, 'backend', 'images', 'message-images', channelName, messageObject.photo);
+            clearInterval(checkFileExistence);
+            if (!fs.existsSync(filePath)) {
+                res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
+            }
+        }, 20000);
 
-                fs.access(filePath, fs.constants.F_OK, (err) => {
-                    if (err) {
-                        console.error(`Файл ${messageObject.photo} ще не доступний!`);
-                        console.log(err);
-
-                        io.emit('chat message', channelName, messageObject);
-                    } else {
-                        io.emit('chat message', channelName, messageObject);
-                    }
-                });
-            }).catch((error) => {
-                console.error('Помилка при завантаженні зображень:', error);
-                alertify.error('Помилка при завантаженні зображень.');
-            });
-        }, 10000);
-
-        res.status(200).json({ success: true, message: 'Message saved successfully.' });
     } catch (error) {
-        console.error('Error saving photo and message:', error);
-        res.status(500).json({ success: false, message: 'Server error.' });
+        res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
     }
 });
 
@@ -995,11 +980,12 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
 });
 
 app.post('/create-channel', checkUserExists, async (req, res) => {
-    const { channelName, ip } = req.body;
+    let { channelName, ip } = req.body;
     const username = req.username;
 
     try {
         const channels = await getChannels();
+        channelName = channelName.trim();
         const channelExists = channels.some(channel => channel.name === channelName);
 
         if (channelExists) {
@@ -1695,17 +1681,17 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
+httpServer.listen(port, 'localhost', () => {
+    fs.readdir(imagesDir, (err, files) => {
+        if (err) {
+            console.error('Unable to scan directory:', err);
+            return;
+        }
 
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
+        shuffledImages = shuffleArray(files);
+    });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
 httpServer.listen(port, () => {
     fs.readdir(imagesDir, (err, files) => {

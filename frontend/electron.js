@@ -1,9 +1,4 @@
 import { app, BrowserWindow } from 'electron';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 function createWindow() {
   let mainWindow = new BrowserWindow({
@@ -13,20 +8,10 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: true,
-      sandbox: false,
-      devTools: false
+      sandbox: false
     }
   });
-
-  mainWindow.loadFile(path.join(__dirname, 'html', 'index.html'));
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    const fileUrl = `file://${path.join(__dirname, 'html', 'index.html')}`;
-
-    if (url === fileUrl || url === 'file:///' || url === '/') {
-      event.preventDefault();
-      mainWindow.loadFile(path.join(__dirname, 'html', 'index.html'));
-    }
-  });
+  mainWindow.loadURL('https://roman-talk.onrender.com');
 }
 
 app.whenReady().then(() => {
