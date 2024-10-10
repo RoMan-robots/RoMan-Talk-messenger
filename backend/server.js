@@ -1681,17 +1681,17 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-httpServer.listen(port, 'localhost', () => {
-    fs.readdir(imagesDir, (err, files) => {
-        if (err) {
-            console.error('Unable to scan directory:', err);
-            return;
-        }
+// httpServer.listen(port, 'localhost', () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
 
-        shuffledImages = shuffleArray(files);
-    });
-    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-});
+//         shuffledImages = shuffleArray(files);
+//     });
+//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+// });
 
 httpServer.listen(port, () => {
     fs.readdir(imagesDir, (err, files) => {
