@@ -457,7 +457,7 @@ body {
   padding: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   width: 400px;
-  height: 250px;
+  height: 300px;
 }
 
 #message-options-menu button {
@@ -473,7 +473,7 @@ body {
 @media (max-width: 400px){
   #message-options-menu {
     width: 100%;
-    height: 300px;
+    height: 350px;
   }
 }
 
@@ -489,6 +489,13 @@ body {
   margin: 0;
   padding: 5px 0;
   font-weight: bold;
+}
+
+.general,
+.ai-functions {
+  display: block;
+  border-bottom: 1px solid var(--text-color);
+  padding: 5px;
 }
 
 #input-container {
