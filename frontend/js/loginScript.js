@@ -12,7 +12,7 @@ window.fetch = function (...args) {
 };
 
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
-const version = "2.0"
+const version = "2.1"
 fetch('/set-bg')
   .then(response => response.blob())
   .then(imageBlob => {

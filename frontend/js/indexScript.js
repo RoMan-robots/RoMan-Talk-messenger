@@ -15,7 +15,7 @@ const loginScreenButton = document.getElementById('login-screen-button');
 const registerScreenButton = document.getElementById('register-screen-button');
 const helloScreen = document.getElementById('hello-screen');
 
-const version = "2.0"
+const version = "2.1"
 
 function changeUrlToLogin(url) {
   window.location.href = url;
