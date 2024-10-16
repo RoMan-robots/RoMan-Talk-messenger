@@ -68,6 +68,7 @@ async function getCurrentUsername() {
 }
 
 function displayMessage(message, id) {
+  console.log(message, id)
   const messageElement = document.createElement('div');
   messageElement.classList.add('message');
   messageElement.dataset.index = id;
@@ -143,27 +144,6 @@ document.addEventListener('click', (event) => {
     menu.classList.add('message-options-menu-hide');
   }
 });
-
-document.getElementById("message-options-menu").addEventListener("click", function (event) {
-  const messageId = event.currentTarget.dataset.messageId;
-  if (event.target.tagName === "BUTTON") {
-    const action = event.target.textContent;
-    switch (action) {
-      case "Перекласти текст":
-        translateMessage(messageId);
-        break;
-      case "Стиснути текст":
-        compressMessage(messageId);
-        break;
-      case "Редагувати повідомення":
-        editMessage(messageId);
-        break;
-      case "Видалити повідомлення":
-        deleteMessage(messageId);
-        break;
-    }
-  }
-})
 
 async function loadMessages(channelName) {
   try {
@@ -475,37 +455,37 @@ function createNewChannel() {
   const channelName = document.getElementById("new-channel-name").value;
 
   fetch("https://api.ipify.org?format=json")
-      .then(response => response.json())
-      .then(ipData => {
-          const ip = ipData.ip;
+    .then(response => response.json())
+    .then(ipData => {
+      const ip = ipData.ip;
 
-          return fetch('/create-channel', {
-              method: 'POST',
-              headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ 
-                  channelName: channelName,
-                  ip: ip 
-              })
-          });
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.success) {
-              loadUserChannels();
-              loadMessages(channelName);
-          } else {
-              console.error(data.message);
-              alertify.error(data.message);
-          }
-      })
-      .catch(error => {
-          console.error('Помилка при створенні каналу:', error);
-          alertify.error('Помилка при створенні каналу:', error);
+      return fetch('/create-channel', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          channelName: channelName,
+          ip: ip
+        })
       });
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadUserChannels();
+        loadMessages(channelName);
+      } else {
+        console.error(data.message);
+        alertify.error(data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Помилка при створенні каналу:', error);
+      alertify.error('Помилка при створенні каналу:', error);
+    });
 
   closeModal();
 }
@@ -579,7 +559,7 @@ function changeUrlToSettings(url) {
 
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  
+
   if (messageElement) {
     const [author, ...textParts] = messageElement.textContent.split(': ');
     const originalText = textParts.join(': ');
@@ -652,6 +632,65 @@ async function compressMessage(messageId) {
     } catch (error) {
       console.error('Помилка при стисненні повідомлення:', error);
       messageElement.textContent = author + ': ' + originalText;
+      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
+    }
+  }
+}
+
+async function compressAllMessages(messageId) {
+  const messageElements = document.querySelectorAll(`.message[data-index]`);
+  let isTargetMessage = false;
+  let messagesToCompress = [];
+
+  messageElements.forEach(messageElement => {
+    const currentMessageId = messageElement.dataset.index;
+    if (currentMessageId == messageId) {
+      isTargetMessage = true;
+    }
+
+    if (isTargetMessage) {
+      const [author, ...textParts] = messageElement.querySelector('p').textContent.split(': ');
+      const originalText = textParts.join(': ');
+      messagesToCompress.push({ author, originalText, element: messageElement });
+    }
+  });
+  messageId = +messageId + 1;
+  if (messagesToCompress.length > 0) {
+    displayMessage({ context: `Початок стиснення повідомлень від повідомлення з ID: ${messageId}` }, messageId);
+
+    try {
+      const combinedText = messagesToCompress.map(msg => `${msg.author}: ${msg.originalText}`).join('\n');
+      const response = await fetch('/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: combinedText })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'Ліміт API вичерпано, спробуйте через 1 годину.') {
+          alertify.error('Ліміт API вичерпано, спробуйте пізніше.');
+        } else {
+          throw new Error(errorData.error || 'Network response was not ok');
+        }
+      }
+
+      const data = await response.json();
+
+      if (data.summaryText) {
+        const summaryMessages = data.summaryText.split('\n');
+        displayMessage({
+          context: `Результат: ${summaryMessages}`
+        }, messageId);
+        alertify.success('Повідомлення стиснено!');
+      } else {
+        alertify.error('Помилка в відповіді');
+      }
+    } catch (error) {
+      console.error('Помилка при стисненні повідомлення:', error);
+      messagesToCompress.forEach(msg => {
+        msg.element.querySelector('p').textContent = msg.author + ': ' + msg.originalText;
+      });
       alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
     }
   }
@@ -822,3 +861,27 @@ socket.on('message edited', (channelName, messageId, newContent) => {
     }
   }
 });
+
+document.getElementById("message-options-menu").addEventListener("click", function (event) {
+  const messageId = event.currentTarget.dataset.messageId;
+  if (event.target.tagName === "BUTTON") {
+    const action = event.target.textContent;
+    switch (action) {
+      case "Перекласти текст":
+        translateMessage(messageId);
+        break;
+      case "Стиснути текст":
+        compressMessage(messageId);
+        break;
+      case "Що нового":
+        compressAllMessages(messageId);
+        break;
+      case "Редагувати повідомення":
+        editMessage(messageId);
+        break;
+      case "Видалити повідомлення":
+        deleteMessage(messageId);
+        break;
+    }
+  }
+})
