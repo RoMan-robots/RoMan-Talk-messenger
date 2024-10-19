@@ -891,6 +891,28 @@ button,
   --some-buttons-text: #fff;
 }
 
+[data-theme="amethyst"] {
+  --background-color: #352f44;
+  --text-color: #d3c4e6;
+  --button-bg-color: #8e78b4;
+  --input-bg-color: #5a4d7a;
+  --modal-bg-color: #4b4370; 
+  --message-bg-color: #6c598c;
+  --channel-list-bg-color: #3f375c;
+  --some-buttons-text: #e1d4f9;
+}
+
+[data-theme="ruby"] {
+  --background-color: #6c0000;
+  --text-color: #f4a7a7;
+  --button-bg-color: #b93030;
+  --input-bg-color: #3f0808;
+  --modal-bg-color: #600606; 
+  --message-bg-color: #8d2626;
+  --channel-list-bg-color: #741212;
+  --some-buttons-text: #f6c5c5;
+}
+
 #chat-container,
 .modal-content,
 #channel-list {
