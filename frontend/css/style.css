@@ -9,30 +9,30 @@ body {
 }
 
 #background {
-  height: 210vh;
+  height: 235vh;
 }
 
 @media (max-width: 600px) {
   #background {
-    height: 200vh;
+    height: 215vh;
   }
 }
 
 @media (max-width: 400px) {
   #background {
-    height: 330vh;
+    height: 340vh;
   }
 }
 
 @media (max-width: 400px) and (min-height: 630px){
   #background {
-    height: 370vh;
+    height: 390vh;
   }
 }
 
 @media (max-width: 500px) and (min-height: 800px) {
   #background {
-    height: 265vh;
+    height: 290vh;
   }
 }
 
