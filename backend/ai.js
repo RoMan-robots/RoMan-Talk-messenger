@@ -4,7 +4,6 @@ import fetch from 'node-fetch';
 import Sentiment from 'sentiment';
 import dotenv from 'dotenv';
 dotenv.config();
-console.log("ok", process.memoryUsage())
 
 const apiKey = process.env.HUGGING_FACE_TOKEN
 const badWordsFilePath = 'bad-words.txt';
@@ -32,28 +31,30 @@ function normalizeText(text) {
         'M': 'М', 'm': 'м',
         'K': 'К', 'k': 'к'
     };
-    console.log(text);
     return text.split('').map(char => latinToCyrillicMap[char] || char).join('');
 }
 
+function removeSpacesAndSymbols(text) {
+    return text.replace(/[\s\u200B-\u200D\uFEFF]/g, '').replace(/[^a-zA-Zа-яА-Я0-9]/g, '');
+}
+
 export function filterText(text) {
-    const originalText = text;
-    const normalizedText = normalizeText(text)
+    const normalizedText = normalizeText(text); 
 
-    let words = normalizedText.split(" ");
-    let filteredWords = words.map(word => {
-        const lowerCaseWord = word.toLowerCase();
-        
-        const isBadWord = badWords.some(badWord => lowerCaseWord.includes(badWord.toLowerCase()));
+    const cleanText = removeSpacesAndSymbols(normalizedText.toLowerCase());
 
-        if (isBadWord) {
-            const originalWord = originalText.split(" ").find(w => normalizeText(w).toLowerCase() === lowerCaseWord);
-            return originalWord ? '*'.repeat(originalWord.length) : word;
-        } else {
-            return originalText.split(" ").find(w => normalizeText(w).toLowerCase() === lowerCaseWord) || word;
+    badWords.forEach(badWord => {
+        const regex = new RegExp(
+            badWord.split('').map(letter => `[${letter}]+([^a-zA-Zа-яА-Я0-9]*?)`).join(''),
+            'gi'
+        );
+
+        if (regex.test(cleanText)) {
+            text = text.replace(regex, '*'.repeat(badWord.length));
         }
     });
-    return filteredWords.join(' ');
+
+    return text;
 }
 
 export async function checkGrammar(text, language) {
