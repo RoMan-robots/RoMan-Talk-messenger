@@ -68,7 +68,6 @@ async function getCurrentUsername() {
 }
 
 function displayMessage(message, id) {
-  console.log(message, id)
   const messageElement = document.createElement('div');
   messageElement.classList.add('message');
   messageElement.dataset.index = id;
@@ -103,6 +102,9 @@ function displayMessage(message, id) {
     img.classList.add('message');
     messageList.appendChild(img);
   }
+  setTimeout(() => {
+    messageList.scrollTop = messageList.scrollHeight;
+  })
 }
 
 async function openMessageOptionsMenu(id) {
@@ -165,9 +167,6 @@ async function loadMessages(channelName) {
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
           displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
-        })
-        setTimeout(() => {
-          messageList.scrollTop = messageList.scrollHeight;
         })
       } else {
         console.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
@@ -233,8 +232,10 @@ async function sendMessage() {
         formData.append('context', message);
 
         selectedPhotoFiles.forEach(file => {
-          formData.append('photo', file);
+          const trimmedPhotoName = file.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
+          formData.append('photo', file, trimmedPhotoName);
         });
+
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
           body: formData,
@@ -258,7 +259,6 @@ async function sendMessage() {
 
         uploadFilesDiv.classList.remove("upload-files-visible");
         uploadFilesDiv.classList.add("upload-files-invisible");
-
       } else {
         const messageObject = {
           author: currentUsername,
@@ -741,26 +741,6 @@ function deleteMessage(messageId) {
     .then(data => {
       if (data.success) {
         alertify.success('Повідомлення видалено!');
-
-        const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
-        const photoElement = document.querySelector(`img[data-index='${messageId}']`);
-        if (messageElement) {
-          messageElement.remove();
-          if (photoElement) {
-            photoElement.remove();
-          }
-        }
-        const messages = document.querySelectorAll('.message');
-        let currentIndex = 1;
-
-        messages.forEach((message) => {
-          if (message.classList.contains('message-photo')) {
-            message.dataset.index = currentIndex - 1;
-          } else {
-            message.dataset.index = currentIndex;
-            currentIndex++;
-          }
-        });
       } else {
         alertify.error(data.message || 'Не вдалося видалити повідомлення');
       }
@@ -842,6 +822,17 @@ socket.on('message deleted', (channelName, messageId) => {
         photoElement.remove();
       }
     }
+    const messages = document.querySelectorAll('.message');
+    let currentIndex = 1;
+
+    messages.forEach((message) => {
+      if (message.classList.contains('message-photo')) {
+        message.dataset.index = currentIndex - 1;
+      } else {
+        message.dataset.index = currentIndex;
+        currentIndex++;
+      }
+    });
   }
 });
 

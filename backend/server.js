@@ -886,9 +886,12 @@ app.post('/upload-photo-message', async (req, res) => {
         await downloadImages(channelName);
 
         const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
+        let responseSent = false;
+
         const checkFileExistence = setInterval(() => {
-            if (fs.existsSync(filePath)) {
+            if (fs.existsSync(filePath) && !responseSent) {
                 clearInterval(checkFileExistence);
+                responseSent = true;
                 io.emit('chat message', channelName, messageObject);
                 res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
             }
@@ -896,13 +899,16 @@ app.post('/upload-photo-message', async (req, res) => {
 
         setTimeout(() => {
             clearInterval(checkFileExistence);
-            if (!fs.existsSync(filePath)) {
+            if (!fs.existsSync(filePath) && !responseSent) {
+                responseSent = true;
                 res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
             }
         }, 20000);
 
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
+        }
     }
 });
 
