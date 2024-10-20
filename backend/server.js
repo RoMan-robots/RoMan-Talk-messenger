@@ -36,6 +36,8 @@ const repo = process.env.NAME_REPO;
 
 let loginAttempts = {};
 
+const typingUsersByChannel = {};
+
 const lngDetector = new LanguageDetect();
 let modelsLoaded = false;
 let models = {}
@@ -675,6 +677,36 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('typing', (data) => {
+        const { channel, username } = data;
+
+        if (!typingUsersByChannel[channel]) {
+            typingUsersByChannel[channel] = new Set();
+        }
+
+        typingUsersByChannel[channel].add(username);
+
+        socket.broadcast.emit('typing', { channel, username });
+    });
+
+    socket.on('stop typing', (data) => {
+        const { channel, username } = data;
+
+        if (typingUsersByChannel[channel]) {
+            typingUsersByChannel[channel].delete(username);
+            socket.broadcast.emit('stop typing', { channel, username });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        Object.keys(typingUsersByChannel).forEach(channel => {
+            if (typingUsersByChannel[channel].has(socket.username)) {
+                typingUsersByChannel[channel].delete(socket.username);
+                socket.broadcast.emit('stop typing', { channel, username: socket.username });
+            }
+        });
+    });
+
     socket.on('delete message', async (channelName, messageId) => {
         try {
             await deleteMessage(channelName, messageId);
@@ -836,7 +868,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
         messageObject.id = id + 1;
 
         await saveMessages(channelName, messageObject);
-  
+
         io.emit('chat message', channelName, messageObject);
 
         res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
@@ -973,9 +1005,10 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
     const { channelName } = req.params;
     try {
         const messages = await getMessages(channelName);
-        await downloadImages(channelName)
+        await downloadImages(channelName);
 
-        res.send({ channels: [{ name: channelName, messages }] });
+        const typingUsers = typingUsersByChannel[channelName] ? Array.from(typingUsersByChannel[channelName]) : [];
+        res.send({ channels: [{ name: channelName, messages, typingUsers }] });
     } catch (error) {
         if (error.message === 'Канал не знайдено.') {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
