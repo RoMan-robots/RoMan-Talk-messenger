@@ -23,7 +23,6 @@ const changeRankModal = document.getElementById("change-rank-modal");
 const rankNamePlaceholder = document.getElementById('rank-name-placeholder');
 
 const settingsButtons = document.querySelector('.settings-buttons');
-const settingsOption = document.querySelector(".settings-option")
 
 const token = localStorage.getItem('token');
 
@@ -86,7 +85,6 @@ async function openChannelSettings(channel) {
 async function fetchUserChannels() {
   try {
     settingsButtons.style.display = 'none';
-    settingsOption.style.display = 'none';
     document.getElementById('channels-modal').style.display = 'block';
     const response = await fetch('/my-channels', { headers: {Authorization: `Bearer ${token}`} });
     const data = await response.json();
@@ -408,7 +406,6 @@ async function openSecurityModal() {
   document.getElementById('security-modal').style.display = 'block';
 
   settingsButtons.style.display = 'none';
-  settingsOption.style.display = 'none';
 
   await loadSecurityRecomendations();
 }
@@ -417,14 +414,12 @@ function closeSecurityModal() {
   document.getElementById('security-modal').style.display = 'none';
 
   settingsButtons.style.display = 'flex';
-  settingsOption.style.display = 'flex';
 }
 
 function openRequestsModal() {
   document.getElementById('requests-modal').style.display = 'block';
 
   settingsButtons.style.display = 'none';
-  settingsOption.style.display = 'none';
 
   loadAppeals()
 }
@@ -434,21 +429,18 @@ function closeMyChannelsModal() {
   document.getElementById('channel-settings-modal').style.display = 'none';
 
   settingsButtons.style.display = 'flex';
-  settingsOption.style.display = 'flex';
 }
 
 function openChangeRankModal() {
   changeRankModal.style.display = "block";
 
   settingsButtons.style.display = 'none';
-  settingsOption.style.display = 'none';
 }
 
 function closeChangeRankModal() {
   changeRankModal.style.display = "none";
 
   settingsButtons.style.display = 'flex';
-  settingsOption.style.display = 'flex';
 }
 
 function toggleChangePassword() {

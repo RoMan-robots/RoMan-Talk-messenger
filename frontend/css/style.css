@@ -284,6 +284,8 @@ body {
 
 .footer-a {
   color: #adadad;
+  margin-left: 7px;
+  margin-right: 7px;
 }
 
 #server-dropdown:hover {
@@ -613,7 +615,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 105vh;
   color: #fff;
   font-family: Verdana, sans-serif;
   background: rgba(0, 0, 0, 0.4);
