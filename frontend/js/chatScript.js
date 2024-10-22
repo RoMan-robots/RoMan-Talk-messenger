@@ -21,7 +21,7 @@ const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
 const fileInput = document.getElementById('file-input');
 
-const socket = io(baseURL);
+const socket = io("https://roman-talk.onrender.com");
 const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
 const newUserSound = new Audio("/newUserSound.mp3");
