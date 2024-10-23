@@ -32,7 +32,7 @@ body {
 
 @media (max-width: 500px) and (min-height: 800px) {
   #background {
-    height: 290vh;
+    height: 330vh;
   }
 }
 
@@ -333,6 +333,7 @@ body {
   border-radius: 10px;
   display: none;
   padding: 10px;
+  z-index: 999;
 }
 
 #channel-list.active {

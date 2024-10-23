@@ -31,14 +31,14 @@
                 <input type="checkbox" id="anonymousLogin">Анонімний логін
             </label>
             <div class="ok">
+                <button class="btn btn-secondary" onclick="changeUrlTo('/')">Назад</button>
                 <button id="login-button" class="btn btn-light" onclick="login()">Увійти</button>
             </div>
         </div>
     </form>
     <div id="ban-screen" style="display: none;">
         <h1 class="classic ban-text">Акаунт заблоковано!</h1>
-        <h3 class="classic ban-text">Ви були заблоковані за порушення правил використання сервісу. Проте, ви можете
-            подати на апеляцію, натиснувши на кнопку нижче.</h3>
+        <h3 class="classic ban-text">Ви були заблоковані за порушення правил використання RoMan Talk</h3>
         <button class="btn btn-light" id="appeal-button" onclick="openAppealForm()">Подати на апеляцію</button>
         <button class="btn btn-light" onclick="changeUrlTo('/')">Перейти до головної сторінки</button>
     </div>
