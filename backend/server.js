@@ -2,6 +2,7 @@ import express from 'express';
 import fileUpload from "express-fileupload"
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
+import cors from 'cors';
 import uaParser from 'ua-parser-js';
 import geoip from 'geoip-lite';
 import { Octokit } from '@octokit/rest';
@@ -27,7 +28,13 @@ const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
-const io = new SocketIO(httpServer);
+const io = new SocketIO(httpServer, {
+    cors: {
+        origin: "http://localhost:8080",
+        methods: ["GET", "POST"]
+    }
+});
+
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
 const localDir = path.join(__dirname, 'images/message-images');
 
@@ -44,6 +51,10 @@ let models = {}
 
 app.use(fileUpload());
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:8080',
+    methods: ['GET', 'POST']
+}));
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
