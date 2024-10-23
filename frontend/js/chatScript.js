@@ -21,7 +21,7 @@ const chatContainer = document.getElementById('chat-container');
 const sortModal = document.getElementById('sort-modal');
 const fileInput = document.getElementById('file-input');
 
-const socket = io("https://roman-talk.onrender.com");
+const socket = io(baseURL);
 const welcomeSound = new Audio('/welcomeSound.mp3');
 const newMessageSound = new Audio("/newMessageSound.mp3");
 const newUserSound = new Audio("/newUserSound.mp3");
@@ -211,6 +211,7 @@ async function sendMessage() {
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
         const data = await response.json();
+        const editMessage = document.getElementById("edit-message");
 
         if (data.success) {
           alertify.success('Повідомлення відредаговано!');
@@ -218,7 +219,6 @@ async function sendMessage() {
 
           messageInput.value = '';
 
-          const editMessage = document.getElementById("edit-message");
           let messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
 
           const currentText = messageElement.textContent;
@@ -228,15 +228,25 @@ async function sendMessage() {
             const textBeforeColon = currentText.substring(0, colonIndex + 1);
             messageElement.textContent = textBeforeColon + ' ' + message;
 
-            messageInput.placeholder = 'Напишіть повідомлення';
+            editMessage.classList.add("edit-message-invisible");
+            editMessage.classList.remove("edit-message-visible");
+
+            messageInput.value = '';
+          } else {
+            messageElement.textContent = message;
 
             editMessage.classList.add("edit-message-invisible");
             editMessage.classList.remove("edit-message-visible");
-          } else {
-            messageElement.textContent = message;
+
+            messageInput.value = '';
           }
         } else {
           alertify.error(data.message);
+
+          editMessage.classList.add("edit-message-invisible");
+          editMessage.classList.remove("edit-message-visible");
+
+          messageInput.value = '';
         }
       } else if (selectedPhotoFiles.length > 0) {
         const formData = new FormData();
@@ -935,7 +945,10 @@ document.getElementById("message-options-menu").addEventListener("click", functi
       case "Що нового":
         compressAllMessages(messageId);
         break;
-      case "Редагувати повідомлення":
+      case "Показати оригінал":
+        getOriginalMessage();
+        break;
+      case "Редагувати повідомення":
         editMessage(messageId);
         break;
       case "Видалити повідомлення":
