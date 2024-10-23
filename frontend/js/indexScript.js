@@ -73,10 +73,7 @@ function showDownloadMenu() {
 }
 function downloadApp(platform) {
   const downloadLinks = {
-    'mac-arm': 'https://www.dropbox.com/scl/fi/5u8e4ko8br00l7x2aquq2/RoManTalk-mac-arm.zip?rlkey=zmbo6rkn5knvfos4cigs86t13&st=7pppbvll&dl=1',
-    'mac-x86': 'https://www.dropbox.com/scl/fi/yaj97ks88b6ozlvlti2vt/RoManTalk-mac-x64.zip?rlkey=g58oackv16kfi063xao4xrukc&st=0zcgdozo&dl=1',
-    'win-arm': 'https://www.dropbox.com/scl/fi/ql6v8tk9c74noq32elptu/RoManTalk-win-arm.zip?rlkey=ujzbm7ij4dqa445cakobbmm1a&st=qj3fez33&dl=1',
-    'win-x86': 'https://www.dropbox.com/scl/fi/7khpnuf3yhd79qohi6gwz/RoManTalk-win-x64.zip?rlkey=589exzh61wodsxii6kpjnq3c6&st=ls2vtm2j&dl=1',
+    'win': 'https://www.dropbox.com/scl/fi/5lmb41k95f27f3zkuev58/RoManTalk.exe?rlkey=zzi14fdsb7zx748wen6fwzm58&st=3ez04br9&dl=1',
     'mobile': 'https://www.dropbox.com/scl/fi/uz4f8yx7mauy54fn4hyqc/RoManTalk-apk.apk?rlkey=7go69pj1joqja6cwcqabixhzz&st=0qi0ktz2&dl=1'
   };
 
