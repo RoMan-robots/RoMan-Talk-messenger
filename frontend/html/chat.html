@@ -35,12 +35,14 @@
     <div id="message-list">
     </div>
     <div id="upload-files" class="upload-files-invisible">
+      <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
       <h5>Прикріплені зображення до повідомлення:<h5>
           <ul>
 
           </ul>
     </div>
     <div id="edit-message" class="edit-message-invisible">
+      <span class="close-button" onclick="closeModal('edit-message')">&times;</span>
       <h5>Редагування повідомлення</h5>
       <span id="edit-message-span"></span>
     </div>
@@ -75,13 +77,14 @@
     </div>
     <div id="create-channel-modal" class="modal">
       <div class="modal-content">
-        <span class="close-button" onclick="closeModal()">&times;</span>
+        <span class="close-button" onclick="closeModal('create-channel-modal')">&times;</span>
         <h2 class="title">Створити новий канал</h2>
         <input type="text" id="new-channel-name" placeholder="Назва каналу">
         <button onclick="createNewChannel()" id="create">Створити</button>
       </div>
     </div>
     <div id="explore-channels-modal" class="modal" style="display: none;">
+      <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
       <div class="modal-content">
         <span class="close-button" onclick="closeExploreModal()">&times;</span>
         <h2>Доступні канали</h2>
@@ -91,7 +94,7 @@
     </div>
     <div id="sort-modal" class="modal">
       <div class="modal-content">
-        <span id="sort-modal-close" class="close">&times;</span>
+        <span class="close-button" onclick="closeModal('sort-modal')">&times;</span>
         <h2>Сортувати канали за:</h2>
         <button onclick="sortChannels('name')" class="sort-button">алфавітом</button>
         <button onclick="sortChannels('size')" class="sort-button">розміром</button>

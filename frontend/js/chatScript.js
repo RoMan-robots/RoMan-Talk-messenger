@@ -232,6 +232,7 @@ async function sendMessage() {
             editMessage.classList.remove("edit-message-visible");
 
             messageInput.value = '';
+            messageInput.placeholder = 'Напишіть повідомлення';
           } else {
             messageElement.textContent = message;
 
@@ -239,6 +240,7 @@ async function sendMessage() {
             editMessage.classList.remove("edit-message-visible");
 
             messageInput.value = '';
+            messageInput.placeholder = 'Напишіть повідомлення';
           }
         } else {
           alertify.error(data.message);
@@ -247,6 +249,7 @@ async function sendMessage() {
           editMessage.classList.remove("edit-message-visible");
 
           messageInput.value = '';
+          messageInput.placeholder = 'Напишіть повідомлення';
         }
       } else if (selectedPhotoFiles.length > 0) {
         const formData = new FormData();
@@ -374,13 +377,8 @@ function loadChannelManagementButtons() {
   sortChannelsButton.textContent = 'Сортувати канали';
   channelListElement.appendChild(sortChannelsButton);
 
-  const sortModalClose = document.getElementById('sort-modal-close');
   sortChannelsButton.addEventListener('click', () => {
     sortModal.style.display = 'block';
-  });
-
-  sortModalClose.addEventListener('click', () => {
-    sortModal.style.display = 'none';
   });
 }
 
@@ -463,8 +461,17 @@ function createChannelModal() {
   document.getElementById("create-channel-modal").style.display = "block";
 }
 
-function closeModal() {
-  document.getElementById("create-channel-modal").style.display = "none";
+function closeModal(element) {
+  if (element === 'edit-message') {
+    document.getElementById(element).classList.remove("edit-message-visible")
+    document.getElementById(element).classList.add("edit-message-invisible")
+
+    messageInput.value = '';
+    messageInput.placeholder = 'Напишіть повідомлення';
+    editMode = false;
+  } else {
+    document.getElementById(element).style.display = "none";
+  }
 }
 
 function openExploreChannelsModal() {
