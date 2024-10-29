@@ -1696,13 +1696,13 @@ app.post('/logout', checkUserExists, (req, res) => {
 });
 
 app.post('/delete-account', checkUserExists, async (req, res) => {
-    const { password } = req.body;
+    const { password, userId } = req.body;
     let users = await getUsers();
-    const userIndex = users.findIndex(user => user.id === req.session.userId);
+    const userIndex = users.findIndex(user => user.id === userId);
 
     const isPasswordMatch = await bcrypt.compare(password, users[userIndex].password);
     if (isPasswordMatch) {
-        users = users.filter(user => user.id !== req.session.userId);
+        users = users.filter(user => user.id !== userId);
         await saveUsers(users);
         res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
     } else {

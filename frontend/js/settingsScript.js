@@ -28,6 +28,7 @@ const token = localStorage.getItem('token');
 
 let display = false;
 let currentChannelName;
+let userId;
 
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
@@ -39,29 +40,35 @@ fetch('/set-bg')
   })
   .catch(error => console.error('Error fetching the random image:', error));
 
+fetch('/username', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+})
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.userId) {
+      userId = data.userId;
+    } else {
+      alertify.error("Не вдалося отримати ID користувача");
+    }
+  })
+  .catch(error => {
+    console.error('Помилка:', error);
+    alertify.error("Помилка при отриманні ID користувача");
+  });
+
 function changeUrlToChat(url) {
   window.location.href = url;
 }
 
 async function copyUserId() {
-  try {
-    const response = await fetch('/username', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const data = await response.json();
-    if (data.success && data.userId) {
-      await navigator.clipboard.writeText(data.userId);
-      alertify.success('ID скопійовано до буферу обміну.');
-    } else {
-      alertify.error("Не вдалося отримати ID користувача")
-    }
-  } catch (error) {
-    console.error('Помилка:', error);
-    alertify.error("Помилка при копіюванні ID в буфер обміну")
+  if (userId) {
+    await navigator.clipboard.writeText(userId);
+    alertify.success('ID скопійовано до буферу обміну.');
+  } else {
+    alertify.error("Не вдалося отримати ID користувача")
   }
-
 }
 
 async function openChannelSettings(channel) {
@@ -86,7 +93,7 @@ async function fetchUserChannels() {
   try {
     settingsButtons.style.display = 'none';
     document.getElementById('channels-modal').style.display = 'block';
-    const response = await fetch('/my-channels', { headers: {Authorization: `Bearer ${token}`} });
+    const response = await fetch('/my-channels', { headers: { Authorization: `Bearer ${token}` } });
     const data = await response.json();
     if (response.ok && Array.isArray(data.myChannels)) {
       const channelsList = document.getElementById('channels-list');
@@ -106,7 +113,7 @@ async function fetchUserChannels() {
 }
 
 async function checkChannelPrivacy(channelName) {
-  const response = await fetch(`/get-channel-privacy/${channelName}`, { headers: {Authorization: `Bearer ${token}`} });
+  const response = await fetch(`/get-channel-privacy/${channelName}`, { headers: { Authorization: `Bearer ${token}` } });
   const { isPrivate } = await response.json();
   return isPrivate;
 }
@@ -636,16 +643,16 @@ async function logout() {
   try {
     let response = await fetch("https://api.ipify.org?format=json");
     const ipData = await response.json();
-    response = await fetch('/logout', { 
+    response = await fetch('/logout', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json' 
-      }, 
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         ip: ipData.ip
       })
-     });
+    });
     const data = await response.json();
     if (data.success) {
       window.location.href = '/';
@@ -661,7 +668,10 @@ async function logout() {
 
 async function deleteAccount() {
   alertify.prompt('Будь ласка, введіть ваш пароль для підтвердження видалення акаунту:',
-    async function (value) {
+    function () {
+      alertify.error('Видалення акаунту скасовано.');
+    },
+    async function (evt, value) {
       const password = value;
       try {
         const response = await fetch('/delete-account', {
@@ -670,13 +680,13 @@ async function deleteAccount() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ password, userId })
         });
 
         const data = await response.json();
         if (data.success) {
           window.location.href = '/';
-          alertify.success('Акаунт видалено успішно.');
+          localStorage.removeItem('token');
         } else {
           alertify.error('Видалення акаунту скасовано. Пароль неправильний.');
         }
@@ -684,9 +694,6 @@ async function deleteAccount() {
         alertify.error('Помилка з’єднання з сервером.');
         console.error('Error:', error);
       }
-    },
-    function () {
-      alertify.error('Видалення акаунту скасовано.');
     }
   ).set('type', 'password');
 }
