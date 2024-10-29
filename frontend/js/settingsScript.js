@@ -758,6 +758,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.rank === "owner" || data.rank === "admin" || data.rank === "moderator") {
         const requestsButton = document.getElementById("requests-button");
         requestsButton.removeAttribute("style");
+        document.getElementById("admin-warning").style.display = "none"
       }
     }
 
