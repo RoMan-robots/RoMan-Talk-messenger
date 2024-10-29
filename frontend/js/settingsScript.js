@@ -385,7 +385,7 @@ async function loadSecurityRecomendations() {
   const data = await response.json();
 
   if (data.success && data.security) {
-    const ol = document.createElement('ol');
+    const ol = document.createElement('ul');
     const securityObj = data.security;
 
     Object.keys(securityObj).forEach((username) => {
