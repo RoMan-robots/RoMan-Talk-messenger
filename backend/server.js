@@ -358,7 +358,7 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
             channels[channelIndex].messages.forEach(message => {
                 if (message.id === messageId) {
                     if (newContent !== undefined) {
-                        message.content = newContent;
+                        message.context = newContent;
                     }
                     if (newId !== undefined) {
                         message.id = newId;
@@ -1036,7 +1036,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
 
     try {
         const channels = await getChannels();
-        channelName = channelName.trim();
+        channelName = channelName.replace(/ /g, "_");
         const channelExists = channels.some(channel => channel.name === channelName);
 
         if (channelExists) {
@@ -1075,7 +1075,9 @@ app.get('/get-channels', checkUserExists, async (req, res) => {
         const userId = user.id;
 
         let channels = await getChannels();
-        channels = channels.filter(channel => !channel.isPrivate || (channel.isPrivate && channel.subs.includes(userId.toString())));
+        channels = channels.filter(channel => {
+            return !channel.isPrivate || (channel.isPrivate && channel.subs.includes(userId.toString()));
+        });
 
         res.send({ success: true, channels });
     } catch (error) {
