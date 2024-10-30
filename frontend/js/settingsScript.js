@@ -272,11 +272,11 @@ function updateSubscribersListUI(username, userId) {
 async function deleteChannel() {
   const password = await new Promise((resolve) => {
     alertify.prompt('Будь ласка, введіть пароль для підтвердження видалення каналу:',
-      function (value) {
-        resolve(value);
-      },
       function () {
         resolve(null);
+      },
+      function (evt, value) {
+        resolve(value);
       }
     ).set('type', 'password');
   });
@@ -289,7 +289,7 @@ async function deleteChannel() {
     const response = await fetch('/channel/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ channelName: currentChannelName, password })
+      body: JSON.stringify({ currentChannelName, password })
     });
     const data = await response.json();
     if (data.success) {

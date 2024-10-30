@@ -1060,7 +1060,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
         await updateUserChannels(username, channelName);
 
         res.send({ success: true, message: 'Канал створено успішно.' });
-        await alertSecurity(req, ip, username, `Створено канал під вашим акаунтом з ім'ям ${channelName}`);
+        await alertSecurity(req, ip, username, `Створено канал з назвою ${channelName} під вашим акаунтом з ім'ям `);
     } catch (error) {
         console.error('Помилка при створенні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });

@@ -484,7 +484,7 @@ function closeExploreModal() {
 }
 
 function createNewChannel() {
-  const channelName = document.getElementById("new-channel-name").value;
+  let channelName = document.getElementById("new-channel-name").value;
   channelName = channelName.replace(/ /g, "_");
 
   fetch("https://api.ipify.org?format=json")
