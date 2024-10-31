@@ -52,7 +52,13 @@ let models = {}
 app.use(fileUpload());
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:8080',
+    origin: function (origin, callback) {
+        if (origin && /^(http:\/\/localhost:\d+|http:\/\/127\.0\.0\.1:\d+)$/.test(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('якись там ерор по корсу'));
+        }
+    },
     methods: ['GET', 'POST']
 }));
 
@@ -1698,16 +1704,27 @@ app.post('/logout', checkUserExists, (req, res) => {
 app.post('/delete-account', checkUserExists, async (req, res) => {
     const { password, userId } = req.body;
     let users = await getUsers();
+
     const userIndex = users.findIndex(user => user.id === userId);
+    if (userIndex === -1) {
+        return res.status(404).send({ success: false, message: 'Користувача не знайдено.' });
+    }
 
     const isPasswordMatch = await bcrypt.compare(password, users[userIndex].password);
-    if (isPasswordMatch) {
-        users = users.filter(user => user.id !== userId);
-        await saveUsers(users);
-        res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
-    } else {
-        res.status(401).send({ success: false, message: 'Невірний пароль.' });
+    if (!isPasswordMatch) {
+        return res.status(401).send({ success: false, message: 'Невірний пароль.' });
     }
+
+    users.splice(userIndex, 1);
+
+    const updatedUsers = users.map((user, index) => ({
+        ...user,
+        id: index + 1 
+    }));
+
+    await saveUsers(updatedUsers);
+
+    res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
 });
 
 app.get("/", (req, res) => {
