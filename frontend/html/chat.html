@@ -1,93 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RoMan Talk</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <script>
-      window.nodeRequire = require;
-      delete window.require;
-      delete window.exports;
-      delete window.module;
-    </script>
-    <script src="../js/chatScript.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoMan Talk</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <script>
+    window.nodeRequire = require;
+    delete window.require;
+    delete window.exports;
+    delete window.module;
+  </script>
+  <script src="../js/chatScript.js" defer></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
 </head>
+
 <body>
-    <div id="chat-container">
-        <div id="top-bar">
-          <h1 class="title">RoMan Talk</h1>
-          <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
-          <div id="channel-list">
-            <div id="management-buttons"></div>
-            <div id="channels"></div>
-          </div>
-          <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
-        </div>
-        <div id="message-list">
-        </div>
-        <div id="upload-files" class="upload-files-invisible">
-          <h5>Прикріплені зображення до повідомлення:<h5>
-            <ul> 
-              
-            </ul>
-        </div>
-        <div id="edit-message" class="edit-message-invisible">
-          <h5>Редагування повідомлення</h5>
-          <span id="edit-message-span"></span>
-        </div>
-        <div id="input-container">
-          <label for="file-input" class="file-input-label">+</label>
-          <input type="file" id="file-input" class="file-input" accept="image/*">
-          <input type="text" id="message-input" placeholder="Напишіть повідомлення">
-          <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">✈️</button>
-        </div>
-        <div id="message-options-menu" class="message-options-menu-hide">
-          <div>
-            <p>Загальне</p>
-            <button onclick="copyText(this)">Копіювати текст</button>
-            <button onclick="copyMessageId(this)">Копіювати ID повідомлення</button>
-          </div>
-          <div>
-            <p>AI Функції (BETA)</p>
-             <button onclick="translateMessage()">Перекласти текст</button>
-             <button onclick="compressMessage()">Стиснути текст</button>
-             <button onclick="getOriginalMessage()">Показати оригінальне повідомлення</button>
-          </div>
-          <div>
-            <p>Керування повідомленням</p>
-            <button>Редагувати повідомення</button>
-            <button>Видалити повідомлення</button>
-          </div>
-        </div>
-        <div id="create-channel-modal" class="modal">
-          <div class="modal-content">
-            <span class="close-button" onclick="closeModal()">&times;</span>
-            <h2 class="title">Створити новий канал</h2>
-            <input type="text" id="new-channel-name" placeholder="Назва каналу">
-            <button onclick="createNewChannel()" id="create">Створити</button>
-          </div>
-        </div>
-        <div id="explore-channels-modal" class="modal" style="display: none;">
-          <div class="modal-content">
-              <span class="close-button" onclick="closeExploreModal()">&times;</span>
-              <h2>Доступні канали</h2>
-              <div id="channel-buttons">
-              </div>
-          </div>
+  <div id="chat-container">
+    <div id="top-bar">
+      <h1 class="title">RoMan Talk</h1>
+      <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
+      <div id="channel-list">
+        <div id="management-buttons"></div>
+        <div id="channels"></div>
       </div>
-      <div id="sort-modal" class="modal">
-        <div class="modal-content">
-          <span id="sort-modal-close" class="close">&times;</span>
-          <h2>Сортувати канали за:</h2>
-          <button onclick="sortChannels('name')" class="sort-button">алфавітом</button>
-          <button onclick="sortChannels('size')" class="sort-button">розміром</button>
+      <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
+    </div>
+    <div id="message-list">
+    </div>
+    <div id="upload-files" class="upload-files-invisible">
+      <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
+      <h5>Прикріплені зображення до повідомлення:<h5>
+          <ul>
+
+          </ul>
+    </div>
+    <div id="edit-message" class="edit-message-invisible">
+      <span class="close-button" onclick="closeModal('edit-message')">&times;</span>
+      <h5>Редагування повідомлення</h5>
+      <span id="edit-message-span"></span>
+    </div>
+    <div id="typing" class="">
+      <p><span id="who-typing"></span> </p>
+    </div>
+    <div id="input-container">
+      <label for="file-input" class="file-input-label">+</label>
+      <input type="file" id="file-input" class="file-input" accept="image/*">
+      <input type="text" id="message-input" placeholder="Напишіть повідомлення">
+      <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">✈️</button>
+    </div>
+    <div id="message-options-menu" class="message-options-menu-hide">
+      <div class="general">
+        <p>Загальне</p>
+        <button onclick="copyText(this)">Копіювати текст</button>
+        <button onclick="copyMessageId(this)">Копіювати ID повідомлення</button>
+      </div>
+      <div class="ai-functions">
+        <p>AI Функції (BETA)</p>
+        <button>Перекласти текст</button>
+        <button>Стиснути текст</button>
+        <button>Що нового</button>
+        <button>Показати оригінал</button>
+        <p>Powered by RoMan AI v1.1</p>
+      </div>
+      <div class="message-control">
+        <p>Керування повідомленням</p>
+        <button>Редагувати повідомення</button>
+        <button>Видалити повідомлення</button>
+      </div>
+    </div>
+    <div id="create-channel-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal('create-channel-modal')">&times;</span>
+        <h2 class="title">Створити новий канал</h2>
+        <input type="text" id="new-channel-name" placeholder="Назва каналу">
+        <button onclick="createNewChannel()" id="create">Створити</button>
+      </div>
+    </div>
+    <div id="explore-channels-modal" class="modal" style="display: none;">
+      <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
+      <div class="modal-content">
+        <span class="close-button" onclick="closeExploreModal()">&times;</span>
+        <h2>Доступні канали</h2>
+        <div id="channel-buttons">
         </div>
       </div>
+    </div>
+    <div id="sort-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal('sort-modal')">&times;</span>
+        <h2>Сортувати канали за:</h2>
+        <button onclick="sortChannels('name')" class="sort-button">алфавітом</button>
+        <button onclick="sortChannels('size')" class="sort-button">розміром</button>
+      </div>
+    </div>
 </body>
+
 </html>

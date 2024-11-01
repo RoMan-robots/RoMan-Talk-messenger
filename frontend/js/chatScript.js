@@ -35,6 +35,14 @@ let editMode = false;
 let selectedPhotoFiles = [];
 let selectedChannel = 'RoMan_World_Official';
 
+const typingIndicator = document.getElementById("typing");
+const whoTyping = document.getElementById("who-typing");
+
+let typingUsers = new Set();
+let isTyping = false;
+const typingCheckDelay = 100;
+let typingTimeout;
+
 async function getCurrentUsername() {
   try {
     const response = await fetch('/username', {
@@ -102,6 +110,9 @@ function displayMessage(message, id) {
     img.classList.add('message');
     messageList.appendChild(img);
   }
+  setTimeout(() => {
+    messageList.scrollTop = messageList.scrollHeight;
+  })
 }
 
 async function openMessageOptionsMenu(id) {
@@ -144,28 +155,8 @@ document.addEventListener('click', (event) => {
   }
 });
 
-document.getElementById("message-options-menu").addEventListener("click", function (event) {
-  const messageId = event.currentTarget.dataset.messageId;
-  if (event.target.tagName === "BUTTON") {
-    const action = event.target.textContent;
-    switch (action) {
-      case "Перекласти текст":
-        translateMessage(messageId);
-        break;
-      case "Стиснути текст":
-        compressMessage(messageId);
-        break;
-      case "Редагувати повідомення":
-        editMessage(messageId);
-        break;
-      case "Видалити повідомлення":
-        deleteMessage(messageId);
-        break;
-    }
-  }
-})
-
 async function loadMessages(channelName) {
+  socket.emit('stop typing', { channel: selectedChannel, username: currentUsername });
   try {
     const response = await fetch(`/channel-messages/${channelName}`, {
       headers: {
@@ -185,10 +176,10 @@ async function loadMessages(channelName) {
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
           displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
-        })
-        setTimeout(() => {
-          messageList.scrollTop = messageList.scrollHeight;
-        })
+        });
+
+        typingUsers = new Set(channel.typingUsers);
+        updateTypingIndicator();
       } else {
         console.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
         alertify.error(`Канал "${channelName}" не знайдено або у каналу немає повідомлень.`);
@@ -202,6 +193,7 @@ async function loadMessages(channelName) {
     alertify.error(`Канал ${channelName} не знайдено`);
   }
 }
+
 async function sendMessage() {
   const message = messageInput.value.trim()
   const messageId = messageInput.dataset.editId;
@@ -219,6 +211,7 @@ async function sendMessage() {
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
         const data = await response.json();
+        const editMessage = document.getElementById("edit-message");
 
         if (data.success) {
           alertify.success('Повідомлення відредаговано!');
@@ -226,7 +219,6 @@ async function sendMessage() {
 
           messageInput.value = '';
 
-          const editMessage = document.getElementById("edit-message");
           let messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
 
           const currentText = messageElement.textContent;
@@ -236,15 +228,28 @@ async function sendMessage() {
             const textBeforeColon = currentText.substring(0, colonIndex + 1);
             messageElement.textContent = textBeforeColon + ' ' + message;
 
+            editMessage.classList.add("edit-message-invisible");
+            editMessage.classList.remove("edit-message-visible");
+
+            messageInput.value = '';
             messageInput.placeholder = 'Напишіть повідомлення';
+          } else {
+            messageElement.textContent = message;
 
             editMessage.classList.add("edit-message-invisible");
             editMessage.classList.remove("edit-message-visible");
-          } else {
-            messageElement.textContent = message;
+
+            messageInput.value = '';
+            messageInput.placeholder = 'Напишіть повідомлення';
           }
         } else {
           alertify.error(data.message);
+
+          editMessage.classList.add("edit-message-invisible");
+          editMessage.classList.remove("edit-message-visible");
+
+          messageInput.value = '';
+          messageInput.placeholder = 'Напишіть повідомлення';
         }
       } else if (selectedPhotoFiles.length > 0) {
         const formData = new FormData();
@@ -253,8 +258,10 @@ async function sendMessage() {
         formData.append('context', message);
 
         selectedPhotoFiles.forEach(file => {
-          formData.append('photo', file);
+          const trimmedPhotoName = file.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
+          formData.append('photo', file, trimmedPhotoName);
         });
+
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
           body: formData,
@@ -278,7 +285,6 @@ async function sendMessage() {
 
         uploadFilesDiv.classList.remove("upload-files-visible");
         uploadFilesDiv.classList.add("upload-files-invisible");
-
       } else {
         const messageObject = {
           author: currentUsername,
@@ -371,13 +377,8 @@ function loadChannelManagementButtons() {
   sortChannelsButton.textContent = 'Сортувати канали';
   channelListElement.appendChild(sortChannelsButton);
 
-  const sortModalClose = document.getElementById('sort-modal-close');
   sortChannelsButton.addEventListener('click', () => {
     sortModal.style.display = 'block';
-  });
-
-  sortModalClose.addEventListener('click', () => {
-    sortModal.style.display = 'none';
   });
 }
 
@@ -400,8 +401,9 @@ async function loadUserChannels() {
         channelButton.textContent = channel;
         channelButton.classList.add("user-channel-button")
         channelButton.onclick = () => {
-          selectedChannel = channel;
+          messageInput.value = '';
           loadMessages(channel);
+          selectedChannel = channel;
         };
         channelListElement.appendChild(channelButton);
       });
@@ -436,8 +438,9 @@ async function sortChannels(type) {
         channelButton.classList.add("user-channel-button")
         channelButton.textContent = channel;
         channelButton.onclick = () => {
-          selectedChannel = channel;
+          messageInput.value = '';
           loadMessages(channel);
+          selectedChannel = channel;
         };
         channelListElement.appendChild(channelButton);
       });
@@ -458,8 +461,17 @@ function createChannelModal() {
   document.getElementById("create-channel-modal").style.display = "block";
 }
 
-function closeModal() {
-  document.getElementById("create-channel-modal").style.display = "none";
+function closeModal(element) {
+  if (element === 'edit-message') {
+    document.getElementById(element).classList.remove("edit-message-visible")
+    document.getElementById(element).classList.add("edit-message-invisible")
+
+    messageInput.value = '';
+    messageInput.placeholder = 'Напишіть повідомлення';
+    editMode = false;
+  } else {
+    document.getElementById(element).style.display = "none";
+  }
 }
 
 function openExploreChannelsModal() {
@@ -472,40 +484,41 @@ function closeExploreModal() {
 }
 
 function createNewChannel() {
-  const channelName = document.getElementById("new-channel-name").value;
+  let channelName = document.getElementById("new-channel-name").value;
+  channelName = channelName.replace(/ /g, "_");
 
   fetch("https://api.ipify.org?format=json")
-      .then(response => response.json())
-      .then(ipData => {
-          const ip = ipData.ip;
+    .then(response => response.json())
+    .then(ipData => {
+      const ip = ipData.ip;
 
-          return fetch('/create-channel', {
-              method: 'POST',
-              headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ 
-                  channelName: channelName,
-                  ip: ip 
-              })
-          });
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.success) {
-              loadUserChannels();
-              loadMessages(channelName);
-          } else {
-              console.error(data.message);
-              alertify.error(data.message);
-          }
-      })
-      .catch(error => {
-          console.error('Помилка при створенні каналу:', error);
-          alertify.error('Помилка при створенні каналу:', error);
+      return fetch('/create-channel', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          channelName: channelName,
+          ip: ip
+        })
       });
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadUserChannels();
+        loadMessages(channelName);
+      } else {
+        console.error(data.message);
+        alertify.error(data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Помилка при створенні каналу:', error);
+      alertify.error('Помилка при створенні каналу:', error);
+    });
 
   closeModal();
 }
@@ -554,7 +567,6 @@ async function joinChannel(channelName) {
     const data = await response.json();
     if (data.success) {
       selectedChannel = channelName;
-      socket.emit('join channel', channelName);
       loadUserChannels();
       closeExploreModal();
       loadMessages(channelName);
@@ -579,7 +591,7 @@ function changeUrlToSettings(url) {
 
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  
+
   if (messageElement) {
     const [author, ...textParts] = messageElement.textContent.split(': ');
     const originalText = textParts.join(': ');
@@ -657,6 +669,65 @@ async function compressMessage(messageId) {
   }
 }
 
+async function compressAllMessages(messageId) {
+  const messageElements = document.querySelectorAll(`.message[data-index]`);
+  let isTargetMessage = false;
+  let messagesToCompress = [];
+
+  messageElements.forEach(messageElement => {
+    const currentMessageId = messageElement.dataset.index;
+    if (currentMessageId == messageId) {
+      isTargetMessage = true;
+    }
+
+    if (isTargetMessage) {
+      const [author, ...textParts] = messageElement.querySelector('p').textContent.split(': ');
+      const originalText = textParts.join(': ');
+      messagesToCompress.push({ author, originalText, element: messageElement });
+    }
+  });
+  messageId = +messageId + 1;
+  if (messagesToCompress.length > 0) {
+    displayMessage({ context: `Початок стиснення повідомлень від повідомлення з ID: ${messageId}` }, messageId);
+
+    try {
+      const combinedText = messagesToCompress.map(msg => `${msg.author}: ${msg.originalText}`).join('\n');
+      const response = await fetch('/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: combinedText })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'Ліміт API вичерпано, спробуйте через 1 годину.') {
+          alertify.error('Ліміт API вичерпано, спробуйте пізніше.');
+        } else {
+          throw new Error(errorData.error || 'Network response was not ok');
+        }
+      }
+
+      const data = await response.json();
+
+      if (data.summaryText) {
+        const summaryMessages = data.summaryText.split('\n');
+        displayMessage({
+          context: `Результат: ${summaryMessages}`
+        }, messageId);
+        alertify.success('Повідомлення стиснено!');
+      } else {
+        alertify.error('Помилка в відповіді');
+      }
+    } catch (error) {
+      console.error('Помилка при стисненні повідомлення:', error);
+      messagesToCompress.forEach(msg => {
+        msg.element.querySelector('p').textContent = msg.author + ': ' + msg.originalText;
+      });
+      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
+    }
+  }
+}
+
 function getOriginalMessage() {
   const menu = document.getElementById("message-options-menu");
   const messageId = menu.dataset.messageId;
@@ -702,26 +773,6 @@ function deleteMessage(messageId) {
     .then(data => {
       if (data.success) {
         alertify.success('Повідомлення видалено!');
-
-        const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
-        const photoElement = document.querySelector(`img[data-index='${messageId}']`);
-        if (messageElement) {
-          messageElement.remove();
-          if (photoElement) {
-            photoElement.remove();
-          }
-        }
-        const messages = document.querySelectorAll('.message');
-        let currentIndex = 1;
-
-        messages.forEach((message) => {
-          if (message.classList.contains('message-photo')) {
-            message.dataset.index = currentIndex - 1;
-          } else {
-            message.dataset.index = currentIndex;
-            currentIndex++;
-          }
-        });
       } else {
         alertify.error(data.message || 'Не вдалося видалити повідомлення');
       }
@@ -761,6 +812,23 @@ function copyMessageId(buttonElement) {
 getCurrentUsername();
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.");
 
+messageInput.addEventListener('input', () => {
+  const message = messageInput.value.trim();
+
+  if (message.length > 0 && !isTyping) {
+    isTyping = true;
+    socket.emit('typing', { channel: selectedChannel, username: currentUsername });
+
+    typingInterval = setInterval(() => {
+      if (messageInput.value.trim().length === 0) {
+        clearInterval(typingInterval);
+        socket.emit('stop typing', { channel: selectedChannel, username: currentUsername });
+        isTyping = false;
+      }
+    }, typingCheckDelay);
+  }
+});
+
 fileInput.addEventListener("change", function () {
   if (fileInput.files && fileInput.files.length > 0) {
     for (let i = 0; i < fileInput.files.length; i++) {
@@ -793,6 +861,43 @@ socket.on('chat message', (channel, msg) => {
   }
 });
 
+socket.on('typing', (data) => {
+  if (data.channel === selectedChannel && !typingUsers.has(data.username)) {
+    typingUsers.add(data.username);
+    updateTypingIndicator();
+  }
+});
+
+socket.on('stop typing', (data) => {
+  if (data.channel === selectedChannel && typingUsers.has(data.username)) {
+    typingUsers.delete(data.username);
+    updateTypingIndicator();
+  }
+});
+
+function updateTypingIndicator() {
+  const usersTypingArray = Array.from(typingUsers);
+
+  if (typingUsers.size === 1) {
+    typingIndicator.style.display = 'block';
+    whoTyping.textContent = `${usersTypingArray[0]} пише...`;
+  } else if (typingUsers.size > 1 && typingUsers.size <= 5) {
+    typingIndicator.style.display = 'block';
+    whoTyping.textContent = `${usersTypingArray.join(', ')} пишуть...`;
+  } else if (typingUsers.size > 5) {
+    typingIndicator.style.display = 'block';
+    whoTyping.textContent = `Кілька людей пишуть...`;
+  } else {
+    typingIndicator.style.display = 'none';
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  if (isTyping) {
+    socket.emit('stop typing', { channel: selectedChannel, username: currentUsername });
+  }
+});
+
 socket.on('message deleted', (channelName, messageId) => {
   if (channelName === selectedChannel) {
     const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
@@ -803,6 +908,17 @@ socket.on('message deleted', (channelName, messageId) => {
         photoElement.remove();
       }
     }
+    const messages = document.querySelectorAll('.message');
+    let currentIndex = 1;
+
+    messages.forEach((message) => {
+      if (message.classList.contains('message-photo')) {
+        message.dataset.index = currentIndex - 1;
+      } else {
+        message.dataset.index = currentIndex;
+        currentIndex++;
+      }
+    });
   }
 });
 
@@ -819,6 +935,33 @@ socket.on('message edited', (channelName, messageId, newContent) => {
       } else {
         messageElement.textContent = newContent;
       }
+    }
+  }
+});
+
+document.getElementById("message-options-menu").addEventListener("click", function (event) {
+  const messageId = event.currentTarget.dataset.messageId;
+  if (event.target.tagName === "BUTTON") {
+    const action = event.target.textContent;
+    switch (action) {
+      case "Перекласти текст":
+        translateMessage(messageId);
+        break;
+      case "Стиснути текст":
+        compressMessage(messageId);
+        break;
+      case "Що нового":
+        compressAllMessages(messageId);
+        break;
+      case "Показати оригінал":
+        getOriginalMessage();
+        break;
+      case "Редагувати повідомення":
+        editMessage(messageId);
+        break;
+      case "Видалити повідомлення":
+        deleteMessage(messageId);
+        break;
     }
   }
 });

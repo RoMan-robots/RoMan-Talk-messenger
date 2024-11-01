@@ -2,6 +2,7 @@ import express from 'express';
 import fileUpload from "express-fileupload"
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
+import cors from 'cors';
 import uaParser from 'ua-parser-js';
 import geoip from 'geoip-lite';
 import { Octokit } from '@octokit/rest';
@@ -27,7 +28,13 @@ const __dirname = path.resolve();
 const port = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
-const io = new SocketIO(httpServer);
+const io = new SocketIO(httpServer, {
+    cors: {
+        origin: "http://localhost:8080",
+        methods: ["GET", "POST"]
+    }
+});
+
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
 const localDir = path.join(__dirname, 'images/message-images');
 
@@ -36,12 +43,22 @@ const repo = process.env.NAME_REPO;
 
 let loginAttempts = {};
 
+const typingUsersByChannel = {};
+
 const lngDetector = new LanguageDetect();
 let modelsLoaded = false;
 let models = {}
 
 app.use(fileUpload());
 app.use(express.json());
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
+            callback(null, true); 
+        }
+    },
+    methods: ['GET', 'POST']
+}));
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
@@ -345,7 +362,7 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
             channels[channelIndex].messages.forEach(message => {
                 if (message.id === messageId) {
                     if (newContent !== undefined) {
-                        message.content = newContent;
+                        message.context = newContent;
                     }
                     if (newId !== undefined) {
                         message.id = newId;
@@ -675,6 +692,36 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('typing', (data) => {
+        const { channel, username } = data;
+
+        if (!typingUsersByChannel[channel]) {
+            typingUsersByChannel[channel] = new Set();
+        }
+
+        typingUsersByChannel[channel].add(username);
+
+        socket.broadcast.emit('typing', { channel, username });
+    });
+
+    socket.on('stop typing', (data) => {
+        const { channel, username } = data;
+
+        if (typingUsersByChannel[channel]) {
+            typingUsersByChannel[channel].delete(username);
+            socket.broadcast.emit('stop typing', { channel, username });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        Object.keys(typingUsersByChannel).forEach(channel => {
+            if (typingUsersByChannel[channel].has(socket.username)) {
+                typingUsersByChannel[channel].delete(socket.username);
+                socket.broadcast.emit('stop typing', { channel, username: socket.username });
+            }
+        });
+    });
+
     socket.on('delete message', async (channelName, messageId) => {
         try {
             await deleteMessage(channelName, messageId);
@@ -836,7 +883,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
         messageObject.id = id + 1;
 
         await saveMessages(channelName, messageObject);
-  
+
         io.emit('chat message', channelName, messageObject);
 
         res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
@@ -886,9 +933,12 @@ app.post('/upload-photo-message', async (req, res) => {
         await downloadImages(channelName);
 
         const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
+        let responseSent = false;
+
         const checkFileExistence = setInterval(() => {
-            if (fs.existsSync(filePath)) {
+            if (fs.existsSync(filePath) && !responseSent) {
                 clearInterval(checkFileExistence);
+                responseSent = true;
                 io.emit('chat message', channelName, messageObject);
                 res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
             }
@@ -896,13 +946,16 @@ app.post('/upload-photo-message', async (req, res) => {
 
         setTimeout(() => {
             clearInterval(checkFileExistence);
-            if (!fs.existsSync(filePath)) {
+            if (!fs.existsSync(filePath) && !responseSent) {
+                responseSent = true;
                 res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
             }
         }, 20000);
 
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
+        }
     }
 });
 
@@ -912,7 +965,8 @@ app.post("/session-status", async (req, res) => {
 
     const supportedVersions = {
         "1.2.1": false,
-        "2.0": true
+        "2.0": true,
+        "2.1": true
     };
 
     if (!supportedVersions[version]) {
@@ -966,9 +1020,10 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
     const { channelName } = req.params;
     try {
         const messages = await getMessages(channelName);
-        await downloadImages(channelName)
+        await downloadImages(channelName);
 
-        res.send({ channels: [{ name: channelName, messages }] });
+        const typingUsers = typingUsersByChannel[channelName] ? Array.from(typingUsersByChannel[channelName]) : [];
+        res.send({ channels: [{ name: channelName, messages, typingUsers }] });
     } catch (error) {
         if (error.message === 'Канал не знайдено.') {
             res.status(404).send({ success: false, message: 'Канал не знайдено.' });
@@ -985,7 +1040,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
 
     try {
         const channels = await getChannels();
-        channelName = channelName.trim();
+        channelName = channelName.replace(/ /g, "_");
         const channelExists = channels.some(channel => channel.name === channelName);
 
         if (channelExists) {
@@ -1009,7 +1064,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
         await updateUserChannels(username, channelName);
 
         res.send({ success: true, message: 'Канал створено успішно.' });
-        await alertSecurity(req, ip, username, `Створено канал під вашим акаунтом з ім'ям ${channelName}`);
+        await alertSecurity(req, ip, username, `Створено канал з назвою ${channelName} під вашим акаунтом з ім'ям `);
     } catch (error) {
         console.error('Помилка при створенні каналу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
@@ -1024,7 +1079,9 @@ app.get('/get-channels', checkUserExists, async (req, res) => {
         const userId = user.id;
 
         let channels = await getChannels();
-        channels = channels.filter(channel => !channel.isPrivate || (channel.isPrivate && channel.subs.includes(userId.toString())));
+        channels = channels.filter(channel => {
+            return !channel.isPrivate || (channel.isPrivate && channel.subs.includes(userId.toString()));
+        });
 
         res.send({ success: true, channels });
     } catch (error) {
@@ -1643,18 +1700,29 @@ app.post('/logout', checkUserExists, (req, res) => {
 });
 
 app.post('/delete-account', checkUserExists, async (req, res) => {
-    const { password } = req.body;
+    const { password, userId } = req.body;
     let users = await getUsers();
-    const userIndex = users.findIndex(user => user.id === req.session.userId);
+
+    const userIndex = users.findIndex(user => user.id === userId);
+    if (userIndex === -1) {
+        return res.status(404).send({ success: false, message: 'Користувача не знайдено.' });
+    }
 
     const isPasswordMatch = await bcrypt.compare(password, users[userIndex].password);
-    if (isPasswordMatch) {
-        users = users.filter(user => user.id !== req.session.userId);
-        await saveUsers(users);
-        res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
-    } else {
-        res.status(401).send({ success: false, message: 'Невірний пароль.' });
+    if (!isPasswordMatch) {
+        return res.status(401).send({ success: false, message: 'Невірний пароль.' });
     }
+
+    users.splice(userIndex, 1);
+
+    const updatedUsers = users.map((user, index) => ({
+        ...user,
+        id: index + 1 
+    }));
+
+    await saveUsers(updatedUsers);
+
+    res.send({ success: true, message: 'Акаунт видалено успішно.', redirectUrl: '/' });
 });
 
 app.get("/", (req, res) => {

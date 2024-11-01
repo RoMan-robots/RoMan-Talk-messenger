@@ -9,30 +9,30 @@ body {
 }
 
 #background {
-  height: 210vh;
+  height: 235vh;
 }
 
 @media (max-width: 600px) {
   #background {
-    height: 200vh;
+    height: 215vh;
   }
 }
 
 @media (max-width: 400px) {
   #background {
-    height: 330vh;
+    height: 340vh;
   }
 }
 
 @media (max-width: 400px) and (min-height: 630px){
   #background {
-    height: 370vh;
+    height: 390vh;
   }
 }
 
 @media (max-width: 500px) and (min-height: 800px) {
   #background {
-    height: 265vh;
+    height: 330vh;
   }
 }
 
@@ -179,6 +179,11 @@ body {
   flex-direction: column;
 }
 
+#step-4 {
+  max-height: 80vh; 
+  overflow-y: auto; 
+}
+
 .tutorial-image {
   height: 100px
 }
@@ -284,6 +289,8 @@ body {
 
 .footer-a {
   color: #adadad;
+  margin-left: 7px;
+  margin-right: 7px;
 }
 
 #server-dropdown:hover {
@@ -331,6 +338,7 @@ body {
   border-radius: 10px;
   display: none;
   padding: 10px;
+  z-index: 999;
 }
 
 #channel-list.active {
@@ -457,7 +465,7 @@ body {
   padding: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   width: 400px;
-  height: 250px;
+  height: 310px;
 }
 
 #message-options-menu button {
@@ -473,7 +481,7 @@ body {
 @media (max-width: 400px){
   #message-options-menu {
     width: 100%;
-    height: 300px;
+    height: 360px;
   }
 }
 
@@ -489,6 +497,13 @@ body {
   margin: 0;
   padding: 5px 0;
   font-weight: bold;
+}
+
+.general,
+.ai-functions {
+  display: block;
+  border-bottom: 1px solid var(--text-color);
+  padding: 5px;
 }
 
 #input-container {
@@ -606,7 +621,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 105vh;
   color: #fff;
   font-family: Verdana, sans-serif;
   background: rgba(0, 0, 0, 0.4);
@@ -848,7 +862,7 @@ button,
   --modal-bg-color: #fcb8d2;
   --message-bg-color: #dd8ba7;
   --channel-list-bg-color: #ffadc8;
-  --some-buttons-text: #cd5f96;
+  --some-buttons-text: #a64576;
 }
 
 [data-theme="coffee"] {
@@ -882,6 +896,28 @@ button,
   --message-bg-color: #6f006a;
   --channel-list-bg-color: #000000;
   --some-buttons-text: #fff;
+}
+
+[data-theme="amethyst"] {
+  --background-color: #352f44;
+  --text-color: #d3c4e6;
+  --button-bg-color: #8e78b4;
+  --input-bg-color: #5a4d7a;
+  --modal-bg-color: #4b4370; 
+  --message-bg-color: #6c598c;
+  --channel-list-bg-color: #3f375c;
+  --some-buttons-text: #e1d4f9;
+}
+
+[data-theme="ruby"] {
+  --background-color: #6c0000;
+  --text-color: #f4a7a7;
+  --button-bg-color: #b93030;
+  --input-bg-color: #3f0808;
+  --modal-bg-color: #600606; 
+  --message-bg-color: #8d2626;
+  --channel-list-bg-color: #741212;
+  --some-buttons-text: #f6c5c5;
 }
 
 #chat-container,
