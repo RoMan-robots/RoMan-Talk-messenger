@@ -51,14 +51,6 @@ let models = {}
 
 app.use(fileUpload());
 app.use(express.json());
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
-            callback(null, true); 
-        }
-    },
-    methods: ['GET', 'POST']
-}));
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
 app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
@@ -1749,19 +1741,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1769,7 +1749,19 @@ httpServer.listen(port, () => {
         }
 
         shuffledImages = shuffleArray(files);
-    }); 
+    });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     }); 
+
+//     console.log(`App listening on port ${port}!`)
+// }); 
