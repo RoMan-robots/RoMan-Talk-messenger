@@ -1,5 +1,6 @@
 import express from 'express';
-import fileUpload from "express-fileupload"
+import multer from "multer"
+import fetch from 'node-fetch';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import cors from 'cors';
@@ -9,7 +10,7 @@ import { Octokit } from '@octokit/rest';
 import jwt from 'jsonwebtoken'
 import path from 'path';
 import LanguageDetect from 'languagedetect';
-import fs from "fs-extra"
+import fs from "fs-extra";
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
@@ -49,7 +50,11 @@ const lngDetector = new LanguageDetect();
 let modelsLoaded = false;
 let models = {}
 
-app.use(fileUpload());
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage
+});
+
 app.use(express.json());
 
 app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
@@ -449,7 +454,8 @@ async function addedUserMessage(eventMessage) {
 }
 
 async function uploadImage(imageFile, imageFileName, channelName) {
-    const base64Image = imageFile.data.toString('base64');
+    console.log(imageFile)
+    const base64Image = imageFile.buffer.toString('base64');
     const imagePath = `images/${channelName}/${imageFileName}`;
 
     try {
@@ -503,18 +509,16 @@ async function downloadImages(channelName) {
 
         for (const file of files) {
             if (file.type === 'file') {
-                const filePath = file.path;
-                const fileName = path.basename(filePath);
+                const localFilePath = path.join(channelDir, file.name);
 
-                const { data: fileContent } = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: filePath,
-                });
-
-                const fileBuffer = Buffer.from(fileContent.content, 'base64');
-                const localFilePath = path.join(channelDir, fileName);
-                await fs.writeFile(localFilePath, fileBuffer);
+                if (file.download_url) {
+                    const response = await fetch(file.download_url);
+                    const buffer = await response.arrayBuffer();
+                    await fs.writeFile(localFilePath, Buffer.from(buffer));
+                    console.log("Збережено файл:", localFilePath);
+                } else {
+                    console.error("Не вдалося отримати download_url для файлу:", file.path);
+                }
             }
         }
     } catch (error) {
@@ -885,37 +889,25 @@ app.post('/messages', checkUserExists, async (req, res) => {
     }
 });
 
-app.post('/upload-photo-message', async (req, res) => {
+app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
         const { channelName, author, context } = req.body;
-        const photos = req.files?.photo;
-        let messageObject = { author, context };
+        const photo = req.file;
 
-        const processPhoto = (photo) => {
-            const validExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
-            const trimmedPhotoName = photo.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
-            const fileExtension = trimmedPhotoName.split('.').pop().toLowerCase();
+        if (!photo) {
+            return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
+        }
 
-            if (!validExtensions.includes(`.${fileExtension}`)) {
-                throw new Error('Відправляти можна лише фотографії!');
+        let messageObject = {
+            author,
+            context,
+            image: {
+                name: photo.originalname, 
+                size: photo.size,
+                mimetype: photo.mimetype,
+                buffer: photo.buffer
             }
-
-            if (photo.size > 10 * 1024 * 1024) {
-                throw new Error('Фотографія повинна важити до 10мб!');
-            }
-
-            return trimmedPhotoName;
         };
-
-        if (Array.isArray(photos) && photos.length > 1) {
-            return res.status(400).send('Можна відправляти лише одну фотографію за раз!');
-        }
-
-        if (photos) {
-            const photo = Array.isArray(photos) ? photos[0] : photos;
-            messageObject.image = photo;
-            messageObject.image.name = processPhoto(photo);
-        }
 
         await saveMessages(channelName, messageObject, 'photo');
         const messages = await getMessages(channelName);
@@ -924,30 +916,9 @@ app.post('/upload-photo-message', async (req, res) => {
 
         await downloadImages(channelName);
 
-        const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
-        let responseSent = false;
-
-        const checkFileExistence = setInterval(() => {
-            if (fs.existsSync(filePath) && !responseSent) {
-                clearInterval(checkFileExistence);
-                responseSent = true;
-                io.emit('chat message', channelName, messageObject);
-                res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
-            }
-        }, 500);
-
-        setTimeout(() => {
-            clearInterval(checkFileExistence);
-            if (!fs.existsSync(filePath) && !responseSent) {
-                responseSent = true;
-                res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
-            }
-        }, 20000);
-
+        res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
     } catch (error) {
-        if (!res.headersSent) {
-            res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
-        }
+        res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
     }
 });
 
@@ -1741,19 +1712,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1761,7 +1720,19 @@ httpServer.listen(port, () => {
         }
 
         shuffledImages = shuffleArray(files);
-    }); 
+    });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     }); 
+
+//     console.log(`App listening on port ${port}!`)
+// }); 
