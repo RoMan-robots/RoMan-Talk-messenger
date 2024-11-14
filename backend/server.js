@@ -929,14 +929,13 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         }, 500);
 
         setTimeout(() => {
-            clearInterval(checkFileExistence);
-            if (!fs.existsSync(filePath) && !responseSent) {
+            if (!responseSent) {
+                clearInterval(checkFileExistence);
                 responseSent = true;
                 res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
             }
         }, 20000);
 
-        res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
     }
