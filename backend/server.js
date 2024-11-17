@@ -51,7 +51,7 @@ let modelsLoaded = false;
 let models = {}
 
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage: storage
 });
 
@@ -902,7 +902,7 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
             author,
             context,
             image: {
-                name: photo.originalname, 
+                name: photo.originalname,
                 size: photo.size,
                 mimetype: photo.mimetype,
                 buffer: photo.buffer
@@ -1699,7 +1699,7 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
 
     const updatedUsers = users.map((user, index) => ({
         ...user,
-        id: index + 1 
+        id: index + 1
     }));
 
     await saveUsers(updatedUsers);
@@ -1730,28 +1730,29 @@ app.get("/tos.html", (req, res) => {
 app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
+if (process.env.SERVER_TYPE = "local") {
+    httpServer.listen(port, 'localhost', () => {
+        fs.readdir(imagesDir, (err, files) => {
+            if (err) {
+                console.error('Unable to scan directory:', err);
+                return;
+            }
 
-httpServer.listen(port, 'localhost', () => {
-    fs.readdir(imagesDir, (err, files) => {
-        if (err) {
-            console.error('Unable to scan directory:', err);
-            return;
-        }
-
-        shuffledImages = shuffleArray(files);
+            shuffledImages = shuffleArray(files);
+        });
+        console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
     });
-    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-});
+} else {
+    httpServer.listen(port, () => {
+        fs.readdir(imagesDir, (err, files) => {
+            if (err) {
+                console.error('Unable to scan directory:', err);
+                return;
+            }
 
-// httpServer.listen(port, () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
+            shuffledImages = shuffleArray(files);
+        });
 
-//         shuffledImages = shuffleArray(files);
-//     }); 
-
-//     console.log(`App listening on port ${port}!`)
-// }); 
+        console.log(`App listening on port ${port}!`)
+    });
+}
