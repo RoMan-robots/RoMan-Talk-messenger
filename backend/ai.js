@@ -17,7 +17,7 @@ fs.readFile(badWordsFilePath, 'utf8', (err, data) => {
     }
 });
 
-function normalizeText(text) {
+function normalizeText(text, mode = 'toCyrillic') {
     const latinToCyrillicMap = {
         'A': 'А', 'a': 'а',
         'E': 'Е', 'e': 'е',
@@ -29,9 +29,62 @@ function normalizeText(text) {
         'B': 'В', 'b': 'в',
         'H': 'Н', 'h': 'н',
         'M': 'М', 'm': 'м',
-        'K': 'К', 'k': 'к'
+        'K': 'К', 'k': 'к',
+        'I': 'І', 'i': 'і',
+        'Y': 'У', 'y': 'у',
+        'Є': 'E', 'є': 'e',
+        'І': 'И', 'і': 'и',
     };
-    return text.split('').map(char => latinToCyrillicMap[char] || char).join('');
+
+    const cyrillicToLatinMap = Object.fromEntries(
+        Object.entries(latinToCyrillicMap).map(([latin, cyrillic]) => [cyrillic, latin])
+    );
+
+    if (mode === 'toCyrillic') {
+        return text
+            .split('')
+            .map(char => latinToCyrillicMap[char] || char)
+            .join('');
+    } else if (mode === 'toLatin') {
+        return text
+            .split('')
+            .map(char => cyrillicToLatinMap[char] || char)
+            .join('');
+    }
+
+    throw new Error('Invalid mode for normalizeText');
+}
+
+function generateMixedRegex(word) {
+    const latinToCyrillicMap = {
+        'A': 'А', 'a': 'а',
+        'E': 'Е', 'e': 'е',
+        'O': 'О', 'o': 'о',
+        'P': 'Р', 'p': 'р',
+        'C': 'С', 'c': 'с',
+        'T': 'Т', 't': 'т',
+        'X': 'Х', 'x': 'х',
+        'B': 'В', 'b': 'в',
+        'H': 'Н', 'h': 'н',
+        'M': 'М', 'm': 'м',
+        'K': 'К', 'k': 'к',
+        'I': 'І', 'i': 'і',
+        'Y': 'У', 'y': 'у',
+        'Є': 'E', 'є': 'e',
+        'І': 'И', 'і': 'и',
+    };
+
+    const cyrillicToLatinMap = Object.fromEntries(
+        Object.entries(latinToCyrillicMap).map(([latin, cyrillic]) => [cyrillic, latin])
+    );
+
+    const regexParts = word.split('').map(char => {
+        const latin = latinToCyrillicMap[char] || char;
+        const cyrillic = cyrillicToLatinMap[char] || char;
+        return `[${char}${latin}${cyrillic}]`;
+    });
+
+    return new RegExp(regexParts.join('') + '([^a-zA-Zа-яА-Я0-9]*?)', 'gi');
 }
 
 function removeSpacesAndSymbols(text) {
@@ -39,21 +92,21 @@ function removeSpacesAndSymbols(text) {
 }
 
 export function filterText(text) {
-    const normalizedText = normalizeText(text); 
 
-    const cleanText = removeSpacesAndSymbols(normalizedText.toLowerCase());
+    const originalClean = removeSpacesAndSymbols(text.toLowerCase());
+    const normalizedToCyrillic = removeSpacesAndSymbols(normalizeText(text, 'toCyrillic').toLowerCase());
+    const normalizedToLatin = removeSpacesAndSymbols(normalizeText(text, 'toLatin').toLowerCase());
 
     badWords.forEach(badWord => {
-        const regex = new RegExp(
-            badWord.split('').map(letter => `[${letter}]+([^a-zA-Zа-яА-Я0-9]*?)`).join(''),
-            'gi'
-        );
-
-        if (regex.test(cleanText)) {
+        const regex = generateMixedRegex(badWord.toLowerCase());
+        if (
+            regex.test(originalClean) ||
+            regex.test(normalizedToCyrillic) ||
+            regex.test(normalizedToLatin)
+        ) {
             text = text.replace(regex, '*'.repeat(badWord.length));
         }
     });
-
     return text;
 }
 
