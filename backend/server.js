@@ -948,7 +948,8 @@ app.post("/session-status", async (req, res) => {
     const supportedVersions = {
         "1.2.1": false,
         "2.0": true,
-        "2.1": true
+        "2.1": true,
+        "2.2": true
     };
 
     if (!supportedVersions[version]) {
