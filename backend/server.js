@@ -515,7 +515,6 @@ async function downloadImages(channelName) {
                     const response = await fetch(file.download_url);
                     const buffer = await response.arrayBuffer();
                     await fs.writeFile(localFilePath, Buffer.from(buffer));
-                    console.log("Збережено файл:", localFilePath);
                 } else {
                     console.error("Не вдалося отримати download_url для файлу:", file.path);
                 }
@@ -831,6 +830,7 @@ app.get('/username', checkUserExists, (req, res) => {
 
 app.post('/register', async (req, res) => {
     let { username, password, theme } = req.body;
+    username = filterText(username)
 
     if (!username || !password) {
         return res.status(400).send({ success: false, message: 'Ім\'я користувача та пароль не можуть бути порожніми.' });
@@ -1731,19 +1731,7 @@ app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
 
-// httpServer.listen(port, 'localhost', () => {
-//     fs.readdir(imagesDir, (err, files) => {
-//         if (err) {
-//             console.error('Unable to scan directory:', err);
-//             return;
-//         }
-
-//         shuffledImages = shuffleArray(files);
-//     });
-//     console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
-// });
-
-httpServer.listen(port, () => {
+httpServer.listen(port, 'localhost', () => {
     fs.readdir(imagesDir, (err, files) => {
         if (err) {
             console.error('Unable to scan directory:', err);
@@ -1751,7 +1739,19 @@ httpServer.listen(port, () => {
         }
 
         shuffledImages = shuffleArray(files);
-    }); 
+    });
+    console.log(`Server is running on port ${port}. Test at: http://localhost:${port}/`);
+});
 
-    console.log(`App listening on port ${port}!`)
-}); 
+// httpServer.listen(port, () => {
+//     fs.readdir(imagesDir, (err, files) => {
+//         if (err) {
+//             console.error('Unable to scan directory:', err);
+//             return;
+//         }
+
+//         shuffledImages = shuffleArray(files);
+//     }); 
+
+//     console.log(`App listening on port ${port}!`)
+// }); 
