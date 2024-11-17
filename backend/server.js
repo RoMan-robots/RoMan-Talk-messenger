@@ -515,7 +515,6 @@ async function downloadImages(channelName) {
                     const response = await fetch(file.download_url);
                     const buffer = await response.arrayBuffer();
                     await fs.writeFile(localFilePath, Buffer.from(buffer));
-                    console.log("Збережено файл:", localFilePath);
                 } else {
                     console.error("Не вдалося отримати download_url для файлу:", file.path);
                 }
@@ -831,6 +830,7 @@ app.get('/username', checkUserExists, (req, res) => {
 
 app.post('/register', async (req, res) => {
     let { username, password, theme } = req.body;
+    username = filterText(username)
 
     if (!username || !password) {
         return res.status(400).send({ success: false, message: 'Ім\'я користувача та пароль не можуть бути порожніми.' });
