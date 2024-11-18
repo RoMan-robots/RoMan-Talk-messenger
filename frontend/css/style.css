@@ -125,6 +125,31 @@ body {
   font-weight: bold;
 }
 
+.password-wrapper {
+  position: relative;
+}
+
+.form-control {
+  width: 100%;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.toggle-password:focus {
+  outline: none;
+}
+
 .ban-text {
   display: flex;
   justify-content: center;

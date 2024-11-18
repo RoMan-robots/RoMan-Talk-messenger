@@ -14,8 +14,17 @@ window.fetch = function (...args) {
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 const version = "2.1"
 
-const NUMBER_OF_SNOWFLAKES = 200;
-const MAX_SNOWFLAKE_SIZE = 4;
+const passwordInput = document.getElementById("password-input");
+const toggleButton = document.querySelector(".toggle-password");
+
+toggleButton.addEventListener("click", () => {
+  const isPassword = passwordInput.type === "password";
+  passwordInput.type = isPassword ? "text" : "password";
+  toggleButton.textContent = isPassword ? "🙈" : "👁️";
+});
+
+const NUMBER_OF_SNOWFLAKES = 150;
+const MAX_SNOWFLAKE_SIZE = 3;
 const MAX_SNOWFLAKE_SPEED = 1.5;
 const SNOWFLAKE_COLOUR = '#ddd';
 const snowflakes = [];
