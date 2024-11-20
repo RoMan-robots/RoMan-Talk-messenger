@@ -254,6 +254,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
                 id: newMessageId,
                 author: messageObject.author,
                 context: messageObject.context,
+                date: messageObject.date
             };
 
             if (messageType === 'photo' && messageObject.image) {
@@ -892,7 +893,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
 
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
-        const { channelName, author, context } = req.body;
+        const { channelName, author, context, date } = req.body;
         const photo = req.file;
 
         if (!photo) {
@@ -902,6 +903,7 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         let messageObject = {
             author,
             context,
+            date,
             image: {
                 name: photo.originalname,
                 size: photo.size,
