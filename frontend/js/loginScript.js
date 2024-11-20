@@ -12,17 +12,15 @@ window.fetch = function (...args) {
 };
 
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
-const version = "2.1"
+const version = "2.2"
 
 const passwordInput = document.getElementById("password-input");
 const toggleButton = document.querySelector(".toggle-password");
-
 toggleButton.addEventListener("click", () => {
   const isPassword = passwordInput.type === "password";
   passwordInput.type = isPassword ? "text" : "password";
   toggleButton.textContent = isPassword ? "🙈" : "👁️";
 });
-
 const NUMBER_OF_SNOWFLAKES = 150;
 const MAX_SNOWFLAKE_SIZE = 3;
 const MAX_SNOWFLAKE_SPEED = 1.5;
@@ -41,52 +39,52 @@ const ctx = canvas.getContext('2d');
 
 
 const createSnowflake = () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    radius: Math.floor(Math.random() * MAX_SNOWFLAKE_SIZE) + 1,
-    color: SNOWFLAKE_COLOUR,
-    speed: Math.random() * MAX_SNOWFLAKE_SPEED + 1,
-    sway: Math.random() - 0.5 // next
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  radius: Math.floor(Math.random() * MAX_SNOWFLAKE_SIZE) + 1,
+  color: SNOWFLAKE_COLOUR,
+  speed: Math.random() * MAX_SNOWFLAKE_SPEED + 1,
+  sway: Math.random() - 0.5 // next
 });
 
 const drawSnowflake = snowflake => {
-    ctx.beginPath();
-    ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
-    ctx.fillStyle = snowflake.color;
-    ctx.fill();
-    ctx.closePath();
+  ctx.beginPath();
+  ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
+  ctx.fillStyle = snowflake.color;
+  ctx.fill();
+  ctx.closePath();
 }
 
 const updateSnowflake = snowflake => {
-    snowflake.y += snowflake.speed;
-    snowflake.x += snowflake.sway; // next
-    if (snowflake.y > canvas.height) {
-        Object.assign(snowflake, createSnowflake());
-    }
+  snowflake.y += snowflake.speed;
+  snowflake.x += snowflake.sway; // next
+  if (snowflake.y > canvas.height) {
+    Object.assign(snowflake, createSnowflake());
+  }
 }
 
 const animate = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    snowflakes.forEach(snowflake => {
-        updateSnowflake(snowflake);
-        drawSnowflake(snowflake);
-    });
+  snowflakes.forEach(snowflake => {
+    updateSnowflake(snowflake);
+    drawSnowflake(snowflake);
+  });
 
-    requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
 }
 
 for (let i = 0; i < NUMBER_OF_SNOWFLAKES; i++) {
-    snowflakes.push(createSnowflake());
+  snowflakes.push(createSnowflake());
 }
 
 window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 });
 
 window.addEventListener('scroll', () => {
-    canvas.style.top = `${window.scrollY}px`;
+  canvas.style.top = `${window.scrollY}px`;
 });
 
 animate()

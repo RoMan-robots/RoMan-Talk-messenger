@@ -175,7 +175,7 @@ body {
   -webkit-backdrop-filter: blur(10.5px);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  width: 550px;
+  width: 470px;
 }
 
 @media (max-width: 768px) {
