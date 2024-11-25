@@ -28,10 +28,12 @@
             <div id="register-inputs">
                 <div id="step-1">
                     <h3 class="classic">Крок 1. Збір інформації</h3>
-                    <input type="text" id="register-username-input" class="form-control", placeholder="Ім'я користувача">
+                    <input type="text" id="register-username-input" class="form-control" ,
+                        placeholder="Ім'я користувача">
                     <div class="password-wrapper">
                         <input type="password" id="password-input" class="form-control changing" placeholder="Пароль">
-                        <button type="button" class="toggle-password" onclick="changePasswordVisiblity(this)">👁️</button>
+                        <button type="button" class="toggle-password"
+                            onclick="changePasswordVisiblity(this)">👁️</button>
                     </div>
                     <div class="button-group" role="group">
                         <button onclick="changeUrlToChat('/')" class="btn btn-secondary">Назад</button>
@@ -42,8 +44,10 @@
                 <div id="step-2" style="display: none;">
                     <h3 class="classic">Крок 2. Підтвердження</h3>
                     <div class="password-wrapper">
-                        <input type="password" id="confirm-password-input" class="form-control changing" placeholder="Повторіть пароль">
-                        <button type="button" class="toggle-password" onclick="changePasswordVisiblity(this)">👁️</button>
+                        <input type="password" id="confirm-password-input" class="form-control changing"
+                            placeholder="Повторіть пароль">
+                        <button type="button" class="toggle-password"
+                            onclick="changePasswordVisiblity(this)">👁️</button>
                     </div>
                     <div class="button-group" role="group">
                         <button onclick="nextStep(1)" class="btn btn-secondary">Назад</button>
@@ -76,27 +80,10 @@
                 </div>
 
                 <div id="step-4" style="display: none;">
-                    <h3 class="classic">Крок 4. Туторіал по використанню RoMan Talk</h3>
+                    <h3 class="classic">Крок 4. Туторіал RoMan Talk</h3>
 
-                    <p class="classic">P.S. Якщо натиснути на картинку, вона буде на повний екран</p>
-
-                    <img src="/tutorial1.png" alt="Туторіал 1" class="tutorial-image" onclick="openFullscreen(this)">
-                    <img src="/tutorial2.png" alt="Туторіал 2" class="tutorial-image" onclick="openFullscreen(this)">
-                    <p class="classic">Це головне вікно. Натисніть "Сервери" зверху, щоб побачити доступні, знайти нові,
-                        відсортувати або створити власний.</p>
-
-                    <p class="classic">Вводьте повідомлення внизу. Ви можете прикріплювати фото, натискаючи на +.</p>
-
-                    <p class="classic">Кнопка "⚙️" зверху відкриває налаштування вашого профілю.</p>
-
-                    <img src="/tutorial3.png" alt="Туторіал 3" class="tutorial-image" onclick="openFullscreen(this)">
-                    <p class="classic">Керування повідомленнями: натисніть на кнопку справа для редагування, видалення,
-                        або використання AI функцій.</p>
-
-                    <img src="/tutorial4.png" alt="Туторіал 4" class="tutorial-image" onclick="openFullscreen(this)">
-                    <p class="classic">В налаштуваннях можна змінити пароль, видалити акаунт та редагувати або видаляти
-                        власні канали. Зверніть увагу на різні кольори на скріншотах — це теми, які ви обрали на 3
-                        кроці. Їх можна змінити пізніше в налаштуваннях.</p>
+                    <p class="classic">Якщо вам буде щось незрозуміло, ви можете переглянути туторіал
+                    <a href="tutorial.html" class="footer-a">тут</a></p>
 
                     <div class="button-group">
                         <button onclick="register(event)" class="btn btn-success">Завершити</button>

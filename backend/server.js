@@ -1731,6 +1731,14 @@ app.get("/tos.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "tos.html"));
 })
 
+app.get("/tutorial.html", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend/html", "tutorial.html"));
+});
+
+app.get("/whats-new.html", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend/html", "whats-new.html"));
+});
+
 app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
