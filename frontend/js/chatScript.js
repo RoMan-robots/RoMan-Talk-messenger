@@ -43,6 +43,14 @@ let isTyping = false;
 const typingCheckDelay = 100;
 let typingTimeout;
 
+function updateVh() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
+
+window.addEventListener('resize', updateVh);
+window.addEventListener('load', updateVh);
+
 const NUMBER_OF_SNOWFLAKES = 200;
 const MAX_SNOWFLAKE_SIZE = 4;
 const MAX_SNOWFLAKE_SPEED = 1.5;
