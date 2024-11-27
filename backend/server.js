@@ -1742,7 +1742,7 @@ app.get("/whats-new.html", (req, res) => {
 app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
-if (process.env.SERVER_TYPE = "local") {
+if (process.env.SERVER_TYPE == "local") {
     httpServer.listen(port, 'localhost', () => {
         fs.readdir(imagesDir, (err, files) => {
             if (err) {
