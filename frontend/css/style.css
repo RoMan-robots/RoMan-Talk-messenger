@@ -24,7 +24,7 @@ body {
   }
 }
 
-@media (max-width: 400px) and (min-height: 630px){
+@media (max-width: 400px) and (min-height: 630px) {
   #background {
     height: 410vh;
   }
@@ -181,11 +181,11 @@ body {
 @media (max-width: 768px) {
   #register-text {
     width: 100%;
-    max-width: 450px; 
+    max-width: 450px;
   }
 
   .tutorial-image {
-    max-width: 100%; 
+    max-width: 100%;
   }
 }
 
@@ -195,7 +195,7 @@ body {
   }
 
   .tutorial-image {
-    max-width: 100%; 
+    max-width: 100%;
   }
 }
 
@@ -205,8 +205,8 @@ body {
 }
 
 #step-4 {
-  max-height: 80vh; 
-  overflow-y: auto; 
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 #tutorial-screen {
@@ -300,6 +300,7 @@ body {
   color: var(--some-buttons-text);
   cursor: pointer;
 }
+
 #theme-select {
   padding: 10px;
   background-color: #333;
@@ -342,7 +343,7 @@ body {
 
 
 #top-bar {
-  height: 70px;
+  height: calc(var(--real-vh) * 0.2);
   background-color: #000;
   display: flex;
   align-items: center;
@@ -408,7 +409,7 @@ body {
   flex-grow: 1;
   overflow: auto;
   padding: 10px;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color:var(--background-color);
 }
 
 .message {
@@ -516,7 +517,7 @@ body {
   font-size: 0.9em;
 }
 
-@media (max-width: 400px){
+@media (max-width: 400px) {
   #message-options-menu {
     width: 100%;
     height: 400px;
@@ -673,13 +674,13 @@ body {
   color: black;
 }
 
-@media (max-height:750px){
+@media (max-height:750px) {
   #settings-screen {
     height: 150vh;
   }
 }
 
-@media (max-height:570px){
+@media (max-height:570px) {
   #settings-screen {
     height: 200vh;
   }
@@ -941,7 +942,7 @@ button,
   --text-color: #d3c4e6;
   --button-bg-color: #8e78b4;
   --input-bg-color: #5a4d7a;
-  --modal-bg-color: #4b4370; 
+  --modal-bg-color: #4b4370;
   --message-bg-color: #6c598c;
   --channel-list-bg-color: #3f375c;
   --some-buttons-text: #e1d4f9;
@@ -952,7 +953,7 @@ button,
   --text-color: #f4a7a7;
   --button-bg-color: #b93030;
   --input-bg-color: #3f0808;
-  --modal-bg-color: #600606; 
+  --modal-bg-color: #600606;
   --message-bg-color: #8d2626;
   --channel-list-bg-color: #741212;
   --some-buttons-text: #f6c5c5;

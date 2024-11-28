@@ -44,7 +44,7 @@ const typingCheckDelay = 100;
 let typingTimeout;
 
 function updateVh() {
-  const vh = window.innerHeight * 0.01;
+  const vh = window.innerHeight * 0.3;
   document.documentElement.style.setProperty('--real-vh', `${vh}px`);
 }
 
