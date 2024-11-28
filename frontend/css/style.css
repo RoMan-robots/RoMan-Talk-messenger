@@ -409,7 +409,7 @@ body {
   flex-grow: 1;
   overflow: auto;
   padding: 10px;
-  background-color:var(--background-color);
+  background-color:rgba(0, 0, 0, 0.6);
 }
 
 .message {
@@ -821,6 +821,7 @@ button,
 }
 
 :root {
+  --real-vh: 100vh;
   --background-color: #fff;
   --text-color: #000;
   --additional-text-color: #fff;
@@ -949,6 +950,7 @@ button,
 }
 
 [data-theme="ruby"] {
+  --real-vh: 100vh;
   --background-color: #6c0000;
   --text-color: #f4a7a7;
   --button-bg-color: #b93030;
