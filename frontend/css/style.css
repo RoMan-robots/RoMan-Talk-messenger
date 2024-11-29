@@ -950,7 +950,7 @@ button,
 }
 
 [data-theme="ruby"] {
-  --real-vh: 100vh;
+  --real-vh: 100vh; 
   --background-color: #6c0000;
   --text-color: #f4a7a7;
   --button-bg-color: #b93030;
