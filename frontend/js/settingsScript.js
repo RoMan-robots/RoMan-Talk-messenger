@@ -808,6 +808,10 @@ async function loadPastTheme() {
   }
 }
 
+function locked(){
+  alertify.error("Ця кнопка буде доступна лише з версії 3.0!")
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const response = await fetch('/get-rank', {
