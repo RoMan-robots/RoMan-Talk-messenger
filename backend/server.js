@@ -894,15 +894,16 @@ app.post('/messages', checkUserExists, async (req, res) => {
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
         const { channelName, author, context, date } = req.body;
+        const filteredText = filterText(context)
         const photo = req.file;
 
         if (!photo) {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
-
+        
         let messageObject = {
             author,
-            context,
+            context: filteredText,
             date,
             image: {
                 name: photo.originalname,
