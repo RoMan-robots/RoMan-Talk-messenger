@@ -54,7 +54,6 @@ function normalizeText(text, mode = 'toCyrillic') {
 
     throw new Error('Invalid mode for normalizeText');
 }
-
 function generateMixedRegex(word) {
     const latinToCyrillicMap = {
         'A': 'А', 'a': 'а',
@@ -81,14 +80,14 @@ function generateMixedRegex(word) {
     const regexParts = word.split('').map(char => {
         const latin = latinToCyrillicMap[char] || char;
         const cyrillic = cyrillicToLatinMap[char] || char;
-        return `[${char}${latin}${cyrillic}]`;
+        return `[${char}${latin}${cyrillic}]\\s*`;
     });
 
     return new RegExp(regexParts.join('') + '([^a-zA-Zа-яА-Я0-9]*?)', 'gi');
 }
 
 function removeSpacesAndSymbols(text) {
-    return text.replace(/[\s\u200B-\u200D\uFEFF]/g, '').replace(/[^a-zA-Zа-яА-Я0-9]/g, '');
+    return text.replace(/[\s\u200B-\u200D\uFEFF]/g, '').replace(/[^\wА-Яа-яІіЄєҐґ0-9]/g, '');
 }
 
 export function filterText(text) {

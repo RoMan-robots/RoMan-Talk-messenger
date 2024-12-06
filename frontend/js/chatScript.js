@@ -43,6 +43,82 @@ let isTyping = false;
 const typingCheckDelay = 100;
 let typingTimeout;
 
+function updateVh() {
+  const vh = window.innerHeight * 0.3;
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
+
+window.addEventListener('resize', updateVh);
+window.addEventListener('load', updateVh);
+
+const NUMBER_OF_SNOWFLAKES = 200;
+const MAX_SNOWFLAKE_SIZE = 4;
+const MAX_SNOWFLAKE_SPEED = 1.5;
+const SNOWFLAKE_COLOUR = '#ddd';
+const snowflakes = [];
+
+const canvas = document.createElement('canvas');
+canvas.style.position = 'absolute';
+canvas.style.pointerEvents = 'none';
+canvas.style.top = '0px';
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+document.body.appendChild(canvas);
+
+const ctx = canvas.getContext('2d');
+
+
+const createSnowflake = () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  radius: Math.floor(Math.random() * MAX_SNOWFLAKE_SIZE) + 1,
+  color: SNOWFLAKE_COLOUR,
+  speed: Math.random() * MAX_SNOWFLAKE_SPEED + 1,
+  sway: Math.random() - 0.5 // next
+});
+
+const drawSnowflake = snowflake => {
+  ctx.beginPath();
+  ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
+  ctx.fillStyle = snowflake.color;
+  ctx.fill();
+  ctx.closePath();
+}
+
+const updateSnowflake = snowflake => {
+  snowflake.y += snowflake.speed;
+  snowflake.x += snowflake.sway; // next
+  if (snowflake.y > canvas.height) {
+    Object.assign(snowflake, createSnowflake());
+  }
+}
+
+const animate = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  snowflakes.forEach(snowflake => {
+    updateSnowflake(snowflake);
+    drawSnowflake(snowflake);
+  });
+
+  requestAnimationFrame(animate);
+}
+
+for (let i = 0; i < NUMBER_OF_SNOWFLAKES; i++) {
+  snowflakes.push(createSnowflake());
+}
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+window.addEventListener('scroll', () => {
+  canvas.style.top = `${window.scrollY}px`;
+});
+
+animate()
+
 async function getCurrentUsername() {
   try {
     const response = await fetch('/username', {
@@ -79,6 +155,7 @@ function displayMessage(message, id) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('message');
   messageElement.dataset.index = id;
+  messageElement.dataset.date = message.date;
 
   const messageP = document.createElement('p');
   messageP.textContent = message.context;
@@ -109,6 +186,7 @@ function displayMessage(message, id) {
     img.dataset.index = id
     img.classList.add('message');
     messageList.appendChild(img);
+    img.dataset.date = message.date;
   }
   setTimeout(() => {
     messageList.scrollTop = messageList.scrollHeight;
@@ -126,6 +204,11 @@ async function openMessageOptionsMenu(id) {
   });
 
   if (messageElement) {
+    let date = "Невідома дата відправлення";
+    if(messageElement.dataset.date != "undefined"){
+        date = messageElement.dataset.date + "(Київ)";
+    }
+    document.getElementById("kyiv-time-input").textContent = date;
     const rect = messageElement.getBoundingClientRect();
     const menuHeight = menu.offsetHeight;
 
@@ -175,7 +258,7 @@ async function loadMessages(channelName) {
 
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
-          displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo }, message.id);
+          displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo, date: message.date }, message.id);
         });
 
         typingUsers = new Set(channel.typingUsers);
@@ -252,10 +335,20 @@ async function sendMessage() {
           messageInput.placeholder = 'Напишіть повідомлення';
         }
       } else if (selectedPhotoFiles.length > 0) {
+        const date = new Date().toLocaleString('uk-UA', { 
+          timeZone: 'Europe/Kyiv', 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
         const formData = new FormData();
+
         formData.append('channelName', selectedChannel);
         formData.append('author', currentUsername);
         formData.append('context', message);
+        formData.append('date', date);
 
         selectedPhotoFiles.forEach(file => {
           const trimmedPhotoName = file.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
@@ -286,10 +379,20 @@ async function sendMessage() {
         uploadFilesDiv.classList.remove("upload-files-visible");
         uploadFilesDiv.classList.add("upload-files-invisible");
       } else {
+        const date = new Date().toLocaleString('uk-UA', { 
+          timeZone: 'Europe/Kyiv', 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+
         const messageObject = {
           author: currentUsername,
           context: message,
-          channel: selectedChannel
+          channel: selectedChannel,
+          date: date
         };
         const response = await fetch('/messages', {
           method: 'POST',
@@ -845,9 +948,9 @@ fileInput.addEventListener("change", function () {
 socket.on('chat message', (channel, msg) => {
   if (msg.author && msg.context && channel == selectedChannel) {
     if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}` }, msg.id);
+      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${ msg.date }` }, msg.id);
     } else {
-      displayMessage({ context: `${msg.author}: ${msg.context}` }, msg.id);
+      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${ msg.date }` }, msg.id);
     }
   }
   if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
@@ -962,6 +1065,8 @@ document.getElementById("message-options-menu").addEventListener("click", functi
       case "Видалити повідомлення":
         deleteMessage(messageId);
         break;
+      default:
+        console.warn("Невідома дія:", action);
     }
   }
 });

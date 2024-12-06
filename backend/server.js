@@ -12,6 +12,7 @@ import path from 'path';
 import LanguageDetect from 'languagedetect';
 import fs from "fs-extra";
 import bcrypt from 'bcryptjs';
+import webpush from 'web-push'
 import dotenv from 'dotenv';
 
 import {
@@ -51,7 +52,7 @@ let modelsLoaded = false;
 let models = {}
 
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage: storage
 });
 
@@ -253,6 +254,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic",
                 id: newMessageId,
                 author: messageObject.author,
                 context: messageObject.context,
+                date: messageObject.date
             };
 
             if (messageType === 'photo' && messageObject.image) {
@@ -891,18 +893,20 @@ app.post('/messages', checkUserExists, async (req, res) => {
 
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
-        const { channelName, author, context } = req.body;
+        const { channelName, author, context, date } = req.body;
+        const filteredText = filterText(context)
         const photo = req.file;
 
         if (!photo) {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
-
+        
         let messageObject = {
             author,
-            context,
+            context: filteredText,
+            date,
             image: {
-                name: photo.originalname, 
+                name: photo.originalname,
                 size: photo.size,
                 mimetype: photo.mimetype,
                 buffer: photo.buffer
@@ -948,7 +952,8 @@ app.post("/session-status", async (req, res) => {
     const supportedVersions = {
         "1.2.1": false,
         "2.0": true,
-        "2.1": true
+        "2.1": true,
+        "2.2": true
     };
 
     if (!supportedVersions[version]) {
@@ -1699,7 +1704,7 @@ app.post('/delete-account', checkUserExists, async (req, res) => {
 
     const updatedUsers = users.map((user, index) => ({
         ...user,
-        id: index + 1 
+        id: index + 1
     }));
 
     await saveUsers(updatedUsers);
@@ -1727,10 +1732,17 @@ app.get("/tos.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "tos.html"));
 })
 
+app.get("/tutorial.html", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend/html", "tutorial.html"));
+});
+
+app.get("/whats-new.html", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend/html", "whats-new.html"));
+});
+
 app.get("/settings.html", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../frontend/html", "settings.html"));
 });
-
 if (process.env.SERVER_TYPE == "local") {
     httpServer.listen(port, 'localhost', () => {
         fs.readdir(imagesDir, (err, files) => {
