@@ -186,6 +186,7 @@ function displayMessage(message, id) {
     img.dataset.index = id
     img.classList.add('message');
     messageList.appendChild(img);
+    img.dataset.date = message.date;
   }
   setTimeout(() => {
     messageList.scrollTop = messageList.scrollHeight;
@@ -947,9 +948,9 @@ fileInput.addEventListener("change", function () {
 socket.on('chat message', (channel, msg) => {
   if (msg.author && msg.context && channel == selectedChannel) {
     if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}` }, msg.id);
+      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${ msg.date }` }, msg.id);
     } else {
-      displayMessage({ context: `${msg.author}: ${msg.context}` }, msg.id);
+      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${ msg.date }` }, msg.id);
     }
   }
   if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
