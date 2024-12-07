@@ -14,8 +14,10 @@ function closeFullscreen() {
         fullscreenDiv.remove();
     }
 }
-const NUMBER_OF_SNOWFLAKES = 150;
-const MAX_SNOWFLAKE_SIZE = 3;
+
+
+const NUMBER_OF_SNOWFLAKES = 100;
+const MAX_SNOWFLAKE_SIZE = 4;
 const MAX_SNOWFLAKE_SPEED = 1.5;
 const SNOWFLAKE_COLOUR = '#ddd';
 const snowflakes = [];

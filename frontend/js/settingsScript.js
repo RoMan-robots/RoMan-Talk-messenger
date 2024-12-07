@@ -30,7 +30,8 @@ let display = false;
 let currentChannelName;
 let userId;
 
-const NUMBER_OF_SNOWFLAKES = 200;
+
+const NUMBER_OF_SNOWFLAKES = 100;
 const MAX_SNOWFLAKE_SIZE = 4;
 const MAX_SNOWFLAKE_SPEED = 1.5;
 const SNOWFLAKE_COLOUR = '#ddd';
