@@ -142,7 +142,7 @@ function showDownloadMenu() {
 function downloadApp(platform) {
   const downloadLinks = {
     'win': 'https://www.dropbox.com/scl/fi/5lmb41k95f27f3zkuev58/RoManTalk.exe?rlkey=zzi14fdsb7zx748wen6fwzm58&st=3ez04br9&dl=1',
-    'mobile': 'https://www.dropbox.com/scl/fi/uz4f8yx7mauy54fn4hyqc/RoManTalk-apk.apk?rlkey=7go69pj1joqja6cwcqabixhzz&st=0qi0ktz2&dl=1'
+    'mobile': 'https://www.dropbox.com/scl/fi/qrr4g8padv00i0fu5s2yq/RoManTalk-apk.apk?rlkey=j0eqseh7nvkz9ja09b97xn4el&st=kgvt653t&dl=1'
   };
 
   if (downloadLinks[platform]) {
