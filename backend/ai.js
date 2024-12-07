@@ -80,10 +80,10 @@ function generateMixedRegex(word) {
     const regexParts = word.split('').map(char => {
         const latin = latinToCyrillicMap[char] || char;
         const cyrillic = cyrillicToLatinMap[char] || char;
-        return `[${char}${latin}${cyrillic}]\\s*`;
+        return `[${char}${latin}${cyrillic}]\\s*[^a-zA-Zа-яА-Я0-9]*?`
     });
 
-    return new RegExp(regexParts.join('') + '([^a-zA-Zа-яА-Я0-9]*?)', 'gi');
+    return new RegExp(regexParts.join(''), 'gi');
 }
 
 function removeSpacesAndSymbols(text) {
