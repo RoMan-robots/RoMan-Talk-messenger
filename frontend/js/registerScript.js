@@ -134,7 +134,7 @@ function changePasswordVisiblity(button) {
   if (passwordInput && passwordInput.classList.contains("changing")) {
     const isPassword = passwordInput.type === "password";
     passwordInput.type = isPassword ? "text" : "password";
-    button.textContent = isPassword ? "🙈" : "👁️";
+    button.innerHTML = isPassword ? `<i class="fa-regular fa-eye-slash"></i>` : `<i class="fa-regular fa-eye"></i>`;
   }
 }
 
