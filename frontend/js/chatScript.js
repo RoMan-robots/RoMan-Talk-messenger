@@ -844,6 +844,13 @@ function getOriginalMessage() {
   }
 }
 
+function answerToMessage(messageId){
+  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+  if(messageElement){
+
+  }
+}
+
 function editMessage(messageId) {
   editMode = true;
 
@@ -1059,10 +1066,13 @@ document.getElementById("message-options-menu").addEventListener("click", functi
       case "Показати оригінал":
         getOriginalMessage();
         break;
-      case "Редагувати повідомення":
+      case "Відповісти":
+        answerToMessage(messageId);
+        break;
+      case "Редагувати":
         editMessage(messageId);
         break;
-      case "Видалити повідомлення":
+      case "Видалити":
         deleteMessage(messageId);
         break;
       default:

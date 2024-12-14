@@ -26,14 +26,22 @@
   <div id="chat-container">
     <div id="top-bar">
       <h1 class="title">RoMan Talk</h1>
-      <button id="server-dropdown" onclick="toggleDropdown()">Сервери</button>
+      <div role="button" id="channel-settings-buttons">
+        <button id="server-dropdown" onclick="toggleDropdown()" class="btn"></button>
+        <button id="channel-info-button" class="btn"></button>
+      </div>
       <div id="channel-list">
         <div id="management-buttons"></div>
         <div id="channels"></div>
       </div>
-      <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn btn-dark">⚙️</button>
+      <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn">⚙️</button>
     </div>
     <div id="message-list">
+    </div>
+    <div id="answer-message">
+      <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
+      <h5>Відповісти на повідомлення</h5>
+      <span id="answer-message-span"></span>
     </div>
     <div id="upload-files" class="upload-files-invisible">
       <span class="close-button" onclick="closeModal(this.parentElement)">&times;</span>
@@ -54,7 +62,7 @@
       <label for="file-input" class="file-input-label">+</label>
       <input type="file" id="file-input" class="file-input" accept=".png,.jpg,.jpeg,.svg,.webp">
       <input type="text" id="message-input" placeholder="Напишіть повідомлення">
-      <button id="send-button" onclick="sendMessage()" class="btn btn-secondary">
+      <button id="send-button" onclick="sendMessage()" class="btn">
         <i style="font-size:14px" class="fa">&#xf1d9;</i>
       </button>
     </div>
@@ -75,8 +83,9 @@
       </div>
       <div class="message-control">
         <p>Керування повідомленням</p>
-        <button>Редагувати повідомення</button>
-        <button>Видалити повідомлення</button>
+        <button>Відповісти</button>
+        <button>Редагувати</button>
+        <button>Видалити</button>
       </div>
     </div>
     <div id="create-channel-modal" class="modal">
