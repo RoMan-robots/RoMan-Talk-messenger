@@ -61,6 +61,7 @@ const canvas = document.createElement('canvas');
 canvas.style.position = 'absolute';
 canvas.style.pointerEvents = 'none';
 canvas.style.top = '0px';
+canvas.style.zIndex = '100000';
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
@@ -219,8 +220,8 @@ async function openMessageOptionsMenu(id) {
 
   if (messageElement) {
     let date = "Невідома дата відправлення";
-    if (messageElement.dataset.date != "undefined") {
-      date = messageElement.dataset.date + "(Київ)";
+    if(messageElement.dataset.date != "undefined"){
+        date = messageElement.dataset.date + "(Київ)";
     }
     document.getElementById("kyiv-time-input").textContent = date;
     const rect = messageElement.getBoundingClientRect();
@@ -235,12 +236,7 @@ async function openMessageOptionsMenu(id) {
     setTimeout(() => {
       menu.classList.remove('message-options-menu-hide');
       menu.classList.add('message-options-menu-visible');
-    }, 0);
-
-
-    menu.dataset.messageId = id;
-  } else {
-    console.error(`Message element with ID ${id} not found.`);
+    }, 0); 
   }
 }
 
