@@ -216,7 +216,14 @@ async function rephormatMessagesID(channelName) {
         let messages = await getMessages(channelName);
 
         const reformattedMessages = messages.map((message, index) => {
-            return { ...message, id: index + 1 };
+            const newId = index + 1;
+            return {
+                ...message,
+                id: newId,
+                replyTo: message.replyTo ? 
+                    messages.findIndex(m => m.id === message.replyTo) + 1 : 
+                    null
+            };
         });
 
         await saveAllMessages(channelName, reformattedMessages);
@@ -233,9 +240,14 @@ async function getMessages(channelName) {
 
         if (!channelData) {
             throw new Error('Канал не знайдено.');
-        } else {
-            return channelData.messages;
         }
+
+        return channelData.messages.map(message => ({
+            ...message,
+            replyToMessage: message.replyTo ? 
+                channelData.messages.find(m => m.id === message.replyTo) : 
+                null
+        }));
     } catch (error) {
         throw new Error('Помилка при отриманні повідомлень: ' + error.message);
     }
@@ -517,7 +529,6 @@ async function downloadImages(channelName) {
                     const response = await fetch(file.download_url);
                     const buffer = await response.arrayBuffer();
                     await fs.writeFile(localFilePath, Buffer.from(buffer));
-                    console.log("Збережено файл:", localFilePath);
                 } else {
                     console.error("Не вдалося отримати download_url для файлу:", file.path);
                 }
@@ -869,31 +880,45 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/messages', checkUserExists, async (req, res) => {
+    const { author, context, channel, date, replyTo } = req.body;
+
     try {
-        const messageObject = req.body;
-        const channelName = messageObject.channel;
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channel);
+        
+        if (channelIndex === -1) {
+            return res.status(404).send({ success: false, message: 'Канал не знайдено' });
+        }
 
-        const filteredText = filterText(messageObject.context);
-        messageObject.context = filteredText;
+        const newMessage = {
+            id: channels[channelIndex].messages.length + 1,
+            author,
+            context,
+            date,
+            replyTo
+        };
 
-        const messages = await getMessages(channelName);
-        const id = messages.length ? messages.length : 0;
-        messageObject.id = id + 1;
+        channels[channelIndex].messages.push(newMessage);
+        await saveChannels(channels);
 
-        await saveMessages(channelName, messageObject);
+        io.to(channel).emit('chat message', channel, {
+            id: newMessage.id,
+            author: newMessage.author,
+            context: newMessage.context,
+            date: newMessage.date,
+            replyTo: newMessage.replyTo
+        });
 
-        io.emit('chat message', channelName, messageObject);
-
-        res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
+        res.send({ success: true, message: newMessage });
     } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).send({ success: false, message: 'Сталася помилка під час відправки повідомлення.' });
+        console.error('Помилка при збереженні повідомлення:', error);
+        res.status(500).send({ success: false, message: 'Помилка сервера' });
     }
 });
 
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
-        const { channelName, author, context, date } = req.body;
+        const { channelName, author, context, date, replyTo } = req.body;
         const filteredText = filterText(context)
         const photo = req.file;
 
@@ -905,6 +930,7 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
             author,
             context: filteredText,
             date,
+            replyTo,
             image: {
                 name: photo.originalname,
                 size: photo.size,

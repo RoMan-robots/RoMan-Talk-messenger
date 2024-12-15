@@ -454,11 +454,13 @@ body {
   color: var(--text-color);
 }
 
-.upload-files-invisible {
+.upload-files-invisible,
+.message-answer-invisible {
   display: none;
 }
 
-.upload-files-visible {
+.upload-files-visible,
+.message-answer-visible {
   display: block;
 }
 
@@ -557,6 +559,59 @@ body {
   margin: 0;
   padding: 5px 0;
   font-weight: bold;
+}
+
+
+.reply-to {
+  margin: 5px 0;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left: 4px solid var(--text-color);
+  border-radius: 5px;
+  font-size: 0.85em;
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reply-author {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.reply-text {
+  color: var(--text-color);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.message-photo {
+  max-width: 200px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#message-answer {
+  background: var(--modal-bg-color);
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  position: relative;
+}
+
+#message-answer span:not(.close-button) {
+  color: var(--text-color);
+  opacity: 0.8;
 }
 
 .general,
@@ -1028,7 +1083,7 @@ input,
   color: var(--text-color);
 }
 
-#server-dropdown, #channel-info-button {
+#server-dropdown, #channel-info-button, #settings {
   color: var(--text-color);
 }
 
