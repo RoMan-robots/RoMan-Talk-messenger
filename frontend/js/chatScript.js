@@ -28,7 +28,7 @@ const newUserSound = new Audio("/newUserSound.mp3");
 
 const token = localStorage.getItem('token');
 
-let isDropdownActive = true;
+let isDropdownActive = false
 let currentUsername;
 
 let editMode = false;
@@ -219,10 +219,15 @@ function displayMessage(message, id) {
   });
 }
 
-async function openMessageOptionsMenu(messageId) {
+async function openMessageOptionsMenu(messageId, count = 0) {
   const menu = document.getElementById("message-options-menu");
   menu.dataset.messageId = messageId;
   let messageElement = null;
+
+  const visibleMessages = Array.from(document.querySelectorAll('.message')).filter(element => {
+    const rect = element.getBoundingClientRect();
+    return rect.top >= 0 && rect.bottom <= window.innerHeight;
+  });
 
   document.querySelectorAll('.message').forEach((element) => {
     if (element.dataset.index == messageId) {
@@ -239,16 +244,27 @@ async function openMessageOptionsMenu(messageId) {
     const rect = messageElement.getBoundingClientRect();
     const menuHeight = menu.offsetHeight;
 
-    let top = rect.top - menuHeight;
+    const messageIndex = visibleMessages.indexOf(messageElement);
+    
+    let top;
+    if (messageIndex >= 0 && messageIndex < 8) {
+      top = rect.bottom;
+    } else {
+      top = rect.top - menuHeight;
+    }
+
     let left = rect.left;
 
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;
 
-    setTimeout(() => {
-      menu.classList.remove('message-options-menu-hide');
-      menu.classList.add('message-options-menu-visible');
-    }, 0);
+    if (count < 1) {
+      setTimeout(() => {
+        menu.classList.remove('message-options-menu-hide');
+        menu.classList.add('message-options-menu-visible');
+        openMessageOptionsMenu(messageId, count + 1);
+      }, 0);
+    }
   }
 }
 
@@ -560,18 +576,36 @@ function createChannelModal() {
 }
 
 function closeModal(element) {
-  if (element === 'edit-message') {
-    document.getElementById(element).classList.remove("edit-message-visible")
-    document.getElementById(element).classList.add("edit-message-invisible")
-
-    messageInput.value = '';
-    messageInput.placeholder = 'Напишіть повідомлення';
-    editMode = false;
-  } else if (element == "message-answer") {
-    document.getElementById(element).classList.remove("message-answer-visible")
-    document.getElementById(element).classList.add("message-answer-invisible")
-  } else {
-    document.getElementById(element).style.display = "none";
+  if (typeof element === 'string') {
+    const modalElement = document.getElementById(element);
+    if (modalElement) {
+      if (element === 'edit-message') {
+        modalElement.classList.remove("edit-message-visible");
+        modalElement.classList.add("edit-message-invisible");
+        messageInput.value = '';
+        messageInput.placeholder = 'Напишіть повідомлення';
+        editMode = false;
+      } else if (element === "message-answer") {
+        modalElement.classList.remove("message-answer-visible");
+        modalElement.classList.add("message-answer-invisible");
+      } else {
+        modalElement.style.display = "none";
+      }
+    }
+  } 
+  else if (element instanceof HTMLElement) {
+    if (element.id === 'edit-message') {
+      element.classList.remove("edit-message-visible");
+      element.classList.add("edit-message-invisible");
+      messageInput.value = '';
+      messageInput.placeholder = 'Напишіть повідомлення';
+      editMode = false;
+    } else if (element.id === "message-answer") {
+      element.classList.remove("message-answer-visible");
+      element.classList.add("message-answer-invisible");
+    } else {
+      element.style.display = "none";
+    }
   }
 }
 
@@ -848,8 +882,6 @@ function answerToMessage(messageId) {
     return;
   }
 
-  console.log('MessageId in answerToMessage:', messageId);
-
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   const answerMessage = document.getElementById("message-answer");
   const answerMessageSpan = document.getElementById("message-answer-span");
@@ -970,21 +1002,23 @@ fileInput.addEventListener("change", function () {
 });
 
 socket.on('chat message', (channel, msg) => {
-  if (msg.author && msg.context && channel == selectedChannel) {
-    if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${msg.date}` }, msg.id);
-    } else {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${msg.date}` }, msg.id);
-    }
-  }
-  if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
-    newMessageSound.play();
-  } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
-    newUserSound.play();
-  }
+  if (channel === selectedChannel) {
+      displayMessage({
+          context: `${msg.author}: ${msg.context}`,
+          photo: msg.photo,
+          date: msg.date,
+          replyTo: msg.replyTo
+      }, msg.id);
+      
+      if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
+          newMessageSound.play();
+      } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
+          newUserSound.play();
+      }
 
-  if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
-    welcomeSound.play();
+      if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
+          welcomeSound.play();
+      }
   }
 });
 

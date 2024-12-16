@@ -901,13 +901,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
         channels[channelIndex].messages.push(newMessage);
         await saveChannels(channels);
 
-        io.to(channel).emit('chat message', channel, {
-            id: newMessage.id,
-            author: newMessage.author,
-            context: newMessage.context,
-            date: newMessage.date,
-            replyTo: newMessage.replyTo
-        });
+        io.emit('chat message', channel, newMessage);
 
         res.send({ success: true, message: newMessage });
     } catch (error) {
