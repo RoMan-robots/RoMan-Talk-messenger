@@ -164,7 +164,7 @@ function displayMessage(message, id) {
   if (message.replyTo) {
     const replyElement = document.createElement('div');
     replyElement.classList.add('reply-to');
-    
+
     const originalMessage = document.querySelector(`.message[data-index='${message.replyTo}']`);
     if (originalMessage) {
       const originalText = originalMessage.querySelector('p').textContent;
@@ -173,13 +173,24 @@ function displayMessage(message, id) {
         <span class="reply-author"><i class="fa-solid fa-pen-to-square"></i>  ${originalAuthor}</span>
         <span class="reply-text">   ${originalText.split(':')[1]}</span>
       `;
+
+      replyElement.addEventListener('click', () => {
+        originalMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        originalMessage.classList.add('highlight-message');
+
+        setTimeout(() => {
+          originalMessage.classList.remove('highlight-message');
+        }, 1500);
+      });
+
       messageContent.appendChild(replyElement);
     }
   }
 
   const messageP = document.createElement('p');
-  messageP.textContent = message.context.includes(':') ? 
-    message.context : 
+  messageP.textContent = message.context.includes(':') ?
+    message.context :
     `${message.author}: ${message.context}`;
   messageContent.appendChild(messageP);
 
@@ -208,20 +219,21 @@ function displayMessage(message, id) {
   });
 }
 
-async function openMessageOptionsMenu(id) {
+async function openMessageOptionsMenu(messageId) {
   const menu = document.getElementById("message-options-menu");
+  menu.dataset.messageId = messageId;
   let messageElement = null;
 
   document.querySelectorAll('.message').forEach((element) => {
-    if (element.dataset.index == id) {
+    if (element.dataset.index == messageId) {
       messageElement = element;
     }
   });
 
   if (messageElement) {
     let date = "Невідома дата відправлення";
-    if(messageElement.dataset.date != "undefined"){
-        date = messageElement.dataset.date + "(Київ)";
+    if (messageElement.dataset.date != "undefined") {
+      date = messageElement.dataset.date + "(Київ)";
     }
     document.getElementById("kyiv-time-input").textContent = date;
     const rect = messageElement.getBoundingClientRect();
@@ -236,7 +248,7 @@ async function openMessageOptionsMenu(id) {
     setTimeout(() => {
       menu.classList.remove('message-options-menu-hide');
       menu.classList.add('message-options-menu-visible');
-    }, 0); 
+    }, 0);
   }
 }
 
@@ -321,7 +333,7 @@ async function sendMessage() {
         const data = await response.json();
         if (data.success) {
           editMode = false;
-          document.querySelector(`.message[data-index='${messageId}'] p`).textContent = 
+          document.querySelector(`.message[data-index='${messageId}'] p`).textContent =
             `${currentUsername}: ${message}`;
           document.getElementById("edit-message").className = "edit-message-invisible";
         }
@@ -382,12 +394,12 @@ async function sendMessage() {
 
     if (data.success) {
       messageInput.value = '';
-      
+
       if (replyToId) {
         messageInput.dataset.replyToId = '';
         document.getElementById("message-answer").className = "message-answer-invisible";
       }
-      
+
       if (selectedPhotoFiles.length > 0) {
         selectedPhotoFiles = [];
         const uploadFilesDiv = document.getElementById("upload-files");
@@ -831,19 +843,28 @@ function getOriginalMessage() {
 }
 
 function answerToMessage(messageId) {
+  if (!messageId) {
+    console.error('MessageId is required for answerToMessage');
+    return;
+  }
+
+  console.log('MessageId in answerToMessage:', messageId);
+
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   const answerMessage = document.getElementById("message-answer");
   const answerMessageSpan = document.getElementById("message-answer-span");
-  
+
   if (messageElement) {
     const originalMessage = messageElement.textContent;
     answerMessageSpan.textContent = originalMessage;
     messageInput.dataset.replyToId = messageId;
-    
+
     answerMessage.classList.remove("message-answer-invisible");
     answerMessage.classList.add("message-answer-visible");
-    
+
     messageInput.focus();
+  } else {
+    console.error('Message element not found for id:', messageId);
   }
 }
 
@@ -1046,9 +1067,10 @@ socket.on('message edited', (channelName, messageId, newContent) => {
 });
 
 document.getElementById("message-options-menu").addEventListener("click", function (event) {
-  const messageId = event.currentTarget.dataset.messageId;
   if (event.target.tagName === "BUTTON") {
+    const messageId = this.dataset.messageId;
     const action = event.target.textContent;
+
     switch (action) {
       case "Перекласти текст":
         translateMessage(messageId);

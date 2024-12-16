@@ -541,7 +541,7 @@ body {
   transition: background 1s, border 1s;
   margin-left: 10px;
   padding: 0 10px;
-  z-index: 9998;
+  z-index: 0;
 }
 
 .message-options:hover {
@@ -556,9 +556,6 @@ body {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   width: 400px;
   height: auto;
-  z-index: 99999;
-  transform: translateX(-50%);
-  left: 50%;
 }
 
 #message-options-menu button {
@@ -608,6 +605,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reply-to:hover {
+  transform: scale(1.02);
 }
 
 .reply-author {
@@ -1305,4 +1308,23 @@ input,
 #send-button:hover {
   background: linear-gradient(135deg, var(--button-gradient-end) 0%, var(--button-gradient-start) 100%);
   transform: scale(1.05);
+}
+
+@keyframes highlightMessage {
+  0% {
+    background-color: var(--message-bg-color);
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.03);
+  }
+  100% {
+    background-color: var(--message-bg-color);
+    transform: scale(1);
+  }
+}
+
+.highlight-message {
+  animation: highlightMessage 1.5s ease;
 }
