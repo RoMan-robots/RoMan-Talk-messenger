@@ -593,7 +593,6 @@ body {
   font-weight: bold;
 }
 
-
 .reply-to {
   margin: 5px 0;
   padding: 8px;
@@ -1327,4 +1326,34 @@ input,
 
 .highlight-message {
   animation: highlightMessage 1.5s ease;
+}
+
+#scroll-to-bottom {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
+  color: var(--button-text-color);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#scroll-to-bottom:hover {
+  background: linear-gradient(135deg, var(--button-gradient-end) 0%, var(--button-gradient-start) 100%);
+  transform: scale(1.1);
+}
+
+.scroll-button-hidden {
+  display: none;
+}
+
+.scroll-button-visible {
+  display: block;
+  animation: fadeIn 0.3s ease-in forwards;
 }

@@ -43,6 +43,8 @@ let isTyping = false;
 const typingCheckDelay = 100;
 let typingTimeout;
 
+const scrollButton = document.getElementById('scroll-to-bottom');
+
 function updateVh() {
   const vh = window.innerHeight * 0.3;
   document.documentElement.style.setProperty('--real-vh', `${vh}px`);
@@ -1131,4 +1133,27 @@ document.getElementById("message-options-menu").addEventListener("click", functi
         console.warn("Невідома дія:", action);
     }
   }
+});
+
+messageList.addEventListener('scroll', () => {
+  const messages = document.querySelectorAll('.message');
+  const scrollTop = messageList.scrollTop;
+  const scrollHeight = messageList.scrollHeight;
+  const clientHeight = messageList.clientHeight;
+  
+  // Показуємо кнопку якщо прокручено більше 50 повідомлень вгору
+  if (messages.length > 50 && scrollHeight - scrollTop - clientHeight > 1000) {
+    scrollButton.classList.remove('scroll-button-hidden');
+    scrollButton.classList.add('scroll-button-visible');
+  } else {
+    scrollButton.classList.remove('scroll-button-visible');
+    scrollButton.classList.add('scroll-button-hidden');
+  }
+});
+
+scrollButton.addEventListener('click', () => {
+  messageList.scrollTo({
+    top: messageList.scrollHeight,
+    behavior: 'smooth'
+  });
 });
