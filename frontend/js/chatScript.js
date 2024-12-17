@@ -28,7 +28,8 @@ const newUserSound = new Audio("/newUserSound.mp3");
 
 const token = localStorage.getItem('token');
 
-let isDropdownActive = false
+let isDropdownActive = false;
+let isChannelInfoActive = false;
 let currentUsername;
 
 let editMode = false;
@@ -471,6 +472,13 @@ function toggleDropdown() {
   isDropdownActive = !isDropdownActive;
   channelList.classList.toggle('active', isDropdownActive);
 }
+
+function toggleChannelInfo() {
+  isChannelInfoActive = !isChannelInfoActive;
+  document.getElementById('channel-info').classList.toggle('active', isChannelInfoActive);
+}
+
+document.getElementById('channel-info-button').onclick = toggleChannelInfo;
 
 function loadChannelManagementButtons() {
   const channelListElement = document.getElementById('management-buttons');
