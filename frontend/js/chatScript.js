@@ -141,16 +141,21 @@ async function getCurrentUsername() {
 
     if (data.username) {
       currentUsername = data.username;
-      applyTheme(data.theme);
-      loadMessages(selectedChannel)
-      loadUserChannels();
-      loadChannelButtons();
-      messageInput.focus()
+      
+      await Promise.all([
+        applyTheme(data.theme),
+        loadMessages(selectedChannel),
+        loadUserChannels(),
+        loadChannelButtons()
+      ]);
+      
+      messageInput.focus();
     } else {
       window.location.href = '/';
     }
   } catch (error) {
     console.error('Помилка при отриманні імені користувача:', error);
+    alertify.error('Помилка при завантаженні даних');
     window.location.href = '/';
   }
 }
@@ -224,14 +229,10 @@ function displayMessage(message, id) {
 
 async function openMessageOptionsMenu(messageId, count = 0) {
   const menu = document.getElementById("message-options-menu");
+  const messageList = document.getElementById("message-list");
   menu.dataset.messageId = messageId;
+  
   let messageElement = null;
-
-  const visibleMessages = Array.from(document.querySelectorAll('.message')).filter(element => {
-    const rect = element.getBoundingClientRect();
-    return rect.top >= 0 && rect.bottom <= window.innerHeight;
-  });
-
   document.querySelectorAll('.message').forEach((element) => {
     if (element.dataset.index == messageId) {
       messageElement = element;
@@ -244,19 +245,41 @@ async function openMessageOptionsMenu(messageId, count = 0) {
       date = messageElement.dataset.date + "(Київ)";
     }
     document.getElementById("kyiv-time-input").textContent = date;
-    const rect = messageElement.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight;
 
-    const messageIndex = visibleMessages.indexOf(messageElement);
-    
-    let top;
-    if (messageIndex >= 0 && messageIndex < 8) {
-      top = rect.bottom;
+    const messageRect = messageElement.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight;
+    const menuWidth = menu.offsetWidth;
+    const messageListRect = messageList.getBoundingClientRect();
+
+    const positions = {
+      top: messageRect.top - menuHeight,
+      bottom: messageRect.bottom,
+      left: messageRect.left,
+      right: messageRect.right - menuWidth
+    };
+
+    const fitsTop = positions.top >= messageListRect.top;
+    const fitsBottom = (positions.bottom + menuHeight) <= messageListRect.bottom;
+    const fitsLeft = positions.left >= messageListRect.left;
+    const fitsRight = (positions.left + menuWidth) <= messageListRect.right;
+
+    let top, left;
+
+    if (fitsBottom) {
+      top = positions.bottom;
+    } else if (fitsTop) {
+      top = positions.top;
     } else {
-      top = rect.top - menuHeight;
+      top = messageRect.top + (messageRect.height / 2) - (menuHeight / 2);
     }
 
-    let left = rect.left;
+    if (fitsLeft) {
+      left = positions.left;
+    } else if (fitsRight) {
+      left = positions.right;
+    } else {
+      left = messageRect.left + (messageRect.width / 2) - (menuWidth / 2);
+    }
 
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;
@@ -293,6 +316,7 @@ async function loadMessages(channelName) {
     const data = await response.json();
 
     messageList.innerHTML = '';
+    updateChannelInfo(channelName, data); 
 
     if (data.channels && Array.isArray(data.channels)) {
       const channel = data.channels.find(c => c.name === channelName);
@@ -315,6 +339,65 @@ async function loadMessages(channelName) {
   } catch (error) {
     console.error('Помилка при завантаженні повідомлень:', error);
     alertify.error(`Канал ${channelName} не знайдено`);
+  }
+}
+
+function updateChannelInfo(channelName, data) {
+  document.getElementById("channel-name").textContent = channelName;
+  
+  const channel = data.channels.find(c => c.name === channelName);
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  
+  if (channel && channel.pinnedMessage) {
+    pinnedMessageDiv.textContent = `${channel.pinnedMessage.author}: ${channel.pinnedMessage.context}`;
+  } else {
+    pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+  }
+
+  const searchInput = document.querySelector('.search-input');
+  searchInput.addEventListener('input', (e) => {
+    const searchText = e.target.value.toLowerCase();
+    const messages = document.querySelectorAll('.message p');
+    
+    messages.forEach(message => {
+      const messageText = message.textContent.toLowerCase();
+      const messageContainer = message.closest('.message');
+      
+      if (messageText.includes(searchText)) {
+        messageContainer.style.display = 'flex';
+      } else {
+        messageContainer.style.display = 'none';
+      }
+    });
+  });
+}
+
+async function pinMessage(messageId) {
+  try {
+    const response = await fetch('/pin-message', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        channelName: selectedChannel
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+      document.querySelector('.pinned-message').textContent = messageElement.textContent;
+      alertify.success('Повідомлення закріплено!');
+    } else {
+      alertify.error(data.message || 'Не вдалося закріпити повідомлення');
+    }
+  } catch (error) {
+    console.error('Помилка при закріпленні повідомлення:', error);
+    alertify.error('Помилка при закріпленні повідомлення');
   }
 }
 
@@ -486,19 +569,19 @@ function loadChannelManagementButtons() {
 
   const createChannelButton = document.createElement('button');
   createChannelButton.id = 'create-channel-button';
-  createChannelButton.textContent = 'Створити канал';
+  createChannelButton.innerHTML = '<i class="fas fa-plus"></i> Створити канал';
   createChannelButton.onclick = createChannelModal;
   channelListElement.appendChild(createChannelButton);
 
   const exploreChannelButton = document.createElement('button');
   exploreChannelButton.id = 'explore-channels-button';
-  exploreChannelButton.textContent = 'Досліджувати канали';
+  exploreChannelButton.innerHTML = '<i class="fa-solid fa-compass"></i> Досліджувати канали';
   exploreChannelButton.onclick = openExploreChannelsModal;
   channelListElement.appendChild(exploreChannelButton);
 
   const sortChannelsButton = document.createElement('button');
   sortChannelsButton.id = 'sort-channels-button';
-  sortChannelsButton.textContent = 'Сортувати канали';
+  sortChannelsButton.innerHTML = '<i class="fa-solid fa-arrow-up-short-wide"></i> Сортувати канали';
   channelListElement.appendChild(sortChannelsButton);
 
   sortChannelsButton.addEventListener('click', () => {
@@ -528,6 +611,7 @@ async function loadUserChannels() {
           messageInput.value = '';
           loadMessages(channel);
           selectedChannel = channel;
+          document.getElementById("channel-name").textContent = channel;
         };
         channelListElement.appendChild(channelButton);
       });
@@ -1116,10 +1200,10 @@ document.getElementById("message-options-menu").addEventListener("click", functi
     const action = event.target.textContent;
 
     switch (action) {
-      case "Перекласти текст":
+      case "Перекласти":
         translateMessage(messageId);
         break;
-      case "Стиснути текст":
+      case "Стиснути":
         compressMessage(messageId);
         break;
       case "Що нового":
@@ -1137,6 +1221,9 @@ document.getElementById("message-options-menu").addEventListener("click", functi
       case "Видалити":
         deleteMessage(messageId);
         break;
+      case "Прикріпити":
+        pinMessage(messageId);
+        break;
       default:
         console.warn("Невідома дія:", action);
     }
@@ -1149,7 +1236,6 @@ messageList.addEventListener('scroll', () => {
   const scrollHeight = messageList.scrollHeight;
   const clientHeight = messageList.clientHeight;
   
-  // Показуємо кнопку якщо прокручено більше 50 повідомлень вгору
   if (messages.length > 50 && scrollHeight - scrollTop - clientHeight > 1000) {
     scrollButton.classList.remove('scroll-button-hidden');
     scrollButton.classList.add('scroll-button-visible');

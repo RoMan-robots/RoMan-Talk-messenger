@@ -23,10 +23,10 @@
 </head>
 
 <body>
-  <button id="scroll-to-bottom" class="scroll-button-hidden">
-    <i class="fa-solid fa-arrow-down"></i>
-  </button>
-  <div id="chat-container">
+  <div id="chat-container" class="hidden">
+    <button id="scroll-to-bottom" class="scroll-button-hidden">
+      <i class="fa-solid fa-arrow-down"></i>
+    </button>
     <div id="top-bar">
       <h1 class="title">RoMan Talk</h1>
       <div role="button" id="channel-settings-buttons">
@@ -39,7 +39,7 @@
       </div>
       <div id="channel-info">
         <div class="channel-header">
-          <h2 id="channel-name"></h2>
+          <h2>Канал: <span id="channel-name">RoMan_World_Official</span></h2>
         </div>
         <div class="channel-section">
           <h3><i class="fa-solid fa-thumbtack"></i> Прикріплене повідомлення</h3>
@@ -48,12 +48,6 @@
         <div class="channel-section">
           <h3><i class="fa-solid fa-magnifying-glass"></i> Пошук</h3>
           <input type="text" placeholder="Пошук повідомлень..." class="search-input">
-        </div>
-        <div class="channel-section">
-
-          <button id="channel-settings-button" class="btn">
-            <i class="fa-solid fa-gear"></i> Налаштування
-          </button>
         </div>
       </div>
       <button id="settings" onclick="changeUrlToSettings('settings.html')" class="btn">
@@ -97,18 +91,19 @@
         <p>Загальне</p>
         <p class="subtext"><span id="kyiv-time-input"></span></p>
         <button onclick="copyText(this)">Копіювати текст</button>
-        <button onclick="copyMessageId(this)">Копіювати ID повідомлення</button>
+        <button onclick="copyMessageId(this)">Копіювати ID</button>
       </div>
       <div class="ai-functions">
         <p>AI Функції (BETA)</p>
-        <button>Перекласти текст</button>
-        <button>Стиснути текст</button>
+        <button>Перекласти</button>
+        <button>Стиснути</button>
         <button>Що нового</button>
         <button>Показати оригінал</button>
         <p class="subtext">Powered by RoMan AI v1.2</p>
       </div>
       <div class="message-control">
         <p>Керування повідомленням</p>
+        <button>Прикріпити</button>
         <button>Відповісти</button>
         <button>Редагувати</button>
         <button>Видалити</button>
@@ -139,6 +134,7 @@
         <button onclick="sortChannels('size')" class="sort-button">розміром</button>
       </div>
     </div>
+  </div>
 </body>
 
 </html>

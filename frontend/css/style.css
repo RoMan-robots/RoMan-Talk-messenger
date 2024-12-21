@@ -398,13 +398,14 @@ body {
 }
 
 #channel-list {
-  margin-left: 35vw;
+  position: absolute;
+  left: 50%;
   top: 70px;
-  width: 300px;
+  transform: translateX(-50%);
+  width: 400px;
   border-radius: 10px;
   display: none;
   padding: 10px;
-  position: absolute;
   background-color: var(--channel-list-bg-color);
   border: 1px solid #444;
   z-index: 10;
@@ -413,9 +414,13 @@ body {
 #channel-list.active {
   display: flex;
 }
+@media (max-width: 400px) {
+  #channel-list {
+    width: 95%;
+  }
+}
 
 .channel {
-  color: #fff;
   margin-bottom: 5px;
 }
 
@@ -551,32 +556,37 @@ body {
 #message-options-menu {
   position: absolute;
   background: var(--background-color);
-  border-radius: 7px;
-  padding: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  width: 400px;
+  border-radius: 10px;
+  padding: 5px;
+  width: 280px;
   height: auto;
 }
 
 #message-options-menu button {
-  background: var(--message-bg-color);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  backdrop-filter: blur(10.5px);
-  -webkit-backdrop-filter: blur(10.5px);
-  border-radius: 20px;
-  border: 0.3px solid rgba(255, 255, 255, 0.18);
-  color: var(--text-color);
+  background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%) !important;
+  color: var(--some-buttons-text);
+  padding: 4px 6px;
+  margin: 5px 0;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95em;
 }
 
-.subtext {
-  font-size: 0.9em;
+#message-options-menu button:hover {
+  background: linear-gradient(135deg, var(--button-gradient-end) 0%, var(--button-gradient-start) 100%) !important;
+  transform: scale(1.03);
 }
 
 @media (max-width: 400px) {
   #message-options-menu {
-    width: 100%;
-    height: 350px;
+    width: 95%;
   }
+}
+
+.subtext {
+  font-size: 0.75em;
 }
 
 .message-options-menu-hide {
@@ -589,8 +599,9 @@ body {
 
 #message-options-menu p {
   margin: 0;
-  padding: 5px 0;
+  padding: 3px 0;
   font-weight: bold;
+  font-size: 0.85em;
 }
 
 .reply-to {
@@ -600,7 +611,7 @@ body {
   border-left: 4px solid var(--text-color);
   border-radius: 5px;
   font-size: 0.85em;
-  color: var(--text-color);
+  color: var(--additional-text-color);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -614,11 +625,11 @@ body {
 
 .reply-author {
   font-weight: bold;
-  color: var(--text-color);
+  color: var(--additional-text-color);
 }
 
 .reply-text {
-  color: var(--text-color);
+  color: var(--additional-text-color);
   opacity: 0.7;
   white-space: nowrap;
   overflow: hidden;
@@ -697,6 +708,8 @@ body {
   border: 1px solid #ccc;
   display: none;
   padding: 10px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 #channel-list.active {
@@ -778,7 +791,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
+  color: #fff;
   font-family: Verdana, sans-serif;
   height: 100vh;
 }
@@ -962,8 +975,8 @@ button,
   --channel-list-bg-color: #333;
   --channel-list-text-color: #fff;
   --some-buttons-text: #fff;
-  --button-gradient-start: #6a11cb;
-  --button-gradient-end: #2575fc;
+  --button-gradient-start: #b4b4b4;
+  --button-gradient-end: #6d6d6d;
 }
 
 [data-theme="dark"] {
@@ -989,8 +1002,8 @@ button,
   --channel-list-bg-color: #143173;
   --top-bar-bg-color: #00095e;
   --some-buttons-text: #fff;
-  --button-gradient-start: #00005d;
-  --button-gradient-end: #143173;
+  --button-gradient-start: #002374;
+  --button-gradient-end: #0251a0;
 }
 
 [data-theme="military"] {
@@ -1002,8 +1015,8 @@ button,
   --message-bg-color: #20530a;
   --channel-list-bg-color: #636f57;
   --some-buttons-text: #fff;
-  --button-gradient-start: #2e3710;
-  --button-gradient-end: #4b5e20;
+  --button-gradient-start: #2f5816;
+  --button-gradient-end: #133501;
 }
 
 [data-theme="blood-red"] {
@@ -1016,8 +1029,8 @@ button,
   --message-bg-color: #000000;
   --channel-list-bg-color: #4d0000;
   --some-buttons-text: #8b0000;
-  --button-gradient-start: #4d0000;
-  --button-gradient-end: #8b0000;
+  --button-gradient-start: #180000;
+  --button-gradient-end: #470101;
 }
 
 
@@ -1030,8 +1043,8 @@ button,
   --message-bg-color: #5bc0de;
   --channel-list-bg-color: #9bd3e1;
   --some-buttons-text: #fff;
-  --button-gradient-start: #2ac0ee;
-  --button-gradient-end: #5bc0de;
+  --button-gradient-start: #3fc9f3;
+  --button-gradient-end: #1ea9d4;
 }
 
 [data-theme="uwu"] {
@@ -1043,8 +1056,8 @@ button,
   --message-bg-color: #dd8ba7;
   --channel-list-bg-color: #ffadc8;
   --some-buttons-text: #a64576;
-  --button-gradient-start: #d53da8;
-  --button-gradient-end: #cd5f96;
+  --button-gradient-start: #e398cc;
+  --button-gradient-end: #dc77a9;
 }
 
 [data-theme="coffee"] {
@@ -1070,7 +1083,7 @@ button,
   --channel-list-bg-color: #9de0ad;
   --some-buttons-text: #fff;
   --button-gradient-start: #60b17b;
-  --button-gradient-end: #087f23;
+  --button-gradient-end: #3a8f4e;
 }
 
 [data-theme="neon"] {
@@ -1083,7 +1096,7 @@ button,
   --channel-list-bg-color: #000000;
   --some-buttons-text: #fff;
   --button-gradient-start: #b000c0;
-  --button-gradient-end: #770075;
+  --button-gradient-end: #5f025d;
 }
 
 [data-theme="amethyst"] {
@@ -1109,8 +1122,8 @@ button,
   --message-bg-color: #8d2626;
   --channel-list-bg-color: #741212;
   --some-buttons-text: #f6c5c5;
-  --button-gradient-start: #b93030;
-  --button-gradient-end: #741212;
+  --button-gradient-start: #9b0f0f;
+  --button-gradient-end: #4a0404;
 }
 
 #chat-container,
@@ -1173,7 +1186,7 @@ input,
 #create-channel-submit,
 .channel-buttons {
   background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
-  color: var(--button-text-color);
+  color: var(--some-buttons-text);
   border: none;
   border-radius: 5px;
   padding: 10px 20px;
@@ -1217,7 +1230,7 @@ input,
 
 .channel-button {
   background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
-  color: var(--button-text-color);
+  color: var(--some-buttons-text);
   border: none;
   border-radius: 5px;
   padding: 10px 15px;
@@ -1233,10 +1246,9 @@ input,
 #create-channel-button,
 #explore-channels-button,
 #sort-channels-button,
-.user-channel-button,
-.channel-button {
+.user-channel-button {
   background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
-  color: var(--button-text-color);
+  color: var(--some-buttons-text) !important;
   border: none;
   border-radius: 7px;
   padding: 10px 15px;
@@ -1361,8 +1373,9 @@ input,
 #channel-info {
   display: none;
   position: absolute;
-  top: 100%;
-  right: 50%;
+  top: 130%;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -1372,6 +1385,11 @@ input,
   z-index: 1000;
 }
 
+@media (max-width: 300px) {
+  #channel-info {
+    width: 100vw;
+  }
+}
 #channel-info.active {
   display: block;
 }
