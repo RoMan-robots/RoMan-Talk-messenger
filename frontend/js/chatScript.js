@@ -251,86 +251,76 @@ function displayMessage(message, id) {
 }
 
 async function openMessageOptionsMenu(messageId, count = 0) {
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
   const menu = document.getElementById('message-options-menu');
   menu.dataset.messageId = messageId;
   
-  let messageElement = null;
-  document.querySelectorAll('.message').forEach((element) => {
-    if (element.dataset.index == messageId) {
-      messageElement = element;
-    }
-  });
+  let date = "Невідома дата відправлення";
+  if (messageElement.dataset.date != "undefined") {
+    date = messageElement.dataset.date + "(Київ)";
+  }
+  document.getElementById("kyiv-time-input").textContent = date;
 
-  if (messageElement) {
-    let date = "Невідома дата відправлення";
-    if (messageElement.dataset.date != "undefined") {
-      date = messageElement.dataset.date + "(Київ)";
-    }
-    document.getElementById("kyiv-time-input").textContent = date;
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  const messageText = messageElement.querySelector('p').textContent;
+  const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+    button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+  );
+  
+  if (pinnedMessageDiv.textContent.includes(messageText)) {
+    pinButton.textContent = 'Відкріпити';
+    pinButton.onclick = () => unpinMessage(messageId);
+  } else {
+    pinButton.textContent = 'Закріпити';
+    pinButton.onclick = () => pinMessage(messageId);
+  }
 
-    const pinnedMessageDiv = document.querySelector('.pinned-message');
-    const pinnedText = pinnedMessageDiv.textContent;
-    const messageText = messageElement.querySelector('p').textContent;
-    
-    const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
-      button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
-    );
+  const messageRect = messageElement.getBoundingClientRect();
+  const menuHeight = menu.offsetHeight;
+  const menuWidth = menu.offsetWidth;
+  const messageListRect = messageList.getBoundingClientRect();
 
-    if (pinButton) {
-      if (pinnedText.includes(messageText)) {
-        pinButton.textContent = 'Відкріпити';
-        pinButton.onclick = () => unpinMessage(messageId);
-      } else {
-        pinButton.textContent = 'Закріпити';
-        pinButton.onclick = () => pinMessage(messageId);
-      }
-    }
+  const positions = {
+    top: messageRect.top - menuHeight,
+    bottom: messageRect.bottom,
+    left: messageRect.left,
+    right: messageRect.right - menuWidth
+  };
 
-    const messageRect = messageElement.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight;
-    const menuWidth = menu.offsetWidth;
-    const messageListRect = messageList.getBoundingClientRect();
+  const fitsTop = positions.top >= messageListRect.top;
+  const fitsBottom = (positions.bottom + menuHeight) <= messageListRect.bottom;
+  const fitsLeft = positions.left >= messageListRect.left;
+  const fitsRight = (positions.left + menuWidth) <= messageListRect.right;
 
-    const positions = {
-      top: messageRect.top - menuHeight,
-      bottom: messageRect.bottom,
-      left: messageRect.left,
-      right: messageRect.right - menuWidth
-    };
+  let top, left;
 
-    const fitsTop = positions.top >= messageListRect.top;
-    const fitsBottom = (positions.bottom + menuHeight) <= messageListRect.bottom;
-    const fitsLeft = positions.left >= messageListRect.left;
-    const fitsRight = (positions.left + menuWidth) <= messageListRect.right;
+  if (fitsBottom) {
+    top = positions.bottom;
+  } else if (fitsTop) {
+    top = positions.top;
+  } else {
+    top = messageRect.top + (messageRect.height / 2) - (menuHeight / 2);
+  }
 
-    let top, left;
+  if (fitsLeft) {
+    left = positions.left;
+  } else if (fitsRight) {
+    left = positions.right;
+  } else {
+    left = messageRect.left + (messageRect.width / 2) - (menuWidth / 2);
+  }
 
-    if (fitsBottom) {
-      top = positions.bottom;
-    } else if (fitsTop) {
-      top = positions.top;
-    } else {
-      top = messageRect.top + (messageRect.height / 2) - (menuHeight / 2);
-    }
+  menu.style.top = `${top}px`;
+  menu.style.left = `${left}px`;
 
-    if (fitsLeft) {
-      left = positions.left;
-    } else if (fitsRight) {
-      left = positions.right;
-    } else {
-      left = messageRect.left + (messageRect.width / 2) - (menuWidth / 2);
-    }
-
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
-
-    if (count < 1) {
-      setTimeout(() => {
-        menu.classList.remove('message-options-menu-hide');
-        menu.classList.add('message-options-menu-visible');
-        openMessageOptionsMenu(messageId, count + 1);
-      }, 0);
-    }
+  if (count < 1) {
+    setTimeout(() => {
+      menu.classList.remove('message-options-menu-hide');
+      menu.classList.add('message-options-menu-visible');
+      openMessageOptionsMenu(messageId, count + 1);
+    }, 0);
   }
 }
 
@@ -511,8 +501,6 @@ async function sendMessage() {
       if (editMode) {
         alertify.success('Повідомлення відредаговано!');
         editMode = false;
-      } else {
-        alertify.success('Повідомлення надіслано!');
       }
 
       if (replyToId) {
@@ -836,6 +824,26 @@ function changeUrlToSettings(url) {
   window.location.href = url;
 }
 
+function searchMessageElement(messageId) {
+  if (!messageId) {
+    alertify.error('Необхідно вказати ID повідомлення');
+    return null;
+  }
+
+  let messageElement = null;
+  document.querySelectorAll('.message').forEach((element) => {
+    if (element.dataset.index == messageId) {
+      messageElement = element;
+    }
+  });
+  
+  if (!messageElement) {
+    alertify.error('Повідомлення не знайдено');
+  }
+  
+  return messageElement;
+}
+
 async function translateMessage(messageId) {
   const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
 
@@ -970,7 +978,7 @@ async function compressAllMessages(messageId) {
       messagesToCompress.forEach(msg => {
         msg.element.querySelector('p').textContent = msg.author + ': ' + msg.originalText;
       });
-      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
+      alertify.error("Ліміт в��черпано. Спробуйте повторити запит через 15-40хв");
     }
   }
 }
@@ -989,27 +997,20 @@ function getOriginalMessage() {
 }
 
 function answerToMessage(messageId) {
-  if (!messageId) {
-    console.error('MessageId is required for answerToMessage');
-    return;
-  }
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
 
-  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
   const answerMessage = document.getElementById("message-answer");
   const answerMessageSpan = document.getElementById("message-answer-span");
+  const originalMessage = messageElement.querySelector('p').textContent;
+  
+  answerMessageSpan.textContent = originalMessage;
+  messageInput.dataset.replyToId = messageId;
 
-  if (messageElement) {
-    const originalMessage = messageElement.textContent;
-    answerMessageSpan.textContent = originalMessage;
-    messageInput.dataset.replyToId = messageId;
+  answerMessage.classList.remove("message-answer-invisible");
+  answerMessage.classList.add("message-answer-visible");
 
-    answerMessage.classList.remove("message-answer-invisible");
-    answerMessage.classList.add("message-answer-visible");
-
-    messageInput.focus();
-  } else {
-    console.error('Message element not found for id:', messageId);
-  }
+  messageInput.focus();
 }
 
 async function pinMessage(messageId) {
@@ -1085,21 +1086,21 @@ async function unpinMessage(messageId) {
 }
 
 function editMessage(messageId) {
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
   editMode = true;
+  const editMessage = document.getElementById("edit-message");
+  const editMessageSpan = document.getElementById("edit-message-span");
+  const oldContent = messageElement.querySelector('p').textContent.split(': ')[1];
 
-  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  const editMessage = document.getElementById("edit-message")
-  const editMessageSpan = document.getElementById("edit-message-span")
-  const oldContent = messageElement.textContent.split(': ')[1];
-
-  editMessageSpan.textContent = oldContent
+  editMessageSpan.textContent = oldContent;
   messageInput.value = oldContent;
-
   messageInput.placeholder = 'Редагування повідомлення';
   messageInput.dataset.editId = messageId;
 
-  editMessage.classList.remove("edit-message-invisible")
-  editMessage.classList.add("edit-message-visible")
+  editMessage.classList.remove("edit-message-invisible");
+  editMessage.classList.add("edit-message-visible");
 }
 
 function deleteMessage(messageId) {
@@ -1129,19 +1130,18 @@ function deleteMessage(messageId) {
 function copyText(buttonElement) {
   const menu = buttonElement.closest('#message-options-menu');
   const messageId = menu.dataset.messageId;
-  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  if (messageElement) {
-    let text = messageElement.textContent;
-    const colonIndex = text.indexOf(':');
-    if (colonIndex !== -1) {
-      text = text.substring(colonIndex + 1).trim();
-    }
-    navigator.clipboard.writeText(text)
-      .then(() => alertify.success('Текст скопійовано!'))
-      .catch(error => alertify.error('Помилка при копіюванні тексту: ' + error));
-  } else {
-    alertify.error('Повідомлення не знайдено');
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
+  let text = messageElement.querySelector('p').textContent;
+  const colonIndex = text.indexOf(':');
+  if (colonIndex !== -1) {
+    text = text.substring(colonIndex + 1).trim();
   }
+  
+  navigator.clipboard.writeText(text)
+    .then(() => alertify.success('Текст скопійовано!'))
+    .catch(error => alertify.error('Помилка при копіюванні тексту: ' + error));
 }
 
 function copyMessageId(buttonElement) {
