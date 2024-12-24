@@ -399,25 +399,19 @@ body {
 
 #channel-list {
   position: absolute;
-  left: 50%;
-  top: 70px;
-  transform: translateX(-50%);
-  width: 400px;
-  border-radius: 10px;
-  display: none;
-  padding: 10px;
+  top: 100%;
+  left: 0;
   background-color: var(--channel-list-bg-color);
-  border: 1px solid #444;
-  z-index: 10;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px;
+  display: none;
+  z-index: 999;
+  width: 400px;
 }
 
 #channel-list.active {
-  display: flex;
-}
-@media (max-width: 400px) {
-  #channel-list {
-    width: 95%;
-  }
+  display: block;
 }
 
 .channel {
@@ -425,17 +419,14 @@ body {
 }
 
 #management-buttons {
-  border-bottom: 1px solid var(--text-color);
-  padding: 10px;
-  z-index: 100001;
+  margin: 0;
+  padding: 0;
 }
 
 #channels {
   margin-top: 10px;
-  max-height: 300px;
   overflow-y: auto;
-  padding: 5px;
-  z-index: 100001;
+  padding: 0 5px;
 }
 
 #channels::-webkit-scrollbar {
@@ -443,8 +434,7 @@ body {
 }
 
 #channels::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  background: transparent;
 }
 
 #channels::-webkit-scrollbar-thumb {
@@ -453,13 +443,17 @@ body {
 }
 
 .user-channel-button {
-  background: var(--message-bg-color);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  backdrop-filter: blur(10.5px);
-  -webkit-backdrop-filter: blur(10.5px);
+  width: 95% !important;
+  margin: 5px;
+  padding: 8px 15px;
+  text-align: left;
   border-radius: 7px;
-  border: 0.3px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
   color: var(--some-buttons-text);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 #message-list {

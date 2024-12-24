@@ -910,6 +910,91 @@ app.post('/messages', checkUserExists, async (req, res) => {
     }
 });
 
+app.post('/pin-message', checkUserExists, async (req, res) => {
+    const { messageId, channelName } = req.body;
+
+    try {
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channelName);
+        
+        if (channelIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Канал не знайдено' 
+            });
+        }
+
+        const channel = channels[channelIndex];
+        const messageToPin = channel.messages.find(m => m.id == messageId);
+        if (!messageToPin) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Повідомлення не знайдено' 
+            });
+        }
+
+        channel.pinnedMessage = messageToPin;
+        
+        await saveChannels(channels);
+
+        io.emit('message pinned', {
+            channelName,
+            pinnedMessage: messageToPin
+        });
+
+        res.json({ 
+            success: true, 
+            message: 'Повідомлення успішно закріплено',
+            pinnedMessage: messageToPin
+        });
+
+    } catch (error) {
+        console.error('Помилка при закріпленні повідомлення:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Помилка при закріпленні повідомлення' 
+        });
+    }
+});
+
+app.post('/unpin-message', checkUserExists, async (req, res) => {
+    const { channelName } = req.body;
+
+    try {
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channelName);
+        
+        if (channelIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Канал не знайдено' 
+            });
+        }
+
+        const channel = channels[channelIndex];
+        
+        channel.pinnedMessage = null;
+        
+        await saveChannels(channels);
+
+        io.emit('message unpinned', {
+            channelName
+        });
+
+        res.json({ 
+            success: true, 
+            message: 'Повідомлення відкріплено'
+        });
+
+    } catch (error) {
+        console.error('Помилка при відкріпленні повідомлення:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Помилка при відкріпленні повідомлення' 
+        });
+    }
+});
+
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
         const { channelName, author, context, date, replyTo } = req.body;
@@ -1023,20 +1108,36 @@ app.get('/my-channels', checkUserExists, async (req, res) => {
 });
 
 app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
-    const { channelName } = req.params;
     try {
-        const messages = await getMessages(channelName);
-        await downloadImages(channelName);
-
-        const typingUsers = typingUsersByChannel[channelName] ? Array.from(typingUsersByChannel[channelName]) : [];
-        res.send({ channels: [{ name: channelName, messages, typingUsers }] });
-    } catch (error) {
-        if (error.message === 'Канал не знайдено.') {
-            res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-        } else {
-            console.error('Помилка при отриманні повідомлень:', error);
-            res.status(500).send({ success: false, message: 'Помилка сервера.' });
+        const { channelName } = req.params;
+        const channels = await getChannels();
+        
+        // Знаходимо потрібний канал
+        const channel = channels.find(c => c.name === channelName);
+        if (!channel) {
+            return res.status(404).json({ 
+                success: false, 
+                message: `Канал "${channelName}" не знайдено.` 
+            });
         }
+
+        // Повертаємо тільки необхідні дані
+        res.json({
+            success: true,
+            channels: [{
+                name: channel.name,
+                messages: channel.messages,
+                pinnedMessage: channel.pinnedMessage,
+                typingUsers: channel.typingUsers || []
+            }]
+        });
+        
+    } catch (error) {
+        console.error('Помилка при отриманні повідомлень:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Помилка сервера при отриманні повідомлень' 
+        });
     }
 });
 

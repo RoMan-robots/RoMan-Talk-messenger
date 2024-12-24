@@ -142,12 +142,35 @@ async function getCurrentUsername() {
     if (data.username) {
       currentUsername = data.username;
       
-      await Promise.all([
-        applyTheme(data.theme),
-        loadMessages(selectedChannel),
-        loadUserChannels(),
-        loadChannelButtons()
-      ]);
+      try {
+        await applyTheme(data.theme);
+      } catch (error) {
+        console.error('Error applying theme:', error);
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+
+      try {
+        await Promise.allSettled([
+          loadMessages(selectedChannel).catch(error => {
+            console.error('Error loading messages:', error);
+            alertify.error('Помилка при завантаженні повідомлень');
+            return { messages: [] };
+          }),
+          loadUserChannels().catch(error => {
+            console.error('Error loading user channels:', error);
+            alertify.error('Помилка при завантаженні каналів');
+            return { channels: [] };
+          }),
+          loadChannelButtons().catch(error => {
+            console.error('Error loading channel buttons:', error);
+            alertify.error('Помилка при завантаженні кнопок каналів');
+            return [];
+          })
+        ]);
+      } catch (error) {
+        console.error('Error loading UI components:', error);
+        alertify.error('Деякі компоненти не вдалося завантажити');
+      }
       
       messageInput.focus();
     } else {
@@ -228,8 +251,7 @@ function displayMessage(message, id) {
 }
 
 async function openMessageOptionsMenu(messageId, count = 0) {
-  const menu = document.getElementById("message-options-menu");
-  const messageList = document.getElementById("message-list");
+  const menu = document.getElementById('message-options-menu');
   menu.dataset.messageId = messageId;
   
   let messageElement = null;
@@ -245,6 +267,24 @@ async function openMessageOptionsMenu(messageId, count = 0) {
       date = messageElement.dataset.date + "(Київ)";
     }
     document.getElementById("kyiv-time-input").textContent = date;
+
+    const pinnedMessageDiv = document.querySelector('.pinned-message');
+    const pinnedText = pinnedMessageDiv.textContent;
+    const messageText = messageElement.querySelector('p').textContent;
+    
+    const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+      button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+    );
+
+    if (pinButton) {
+      if (pinnedText.includes(messageText)) {
+        pinButton.textContent = 'Відкріпити';
+        pinButton.onclick = () => unpinMessage(messageId);
+      } else {
+        pinButton.textContent = 'Закріпити';
+        pinButton.onclick = () => pinMessage(messageId);
+      }
+    }
 
     const messageRect = messageElement.getBoundingClientRect();
     const menuHeight = menu.offsetHeight;
@@ -372,34 +412,6 @@ function updateChannelInfo(channelName, data) {
   });
 }
 
-async function pinMessage(messageId) {
-  try {
-    const response = await fetch('/pin-message', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messageId,
-        channelName: selectedChannel
-      })
-    });
-
-    const data = await response.json();
-    if (data.success) {
-      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-      document.querySelector('.pinned-message').textContent = messageElement.textContent;
-      alertify.success('Повідомлення закріплено!');
-    } else {
-      alertify.error(data.message || 'Не вдалося закріпити повідомлення');
-    }
-  } catch (error) {
-    console.error('Помилка при закріпленні повідомлення:', error);
-    alertify.error('Помилка при закріпленні повідомлення');
-  }
-}
 
 async function sendMessage() {
   const message = messageInput.value.trim();
@@ -439,7 +451,6 @@ async function sendMessage() {
             `${currentUsername}: ${message}`;
           document.getElementById("edit-message").className = "edit-message-invisible";
         }
-        alertify.success('Повідомлення відредаговано!');
         return data;
       }
     },
@@ -496,6 +507,13 @@ async function sendMessage() {
 
     if (data.success) {
       messageInput.value = '';
+
+      if (editMode) {
+        alertify.success('Повідомлення відредаговано!');
+        editMode = false;
+      } else {
+        alertify.success('Повідомлення надіслано!');
+      }
 
       if (replyToId) {
         messageInput.dataset.replyToId = '';
@@ -994,6 +1012,78 @@ function answerToMessage(messageId) {
   }
 }
 
+async function pinMessage(messageId) {
+  try {
+    const response = await fetch('/pin-message', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        channelName: selectedChannel
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+      const menu = document.getElementById("message-options-menu");
+      const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+        button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+      );
+      pinButton.textContent = 'Відкріпити';
+      pinButton.onclick = () => unpinMessage(messageId);
+
+      document.querySelector('.pinned-message').textContent = messageElement.textContent;
+      alertify.success('Повідомлення закріплено!');
+    } else {
+      alertify.error(data.message || 'Не вдалося закріпити повідомлення');
+    }
+  } catch (error) {
+    console.error('Помилка при закріпленні повідомлення:', error);
+    alertify.error('Помилка при закріпленні повідомлення');
+  }
+}
+
+async function unpinMessage(messageId) {
+  try {
+    const response = await fetch('/unpin-message', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        channelName: selectedChannel
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      document.querySelector('.pinned-message').textContent = 'Немає прикріплених повідомлень';
+
+      const menu = document.getElementById("message-options-menu");
+      const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+        button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+      );
+      pinButton.textContent = 'Закріпити';
+      pinButton.onclick = () => pinMessage(messageId);
+
+      alertify.success('Повідомлення відкріплено!');
+    } else {
+      alertify.error(data.message || 'Не вдалося відкріпити повідомлення');
+    }
+  } catch (error) {
+    console.error('Помилка при відкріпленні повідомлення:', error);
+    alertify.error('Помилка при відкріпленні повідомлення');
+  }
+}
+
 function editMessage(messageId) {
   editMode = true;
 
@@ -1153,6 +1243,24 @@ window.addEventListener('beforeunload', () => {
   }
 });
 
+socket.on('message pinned', (data) => {
+  if (data.channelName === selectedChannel) {
+      const pinnedMessageDiv = document.querySelector('.pinned-message');
+      if (pinnedMessageDiv) {
+          pinnedMessageDiv.textContent = `${data.pinnedMessage.author}: ${data.pinnedMessage.context}`;
+      }
+  }
+});
+
+socket.on('message unpinned', (data) => {
+  if (data.channelName === selectedChannel) {
+      const pinnedMessageDiv = document.querySelector('.pinned-message');
+      if (pinnedMessageDiv) {
+          pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+      }
+  }
+});
+
 socket.on('message deleted', (channelName, messageId) => {
   if (channelName === selectedChannel) {
     const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
@@ -1220,9 +1328,6 @@ document.getElementById("message-options-menu").addEventListener("click", functi
         break;
       case "Видалити":
         deleteMessage(messageId);
-        break;
-      case "Прикріпити":
-        pinMessage(messageId);
         break;
       default:
         console.warn("Невідома дія:", action);
