@@ -978,7 +978,7 @@ async function compressAllMessages(messageId) {
       messagesToCompress.forEach(msg => {
         msg.element.querySelector('p').textContent = msg.author + ': ' + msg.originalText;
       });
-      alertify.error("Ліміт в��черпано. Спробуйте повторити запит через 15-40хв");
+      alertify.error("Ліміт вичерпано. Спробуйте повторити запит через 15-40хв");
     }
   }
 }
@@ -1307,30 +1307,25 @@ document.getElementById("message-options-menu").addEventListener("click", functi
     const messageId = this.dataset.messageId;
     const action = event.target.textContent;
 
-    switch (action) {
-      case "Перекласти":
-        translateMessage(messageId);
-        break;
-      case "Стиснути":
-        compressMessage(messageId);
-        break;
-      case "Що нового":
-        compressAllMessages(messageId);
-        break;
-      case "Показати оригінал":
-        getOriginalMessage();
-        break;
-      case "Відповісти":
-        answerToMessage(messageId);
-        break;
-      case "Редагувати":
-        editMessage(messageId);
-        break;
-      case "Видалити":
-        deleteMessage(messageId);
-        break;
-      default:
-        console.warn("Невідома дія:", action);
+    const actions = {
+      'Перекласти': () => translateMessage(messageId),
+      'Стиснути': () => compressMessage(messageId),
+      'Що нового': () => compressAllMessages(messageId),
+      'Показати оригінал': () => getOriginalMessage(),
+      'Відповісти': () => answerToMessage(messageId),
+      'Редагувати': () => editMessage(messageId),
+      'Видалити': () => deleteMessage(messageId),
+      'Копіювати текст': () => copyText(event.target),
+      'Копіювати ID': () => copyMessageId(event.target)
+    };
+
+    const actionFn = actions[action];
+    if (actionFn) {
+      actionFn();
+      this.classList.remove('message-options-menu-visible');
+      this.classList.add('message-options-menu-hide');
+    } else {
+      console.warn("Невідома дія:", action);
     }
   }
 });

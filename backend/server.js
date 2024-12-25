@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from "multer"
+import mongoose from 'mongoose';
 import fetch from 'node-fetch';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
@@ -38,6 +39,7 @@ const io = new SocketIO(httpServer, {
 });
 
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
+mongoose.connect(process.env.MONGO_URL); 
 const localDir = path.join(__dirname, 'images/message-images');
 
 const owner = process.env.OWNER_REPO;
