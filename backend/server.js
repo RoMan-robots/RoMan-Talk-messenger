@@ -1,6 +1,5 @@
 import express from 'express';
 import multer from "multer"
-import mongoose from 'mongoose';
 import fetch from 'node-fetch';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
@@ -15,6 +14,7 @@ import fs from "fs-extra";
 import bcrypt from 'bcryptjs';
 import webpush from 'web-push'
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 import {
     filterText,
@@ -24,6 +24,11 @@ import {
     loadModels,
     translateTextInParts
 } from './ai.js';
+
+import Channel from './schemas/messages.js';
+import User from './schemas/users.js';
+import Request from './schemas/requests.js';
+import Security from './schemas/security.js';
 
 dotenv.config();
 
@@ -39,11 +44,98 @@ const io = new SocketIO(httpServer, {
 });
 
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
-mongoose.connect(process.env.MONGO_URL); 
-const localDir = path.join(__dirname, 'images/message-images');
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
+
+mongoose.connect(process.env.MONGO_URL)
+    .then(async () => {
+        console.log('Connected to MongoDB');
+        
+        try {
+            // Перевіряємо чи потрібна міграція
+            const channelsCount = await Channel.countDocuments();
+            if (channelsCount === 0) {
+                console.log('Starting migration from GitHub...');
+                
+                // Міграція каналів та повідомлень
+                const channelsResponse = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: 'messages.json',
+                });
+                const channelsData = JSON.parse(
+                    Buffer.from(channelsResponse.data.content, 'base64').toString()
+                );
+                
+                for (const channelData of channelsData.channels) {
+                    if (channelData.messages) {
+                        channelData.messages = channelData.messages.map(msg => ({
+                            ...msg,
+                            date: msg.date || new Date().toLocaleString('uk-UA', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }).replace(',', '')
+                        }));
+                    }
+
+                    await Channel.findOneAndUpdate(
+                        { name: channelData.name },
+                        channelData,
+                        { upsert: true }
+                    );
+                }
+                console.log('Channels migrated successfully');
+
+                // Міграція користувачів
+                const usersResponse = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: 'users.json',
+                });
+                const usersData = JSON.parse(
+                    Buffer.from(usersResponse.data.content, 'base64').toString()
+                );
+                
+                for (const userData of usersData.users) {
+                    await User.findOneAndUpdate(
+                        { username: userData.username },
+                        userData,
+                        { upsert: true }
+                    );
+                }
+                console.log('Users migrated successfully');
+
+                // Міграція security
+                const securityResponse = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: 'security.json',
+                });
+                const securityData = JSON.parse(
+                    Buffer.from(securityResponse.data.content, 'base64').toString()
+                );
+                
+                await Security.findOneAndUpdate(
+                    {},
+                    { data: securityData.security },
+                    { upsert: true }
+                );
+                console.log('Security data migrated successfully');
+
+                console.log('Migration completed successfully!');
+            }
+            
+            console.log('Server ready');
+        } catch (error) {
+            console.error('Migration/initialization error:', error);
+        }
+    })
+    .catch(err => console.error('MongoDB connection error:', err));
+const localDir = path.join(__dirname, 'images/message-images');
 
 let loginAttempts = {};
 
@@ -93,13 +185,7 @@ function shuffleArray(array) {
 
 async function getUsers() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'users.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        const users = JSON.parse(data).users;
+        const users = await User.find({});
         return users;
     } catch (error) {
         throw new Error('Error getting users: ' + error.message);
@@ -108,21 +194,8 @@ async function getUsers() {
 
 async function saveUsers(users) {
     try {
-        const content = Buffer.from(JSON.stringify({ users }, null, 2)).toString('base64');
-        const getUsersResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'users.json',
-        });
-        const sha = getUsersResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'users.json',
-            message: 'Update users.json',
-            content,
-            sha,
-        });
+        await User.deleteMany({});
+        await User.insertMany(users);
     } catch (error) {
         throw new Error('Error saving users: ' + error.message);
     }
@@ -130,13 +203,8 @@ async function saveUsers(users) {
 
 async function getChannels() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'messages.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        return JSON.parse(data).channels;
+        const channels = await Channel.find({});
+        return channels;
     } catch (error) {
         throw new Error('Error getting channels: ' + error.message);
     }
@@ -144,21 +212,8 @@ async function getChannels() {
 
 async function saveChannels(channels) {
     try {
-        const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-        const getChannelsResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'messages.json',
-        });
-        const sha = getChannelsResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'messages.json',
-            message: 'Update messages.json',
-            content,
-            sha,
-        });
+        await Channel.deleteMany({});
+        await Channel.insertMany(channels);
     } catch (error) {
         throw new Error('Error saving channels: ' + error.message);
     }
@@ -213,6 +268,7 @@ async function ensureModelsLoaded() {
         console.log('Models loaded successfully');
     }
 }
+
 async function rephormatMessagesID(channelName) {
     try {
         let messages = await getMessages(channelName);
@@ -255,109 +311,50 @@ async function getMessages(channelName) {
     }
 }
 
-async function saveMessages(channelName, messageObject, messageType = "classic", retries = 3) {
+async function saveMessages(channelName, messageObject, messageType = "classic") {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error(`Канал "${channelName}" не знайдено.`);
 
-        if (channelIndex !== -1) {
-            const channel = channels[channelIndex];
-            const newMessageId = channel.messages.length + 1;
+        const newMessageId = channel.messages.length + 1;
+        let newMessage = {
+            id: newMessageId,
+            author: messageObject.author,
+            context: messageObject.context,
+            date: messageObject.date
+        };
 
-            let newMessage = {
-                id: newMessageId,
-                author: messageObject.author,
-                context: messageObject.context,
-                date: messageObject.date
-            };
-
-            if (messageType === 'photo' && messageObject.image) {
-                const originalFileName = messageObject.image.name;
-
-                const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
-
-                const imageFileName = `${newMessageId}--${sanitizedFileName}`;
-                newMessage.photo = imageFileName;
-                await uploadImage(messageObject.image, imageFileName, channelName);
-
-                newMessage.photo = `${imageFileName}`;
-            }
-
-            channel.messages.push(newMessage);
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-
-            try {
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `New message from ${channelName}`,
-                    content,
-                    sha,
-                });
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Retrying saveMessages due to conflict... Attempts left: ${retries}`);
-                    return saveMessages(channelName, messageObject, messageType, retries - 1);
-                } else {
-                    throw new Error('Error saving channels: ' + error.message);
-                }
-            }
-        } else {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
+        if (messageType === 'photo' && messageObject.image) {
+            const originalFileName = messageObject.image.name;
+            const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
+            const imageFileName = `${newMessageId}--${sanitizedFileName}`;
+            newMessage.photo = imageFileName;
+            await uploadImage(messageObject.image, imageFileName, channelName);
         }
+
+        channel.messages.push(newMessage);
+        await channel.save();
+        
+        return newMessage;
     } catch (error) {
         console.error('Помилка при збереженні повідомлень:', error);
         throw error;
     }
 }
 
-async function saveAllMessages(channelName, reformattedMessages, retries = 3) {
+async function saveAllMessages(channelName, reformattedMessages) {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOneAndUpdate(
+            { name: channelName },
+            { $set: { messages: reformattedMessages } },
+            { new: true }
+        );
 
-        if (channelIndex !== -1) {
-            const channel = channels[channelIndex];
-            channel.messages = reformattedMessages;
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-
-            try {
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `Reformatted messages in ${channelName}`,
-                    content,
-                    sha,
-                });
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Retrying saveAllMessages due to conflict... Attempts left: ${retries}`);
-                    return saveAllMessages(channelName, reformattedMessages, retries - 1);
-                } else {
-                    throw new Error('Error saving channels: ' + error.message);
-                }
-            }
-        } else {
+        if (!channel) {
             throw new Error(`Канал "${channelName}" не знайдено.`);
         }
+
+        return channel.messages;
     } catch (error) {
         console.error('Помилка при збереженні переформатованих повідомлень:', error);
         throw error;
@@ -366,47 +363,23 @@ async function saveAllMessages(channelName, reformattedMessages, retries = 3) {
 
 async function editMessage(channelName, messageId, { newContent, newId }) {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error(`Канал "${channelName}" не знайдено.`);
 
-        if (channelIndex !== -1) {
-            let messageFound = false;
-
-            channels[channelIndex].messages.forEach(message => {
-                if (message.id === messageId) {
-                    if (newContent !== undefined) {
-                        message.context = newContent;
-                    }
-                    if (newId !== undefined) {
-                        message.id = newId;
-                    }
-                    messageFound = true;
-                }
-            });
-
-            if (messageFound) {
-                const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `Updated message ${messageId} in channel ${channelName}`,
-                    content,
-                    sha,
-                });
-            } else {
-                throw new Error(`Повідомлення з ID ${messageId} не знайдено у каналі "${channelName}".`);
-            }
-        } else {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
+        const messageIndex = channel.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            throw new Error(`Повідомлення з ID ${messageId} не знайдено.`);
         }
+
+        if (newContent !== undefined) {
+            channel.messages[messageIndex].context = newContent;
+        }
+        if (newId !== undefined) {
+            channel.messages[messageIndex].id = newId;
+        }
+
+        await channel.save();
+        return channel.messages[messageIndex];
     } catch (error) {
         console.error('Помилка при редагуванні повідомлення:', error);
         throw error;
@@ -415,39 +388,17 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
 
 async function deleteMessage(channelName, messageId) {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOneAndUpdate(
+            { name: channelName },
+            { $pull: { messages: { id: messageId } } },
+            { new: true }
+        );
 
-        if (channelIndex !== -1) {
-            const messages = channels[channelIndex].messages;
-            const messageToDelete = messages.find(message => message.id === messageId);
-
-            if (!messageToDelete) {
-                throw new Error('Повідомлення не знайдено.');
-            }
-
-            channels[channelIndex].messages = messages.filter(message => message.id !== messageId);
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-            const getChannelsResponse = await octokit.repos.getContent({
-                owner,
-                repo,
-                path: 'messages.json',
-            });
-            const sha = getChannelsResponse.data.sha;
-            await octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo,
-                path: 'messages.json',
-                message: `Deleted message with ID ${messageId} from ${channelName}`,
-                content,
-                sha,
-            });
-
-            return true;
-        } else {
+        if (!channel) {
             throw new Error(`Канал "${channelName}" не знайдено.`);
         }
+
+        return true;
     } catch (error) {
         console.error('Помилка при видаленні повідомлення:', error);
         throw error;
@@ -456,12 +407,25 @@ async function deleteMessage(channelName, messageId) {
 
 async function addedUserMessage(eventMessage) {
     try {
-        const newMessageId = await getMessages("RoMan_World_Official")
-            .then(messages => messages.length)
-            .catch(error => { throw error; });
-        const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
+        const channel = await Channel.findOne({ name: "RoMan_World_Official" });
+        if (!channel) throw new Error('Канал не знайдено');
 
-        await saveMessages("RoMan_World_Official", newMessage).catch(error => { throw error; });
+        const newMessageId = channel.messages.length + 1;
+        const newMessage = { 
+            id: newMessageId, 
+            author: 'Привітання', 
+            context: eventMessage,
+            date: new Date().toLocaleString('uk-UA', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(',', '')
+        };
+
+        channel.messages.push(newMessage);
+        await channel.save();
 
         io.emit('chat message', "RoMan_World_Official", newMessage);
     } catch (error) {
@@ -470,43 +434,33 @@ async function addedUserMessage(eventMessage) {
 }
 
 async function uploadImage(imageFile, imageFileName, channelName) {
-    console.log(imageFile)
-    const base64Image = imageFile.buffer.toString('base64');
-    const imagePath = `images/${channelName}/${imageFileName}`;
-
     try {
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: imagePath,
-            message: `Upload image ${imageFileName} for channel ${channelName}`,
-            content: base64Image,
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error('Channel not found');
+
+        // Зберігаємо зображення в MongoDB
+        if (!channel.images) channel.images = [];
+        channel.images.push({
+            name: imageFileName,
+            data: imageFile.buffer,
+            contentType: imageFile.mimetype
         });
+
+        await channel.save();
     } catch (error) {
-        console.error('Error uploading image to GitHub:', error);
+        console.error('Error uploading image:', error);
         throw error;
     }
 }
 
 async function deletePhoto(channelName, fileName) {
-    const filePath = `images/${channelName}/${fileName}`;
-
     try {
-        const { data: fileInfo } = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: filePath,
-        });
-
-        await octokit.repos.deleteFile({
-            owner,
-            repo,
-            path: filePath,
-            message: `Delete image ${fileName}`,
-            sha: fileInfo.sha,
-        });
+        await Channel.findOneAndUpdate(
+            { name: channelName },
+            { $pull: { images: { name: fileName } } }
+        );
     } catch (error) {
-        console.error('Error deleting file from GitHub:', error);
+        console.error('Error deleting photo:', error);
         throw error;
     }
 }
@@ -543,13 +497,7 @@ async function downloadImages(channelName) {
 
 async function getRequests() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'requests.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        const requests = JSON.parse(data).requests;
+        const requests = await Request.find({});
         return requests;
     } catch (error) {
         throw new Error('Error getting requests: ' + error.message);
@@ -558,21 +506,8 @@ async function getRequests() {
 
 async function saveRequests(requests) {
     try {
-        const content = Buffer.from(JSON.stringify({ requests }, null, 2)).toString('base64');
-        const getRequestsResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'requests.json',
-        });
-        const sha = getRequestsResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'requests.json',
-            message: 'Update requests.json',
-            content,
-            sha,
-        });
+        await Request.deleteMany({});
+        await Request.insertMany(requests);
     } catch (error) {
         throw new Error('Error saving requests: ' + error.message);
     }
@@ -580,13 +515,8 @@ async function saveRequests(requests) {
 
 async function getSecurity() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'security.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        return JSON.parse(data).security;
+        const security = await Security.findOne({});
+        return security ? security.data : null;
     } catch (error) {
         throw new Error('Error getting security data: ' + error.message);
     }
@@ -594,21 +524,11 @@ async function getSecurity() {
 
 async function saveSecurity(security) {
     try {
-        const content = Buffer.from(JSON.stringify({ security }, null, 2)).toString('base64');
-        const getSecurityResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'security.json',
-        });
-        const sha = getSecurityResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'security.json',
-            message: 'Update security.json',
-            content,
-            sha,
-        });
+        await Security.findOneAndUpdate(
+            {},
+            { data: security },
+            { upsert: true }
+        );
     } catch (error) {
         throw new Error('Error saving security data: ' + error.message);
     }
@@ -992,7 +912,7 @@ app.post('/unpin-message', checkUserExists, async (req, res) => {
         console.error('Помилка при відкріпленні повідомлення:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Помилка при відкріпленні повідомлення' 
+            message: 'Помилка при відкріпленні ��овідомлення' 
         });
     }
 });
@@ -1160,7 +1080,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
             name: channelName,
             owner: username,
             isPrivate: false,
-            messages: [
+            messages: [ 
                 {
                     id: 1,
                     author: "Системне",
