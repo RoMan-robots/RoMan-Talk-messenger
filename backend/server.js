@@ -1034,7 +1034,6 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
         const { channelName } = req.params;
         const channels = await getChannels();
         
-        // Знаходимо потрібний канал
         const channel = channels.find(c => c.name === channelName);
         if (!channel) {
             return res.status(404).json({ 
@@ -1043,7 +1042,6 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
             });
         }
 
-        // Повертаємо тільки необхідні дані
         res.json({
             success: true,
             channels: [{
