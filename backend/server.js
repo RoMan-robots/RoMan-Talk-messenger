@@ -29,6 +29,7 @@ import Channel from './schemas/messages.js';
 import User from './schemas/users.js';
 import Request from './schemas/requests.js';
 import Security from './schemas/security.js';
+import migrateFromGitHub from './utils/migration.js';
 
 dotenv.config();
 
@@ -51,90 +52,19 @@ const repo = process.env.NAME_REPO;
 mongoose.connect(process.env.MONGO_URL)
     .then(async () => {
         console.log('Connected to MongoDB');
+
+        // await migrateFromGitHub();
         
-        try {
-            // Перевіряємо чи потрібна міграція
-            const channelsCount = await Channel.countDocuments();
-            if (channelsCount === 0) {
-                console.log('Starting migration from GitHub...');
-                
-                // Міграція каналів та повідомлень
-                const channelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const channelsData = JSON.parse(
-                    Buffer.from(channelsResponse.data.content, 'base64').toString()
-                );
-                
-                for (const channelData of channelsData.channels) {
-                    if (channelData.messages) {
-                        channelData.messages = channelData.messages.map(msg => ({
-                            ...msg,
-                            date: msg.date || new Date().toLocaleString('uk-UA', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            }).replace(',', '')
-                        }));
-                    }
+        // const channels = await Channel.find({});
+        // const users = await User.find({});
+        // const security = await Security.findOne({});
 
-                    await Channel.findOneAndUpdate(
-                        { name: channelData.name },
-                        channelData,
-                        { upsert: true }
-                    );
-                }
-                console.log('Channels migrated successfully');
-
-                // Міграція користувачів
-                const usersResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'users.json',
-                });
-                const usersData = JSON.parse(
-                    Buffer.from(usersResponse.data.content, 'base64').toString()
-                );
-                
-                for (const userData of usersData.users) {
-                    await User.findOneAndUpdate(
-                        { username: userData.username },
-                        userData,
-                        { upsert: true }
-                    );
-                }
-                console.log('Users migrated successfully');
-
-                // Міграція security
-                const securityResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'security.json',
-                });
-                const securityData = JSON.parse(
-                    Buffer.from(securityResponse.data.content, 'base64').toString()
-                );
-                
-                await Security.findOneAndUpdate(
-                    {},
-                    { data: securityData.security },
-                    { upsert: true }
-                );
-                console.log('Security data migrated successfully');
-
-                console.log('Migration completed successfully!');
-            }
-            
-            console.log('Server ready');
-        } catch (error) {
-            console.error('Migration/initialization error:', error);
-        }
+        // console.log('Channels:', JSON.stringify(channels, null, 2));
+        // console.log('Users:', JSON.stringify(users, null, 2));
+        // console.log('Security:', JSON.stringify(security, null, 2));
     })
-    .catch(err => console.error('MongoDB connection error:', err));
+    .catch (err => console.error('MongoDB connection error:', err));
+
 const localDir = path.join(__dirname, 'images/message-images');
 
 let loginAttempts = {};
@@ -179,7 +109,6 @@ function shuffleArray(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
-    console.log("Shuffled array")
     return array;
 }
 
@@ -278,8 +207,8 @@ async function rephormatMessagesID(channelName) {
             return {
                 ...message,
                 id: newId,
-                replyTo: message.replyTo ? 
-                    messages.findIndex(m => m.id === message.replyTo) + 1 : 
+                replyTo: message.replyTo ?
+                    messages.findIndex(m => m.id === message.replyTo) + 1 :
                     null
             };
         });
@@ -293,19 +222,8 @@ async function rephormatMessagesID(channelName) {
 
 async function getMessages(channelName) {
     try {
-        const channels = await getChannels();
-        const channelData = channels.find(c => c.name === channelName);
-
-        if (!channelData) {
-            throw new Error('Канал не знайдено.');
-        }
-
-        return channelData.messages.map(message => ({
-            ...message,
-            replyToMessage: message.replyTo ? 
-                channelData.messages.find(m => m.id === message.replyTo) : 
-                null
-        }));
+        const channel = await Channel.findOne({ name: channelName }).select('messages -_id');
+        return channel ? channel.messages : [];
     } catch (error) {
         throw new Error('Помилка при отриманні повідомлень: ' + error.message);
     }
@@ -334,7 +252,7 @@ async function saveMessages(channelName, messageObject, messageType = "classic")
 
         channel.messages.push(newMessage);
         await channel.save();
-        
+
         return newMessage;
     } catch (error) {
         console.error('Помилка при збереженні повідомлень:', error);
@@ -411,9 +329,9 @@ async function addedUserMessage(eventMessage) {
         if (!channel) throw new Error('Канал не знайдено');
 
         const newMessageId = channel.messages.length + 1;
-        const newMessage = { 
-            id: newMessageId, 
-            author: 'Привітання', 
+        const newMessage = {
+            id: newMessageId,
+            author: 'Привітання',
             context: eventMessage,
             date: new Date().toLocaleString('uk-UA', {
                 day: '2-digit',
@@ -807,7 +725,7 @@ app.post('/messages', checkUserExists, async (req, res) => {
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channel);
-        
+
         if (channelIndex === -1) {
             return res.status(404).send({ success: false, message: 'Канал не знайдено' });
         }
@@ -838,25 +756,25 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channelName);
-        
+
         if (channelIndex === -1) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Канал не знайдено' 
+            return res.status(404).json({
+                success: false,
+                message: 'Канал не знайдено'
             });
         }
 
         const channel = channels[channelIndex];
         const messageToPin = channel.messages.find(m => m.id == messageId);
         if (!messageToPin) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Повідомлення не знайдено' 
+            return res.status(404).json({
+                success: false,
+                message: 'Повідомлення не знайдено'
             });
         }
 
         channel.pinnedMessage = messageToPin;
-        
+
         await saveChannels(channels);
 
         io.emit('message pinned', {
@@ -864,17 +782,17 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
             pinnedMessage: messageToPin
         });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Повідомлення успішно закріплено',
             pinnedMessage: messageToPin
         });
 
     } catch (error) {
         console.error('Помилка при закріпленні повідомлення:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Помилка при закріпленні повідомлення' 
+        res.status(500).json({
+            success: false,
+            message: 'Помилка при закріпленні повідомлення'
         });
     }
 });
@@ -885,34 +803,34 @@ app.post('/unpin-message', checkUserExists, async (req, res) => {
     try {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channelName);
-        
+
         if (channelIndex === -1) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Канал не знайдено' 
+            return res.status(404).json({
+                success: false,
+                message: 'Канал не знайдено'
             });
         }
 
         const channel = channels[channelIndex];
-        
+
         channel.pinnedMessage = null;
-        
+
         await saveChannels(channels);
 
         io.emit('message unpinned', {
             channelName
         });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Повідомлення відкріплено'
         });
 
     } catch (error) {
         console.error('Помилка при відкріпленні повідомлення:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Помилка при відкріпленні ��овідомлення' 
+        res.status(500).json({
+            success: false,
+            message: 'Помилка при відкріпленні повідомлення'
         });
     }
 });
@@ -926,7 +844,7 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         if (!photo) {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
-        
+
         let messageObject = {
             author,
             context: filteredText,
@@ -1033,12 +951,12 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
     try {
         const { channelName } = req.params;
         const channels = await getChannels();
-        
+
         const channel = channels.find(c => c.name === channelName);
         if (!channel) {
-            return res.status(404).json({ 
-                success: false, 
-                message: `Канал "${channelName}" не знайдено.` 
+            return res.status(404).json({
+                success: false,
+                message: `Канал "${channelName}" не знайдено.`
             });
         }
 
@@ -1051,12 +969,12 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
                 typingUsers: channel.typingUsers || []
             }]
         });
-        
+
     } catch (error) {
         console.error('Помилка при отриманні повідомлень:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Помилка сервера при отриманні повідомлень' 
+        res.status(500).json({
+            success: false,
+            message: 'Помилка сервера при отриманні повідомлень'
         });
     }
 });
@@ -1078,7 +996,7 @@ app.post('/create-channel', checkUserExists, async (req, res) => {
             name: channelName,
             owner: username,
             isPrivate: false,
-            messages: [ 
+            messages: [
                 {
                     id: 1,
                     author: "Системне",
@@ -1147,7 +1065,6 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
     }
 });
-
 app.post('/check-grammar', async (req, res) => {
     const { text } = req.body;
     const correctedText = await checkGrammar(text, language);
@@ -1304,13 +1221,16 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         const messages = await getMessages(channelName);
         const messageToDelete = messages.find(message => message.id === messageId);
 
+        if (!messageToDelete) {
+            return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
+        }
+
         if (messageToDelete.author !== req.username) {
             return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його видалити!' });
         }
 
         if (messageToDelete.photo) {
             await fs.unlink(`${localDir}/${channelName}/${messageToDelete.photo}`);
-
             await deletePhoto(channelName, messageToDelete.photo);
         }
 
@@ -1328,10 +1248,9 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         }
 
         res.json({ success: true });
-
         io.emit('message deleted', channelName, messageId);
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

@@ -15,7 +15,6 @@ const messageSchema = new mongoose.Schema({
     },
     date: {
         type: String,
-        required: true
     }
 });
 
