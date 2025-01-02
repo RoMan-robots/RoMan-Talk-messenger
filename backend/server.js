@@ -53,7 +53,7 @@ mongoose.connect(process.env.MONGO_URL)
     .then(async () => {
         console.log('Connected to MongoDB');
 
-        // await migrateFromGitHub();
+        await migrateFromGitHub();
         
         // const channels = await Channel.find({});
         // const users = await User.find({});

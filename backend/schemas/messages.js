@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: mongoose.Types.ObjectId
+    },
     id: {
         type: Number,
         required: true
@@ -16,6 +20,8 @@ const messageSchema = new mongoose.Schema({
     date: {
         type: String,
     }
+}, { 
+    _id: true 
 });
 
 const channelSchema = new mongoose.Schema({
@@ -40,6 +46,8 @@ const channelSchema = new mongoose.Schema({
         type: [String],
         default: []
     }
+}, {
+    autoIndex: false 
 });
 
 messageSchema.pre('save', function(next) {

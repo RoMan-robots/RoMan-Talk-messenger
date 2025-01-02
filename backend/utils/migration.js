@@ -2,6 +2,7 @@ import Channel from '../schemas/messages.js';
 import User from '../schemas/users.js';
 import Security from '../schemas/security.js';
 import { Octokit } from '@octokit/rest';
+import mongoose from 'mongoose';
 
 const octokit = new Octokit({
     auth: process.env.TOKEN_REPO
@@ -12,10 +13,7 @@ const repo = process.env.NAME_REPO;
 
 async function migrateFromGitHub() {
     try {
-        await Channel.deleteMany({});
-        await User.deleteMany({});
-        await Security.deleteMany({});
-        console.log('Database cleared');
+        await mongoose.connection.dropDatabase();
 
         const channelsResponse = await octokit.repos.getContent({
             owner,
@@ -26,17 +24,32 @@ async function migrateFromGitHub() {
             Buffer.from(channelsResponse.data.content, 'base64').toString()
         );
 
-        for (const channelData of channelsData.channels) {
-            if (!channelData.name || channelData.name.trim() === '') {
+        for (const [channelIndex, channel] of channelsData.channels.entries()) {
+            if (!channel.name || channel.name.trim() === '') {
+                console.warn('Пропускаємо канал без імені');
                 continue;
             }
 
-            delete channelData._id;
+            const transformedMessages = channel.messages.map((message, messageIndex) => ({
+                ...message,
+                _id: new mongoose.Types.ObjectId(),
+                id: messageIndex + 1
+            }));
 
-            await Channel.create(channelData);
+            const transformedChannel = {
+                ...channel,
+                id: channelIndex + 1,
+                messages: transformedMessages
+            };
+
+            try {
+                await Channel.create(transformedChannel);
+            } catch (error) {
+                console.error(`Помилка створення каналу ${channel.name}:`, error);
+            }
         }
-        console.log('Channels migrated successfully');
 
+        // 4. Міграція користувачів
         const usersResponse = await octokit.repos.getContent({
             owner,
             repo,
@@ -48,14 +61,16 @@ async function migrateFromGitHub() {
 
         for (const userData of usersData.users) {
             if (!userData.username || userData.username.trim() === '') {
+                console.warn('Пропускаємо користувача без імені');
                 continue;
             }
 
-            delete userData._id;
-
-            await User.create(userData);
+            try {
+                await User.create(userData);
+            } catch (error) {
+                console.error(`Помилка створення користувача ${userData.username}:`, error);
+            }
         }
-        console.log('Users migrated successfully');
 
         const securityResponse = await octokit.repos.getContent({
             owner,
@@ -66,12 +81,17 @@ async function migrateFromGitHub() {
             Buffer.from(securityResponse.data.content, 'base64').toString()
         );
 
-        await Security.create({ data: securityData.security });
-        console.log('Security data migrated successfully');
+        try {
+            await Security.create({ data: securityData.security });
+            console.log('Дані безпеки мігровано успішно');
+        } catch (error) {
+            console.error('Помилка міграції даних безпеки:', error);
+        }
 
-        console.log('Migration completed successfully!');
+        console.log('Міграцію завершено успішно!');
     } catch (error) {
-        console.error('Migration error:', error);
+        console.error('Критична помилка міграції:', error);
+        throw error;
     }
 }
 
