@@ -23,13 +23,16 @@ import {
     rephraseText,
     loadModels,
     translateTextInParts
-} from './ai.js';
+} from './ai/ai.js';
 
 import Channel from './schemas/messages.js';
 import User from './schemas/users.js';
 import Request from './schemas/requests.js';
 import Security from './schemas/security.js';
 import migrateFromGitHub from './utils/migration.js';
+
+import { uploadToCloudinary, deleteFromCloudinary } from './cloudinary/cloudinaryUpload.js';
+import { validateFile, sanitizeFileName } from './cloudinary/fileValidator.js';
 
 dotenv.config();
 
@@ -616,6 +619,53 @@ io.on('connection', (socket) => {
             io.emit('message edited', channelName, messageId, newContent);
         } catch (error) {
             console.error('Помилка при редагуванні повідомлення:', error);
+        }
+    });
+
+    socket.on('upload', async (file, callback) => {
+        try {
+            // Валідація файлу
+            validateFile(file);
+
+            // Санітаризація назви файлу
+            const sanitizedName = sanitizeFileName(file.name);
+
+            // Завантаження на Cloudinary
+            const uploadResult = await uploadToCloudinary(file.data);
+
+            // Створення повідомлення з посиланням на зображення
+            const newMessage = new Message({
+                author: socket.username,
+                context: '',
+                photo: uploadResult.url,
+                date: new Date().toISOString()
+            });
+
+            // Збереження повідомлення
+            await newMessage.save();
+
+            // Надсилання підтвердження
+            callback({ 
+                success: true, 
+                url: uploadResult.url,
+                size: uploadResult.size,
+                format: uploadResult.format
+            });
+
+            // Трансляція повідомлення в канал
+            io.to(selectedChannel).emit('chat message', {
+                author: socket.username,
+                context: '',
+                photo: uploadResult.url,
+                date: newMessage.date
+            });
+
+        } catch (error) {
+            console.error('Помилка завантаження файлу:', error);
+            callback({ 
+                success: false, 
+                error: error.message 
+            });
         }
     });
 });
