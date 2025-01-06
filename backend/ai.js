@@ -91,15 +91,16 @@ function removeSpacesAndSymbols(text) {
 }
 
 export function filterText(text) {
+    if (typeof text !== 'string') return text;
 
-    const originalClean = removeSpacesAndSymbols(text.toLowerCase());
-    const normalizedToCyrillic = removeSpacesAndSymbols(normalizeText(text, 'toCyrillic').toLowerCase());
-    const normalizedToLatin = removeSpacesAndSymbols(normalizeText(text, 'toLatin').toLowerCase());
+    const originalText = text.toLowerCase();
+    const normalizedToCyrillic = normalizeText(text, 'toCyrillic').toLowerCase();
+    const normalizedToLatin = normalizeText(text, 'toLatin').toLowerCase();
 
     badWords.forEach(badWord => {
         const regex = generateMixedRegex(badWord.toLowerCase());
         if (
-            regex.test(originalClean) ||
+            regex.test(originalText) ||
             regex.test(normalizedToCyrillic) ||
             regex.test(normalizedToLatin)
         ) {

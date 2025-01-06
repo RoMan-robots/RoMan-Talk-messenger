@@ -379,7 +379,14 @@ function updateChannelInfo(channelName, data) {
   const pinnedMessageDiv = document.querySelector('.pinned-message');
   
   if (channel && channel.pinnedMessage) {
-    pinnedMessageDiv.textContent = `${channel.pinnedMessage.author}: ${channel.pinnedMessage.context}`;
+    // Знаходимо повідомлення з відповідним ID
+    const pinnedMessage = channel.messages.find(m => m.id === channel.pinnedMessage);
+    
+    if (pinnedMessage) {
+      pinnedMessageDiv.textContent = `${pinnedMessage.author}: ${pinnedMessage.context}`;
+    } else {
+      pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+    }
   } else {
     pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
   }
@@ -391,13 +398,7 @@ function updateChannelInfo(channelName, data) {
     
     messages.forEach(message => {
       const messageText = message.textContent.toLowerCase();
-      const messageContainer = message.closest('.message');
-      
-      if (messageText.includes(searchText)) {
-        messageContainer.style.display = 'flex';
-      } else {
-        messageContainer.style.display = 'none';
-      }
+      message.closest('.message').style.display = messageText.includes(searchText) ? '' : 'none';
     });
   });
 }
@@ -1184,25 +1185,23 @@ fileInput.addEventListener("change", function () {
     fileInput.value = '';
   }
 });
-
+ 
 socket.on('chat message', (channel, msg) => {
-  if (channel === selectedChannel) {
-      displayMessage({
-          context: `${msg.author}: ${msg.context}`,
-          photo: msg.photo,
-          date: msg.date,
-          replyTo: msg.replyTo
-      }, msg.id);
-      
-      if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
-          newMessageSound.play();
-      } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
-          newUserSound.play();
-      }
+  if (msg.author && msg.context && channel == selectedChannel) {
+    if (msg.photo) {
+      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${ msg.date }` }, msg.id);
+    } else {
+      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${ msg.date }` }, msg.id);
+    }
+  }
+  if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
+    newMessageSound.play();
+  } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
+    newUserSound.play();
+  }
 
-      if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
-          welcomeSound.play();
-      }
+  if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
+    welcomeSound.play();
   }
 });
 
@@ -1244,11 +1243,21 @@ window.addEventListener('beforeunload', () => {
 });
 
 socket.on('message pinned', (data) => {
-  if (data.channelName === selectedChannel) {
-      const pinnedMessageDiv = document.querySelector('.pinned-message');
-      if (pinnedMessageDiv) {
-          pinnedMessageDiv.textContent = `${data.pinnedMessage.author}: ${data.pinnedMessage.context}`;
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  if (pinnedMessageDiv) {
+    const channel = data.channels.find(c => c.name === data.channelName);
+    
+    if (channel && data.pinnedMessage) {
+      const pinnedMessage = channel.messages.find(m => m.id === data.pinnedMessage.id);
+      
+      if (pinnedMessage) {
+        pinnedMessageDiv.textContent = `${pinnedMessage.author}: ${pinnedMessage.context}`;
+      } else {
+        pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
       }
+    } else {
+      pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+    }
   }
 });
 

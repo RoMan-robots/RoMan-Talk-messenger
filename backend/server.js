@@ -53,13 +53,13 @@ mongoose.connect(process.env.MONGO_URL)
     .then(async () => {
         console.log('Connected to MongoDB');
 
-        await migrateFromGitHub();
+        // await migrateFromGitHub();
         
         // const channels = await Channel.find({});
         // const users = await User.find({});
         // const security = await Security.findOne({});
 
-        // console.log('Channels:', JSON.stringify(channels, null, 2));
+        // console.log('Channels:', JSON.stringify(channels.slice(0, 1), null, 2));
         // console.log('Users:', JSON.stringify(users, null, 2));
         // console.log('Security:', JSON.stringify(security, null, 2));
     })
@@ -141,10 +141,28 @@ async function getChannels() {
 
 async function saveChannels(channels) {
     try {
-        await Channel.deleteMany({});
-        await Channel.insertMany(channels);
+        channels.forEach(channel => {
+            channel.messages = channel.messages.map(message => {
+                if (!message._id) {
+                    message._id = new mongoose.Types.ObjectId();
+                }
+                return message;
+            });
+        });
+
+        // Збереження каналів
+        const updatedChannels = await Promise.all(
+            channels.map(channel => Channel.findOneAndUpdate(
+                { name: channel.name }, 
+                channel, 
+                { upsert: true, new: true }
+            ))
+        );
+
+        return updatedChannels;
     } catch (error) {
-        throw new Error('Error saving channels: ' + error.message);
+        console.error('Помилка при збереженні каналів:', error);
+        throw error;
     }
 }
 
@@ -248,6 +266,13 @@ async function saveMessages(channelName, messageObject, messageType = "classic")
             const imageFileName = `${newMessageId}--${sanitizedFileName}`;
             newMessage.photo = imageFileName;
             await uploadImage(messageObject.image, imageFileName, channelName);
+        }
+
+        if (messageObject.replyTo) {
+            const parentMessage = channel.messages.find(m => m.id === messageObject.replyTo);
+            if (parentMessage) {
+                newMessage.replyTo = messageObject.replyTo;
+            }
         }
 
         channel.messages.push(newMessage);
@@ -433,20 +458,26 @@ async function saveRequests(requests) {
 
 async function getSecurity() {
     try {
-        const security = await Security.findOne({});
-        return security ? security.data : null;
+        const securityData = await Security.findOne();
+        return securityData ? securityData.security : {};
     } catch (error) {
-        throw new Error('Error getting security data: ' + error.message);
+        console.error('Помилка отримання даних безпеки:', error);
+        return {};
     }
 }
 
 async function saveSecurity(security) {
     try {
-        await Security.findOneAndUpdate(
-            {},
-            { data: security },
-            { upsert: true }
-        );
+        let securityDoc = await Security.findOne();
+        
+        if (!securityDoc) {
+            securityDoc = new Security({ security });
+        } else {
+            securityDoc.security = security;
+        }
+        
+        await securityDoc.save();
+        return securityDoc;
     } catch (error) {
         throw new Error('Error saving security data: ' + error.message);
     }
@@ -458,14 +489,14 @@ async function alertSecurity(req, ip, username, messageText) {
     const parser = uaParser(userAgent);
     const deviceInfo = parser.os.name;
 
-    const now = new Date();
+    const loginTimestamp = Date.now();
+    const loginDate = new Date();
+    const day = String(loginDate.getDate()).padStart(2, '0');
+    const month = String(loginDate.getMonth() + 1).padStart(2, '0');
+    const year = loginDate.getFullYear();
 
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const hours = String(loginDate.getHours()).padStart(2, '0');
+    const minutes = String(loginDate.getMinutes()).padStart(2, '0');
 
     const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
 
@@ -493,12 +524,11 @@ async function alertSecurity(req, ip, username, messageText) {
         when: formattedDateTime
     };
 
-    const oneWeekAgo = new Date(now);
+    const oneWeekAgo = new Date(loginDate);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const userSecurityLogs = security.find(entry => Object.keys(entry)[0] === username);
     if (userSecurityLogs) {
-
         userSecurityLogs[username] = userSecurityLogs[username].filter(log => {
             const logDate = log.when.split(' ')[0].split('.');
             const logDateTime = new Date(logDate[2], logDate[1] - 1, logDate[0]);
@@ -611,53 +641,100 @@ app.get('/set-bg', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password, checked, ip } = req.body;
+    const { username, password, ip } = req.body;
+    const loginTimestamp = Date.now();
+    const userAgent = req.headers['user-agent'];
+    const parser = uaParser(userAgent);
+    const deviceInfo = parser.os.name;
+
+    const geo = geoip.lookup(ip);
+    let location;
+    if (geo) {
+        const { city, country, timezone } = geo;
+
+        if (city) {
+            location = `${city}, ${country}`;
+        } else if (timezone) {
+            const tzParts = timezone.split('/');
+            location = tzParts.length === 2 ? `${tzParts[1].replace('_', ' ')}, ${country}` : country;
+        } else {
+            location = 'невідоме';
+        }
+    } else {
+        location = 'невідоме';
+    }
+
+    const loginDate = new Date();
+    const day = String(loginDate.getDate()).padStart(2, '0');
+    const month = String(loginDate.getMonth() + 1).padStart(2, '0');
+    const year = loginDate.getFullYear();
+
+    const hours = String(loginDate.getHours()).padStart(2, '0');
+    const minutes = String(loginDate.getMinutes()).padStart(2, '0');
+
+    const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+    if (!loginAttempts[username]) {
+        loginAttempts[username] = [];
+    }
+
+    const userAttempts = loginAttempts[username];
+    const recentAttempts = userAttempts.filter(attemptTime => loginTimestamp - attemptTime < 60000);
+
+    if (recentAttempts.length >= 5) {
+        const message = {
+            message: "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.",
+            device: deviceInfo,
+            location: location,
+            when: formattedDateTime
+        };
+
+        await alertSecurity(req, ip, username, message.message);
+
+        return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
+    }
 
     try {
-        const users = await getUsers();
-        const foundUser = users.find(user => user.username === username);
+        const user = await User.findOne({ username });
 
-        if (!foundUser) {
+        if (!user) {
             return res.status(401).send({ success: false, message: 'Користувача не знайдено' });
         }
 
-        const now = Date.now();
-        const userAttempts = loginAttempts[username] || [];
-        const recentAttempts = userAttempts.filter(attemptTime => now - attemptTime < 60000);
+        const isMatch = await bcrypt.compare(password, user.password);
 
-        if (recentAttempts.length >= 5) {
-            await alertSecurity(req, ip, username, "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.");
+        if (isMatch) {
+            loginAttempts[username] = [];
 
-            return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
-        }
+            const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
-        const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
-
-        if (isPasswordMatch) {
-            if (foundUser.rank === 'banned') {
-                return res.status(423).send({ success: false, message: 'Користувач заблокований' });
-            }
-
-            const token = jwt.sign(
-                { userId: foundUser.id, username: foundUser.username },
-                process.env.JWT_SECRET,
-                { expiresIn: '30d' }
-            );
-
-            res.send({ success: true, redirectUrl: 'chat.html', token: token });
-
-            if (!checked) {
+            if (user.firstLogin) {
+                await User.findByIdAndUpdate(user.id, { firstLogin: false });
                 await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
             }
 
-            await alertSecurity(req, ip, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
+            const message = {
+                message: "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...",
+                device: deviceInfo,
+                location: location,
+                when: formattedDateTime
+            };
+
+            await alertSecurity(req, ip, username, message.message);
+
+            return res.status(200).send({
+                success: true,
+                token,
+                username: user.username,
+                rank: user.rank,
+                firstLogin: user.firstLogin
+            });
         } else {
-            loginAttempts[username] = [...userAttempts, now];
+            loginAttempts[username] = [...userAttempts, loginTimestamp];
             res.status(401).send({ success: false, message: 'Неправильний пароль' });
         }
-
     } catch (error) {
-        console.error(error);
+        console.error('Помилка входу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера' });
     }
 });
@@ -711,7 +788,7 @@ app.post('/register', async (req, res) => {
 
     const security = await getSecurity();
     security.push({ [username]: [] });
-    await saveSecurity(security);
+    await alertSecurity(req, req.ip, username, "Зареєструвався новий користувач з ім'ям " + username);
 
     const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
@@ -731,9 +808,9 @@ app.post('/messages', checkUserExists, async (req, res) => {
         }
 
         const newMessage = {
-            id: channels[channelIndex].messages.length + 1,
+            id: Number(channels[channelIndex].messages.length + 1),
             author,
-            context,
+            context: filterText(context),
             date,
             replyTo
         };
@@ -773,7 +850,17 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
             });
         }
 
-        channel.pinnedMessage = messageToPin;
+        // Перевірка та конвертація ID повідомлення
+        const pinnedMessageId = parseInt(messageId, 10);
+        if (isNaN(pinnedMessageId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Некоректний ідентифікатор повідомлення'
+            });
+        }
+
+        // Зберігаємо лише числовий ID повідомлення
+        channel.pinnedMessage = pinnedMessageId;
 
         await saveChannels(channels);
 
@@ -1380,16 +1467,35 @@ app.post('/delete-appeal', async (req, res) => {
 });
 
 app.get("/get-security", checkUserExists, async (req, res) => {
-    const securityData = await getSecurity();
-    const username = req.username;
+    try {
+        const username = req.username;
+        console.log('Шукаємо логи для користувача:', username);
 
-    const userSecurityData = securityData.find(obj => Object.keys(obj)[0] === username);
+        const securityDoc = await Security.findOne();
+        console.log('Знайдений документ безпеки:', JSON.stringify(securityDoc, null, 2));
 
-    const security = {
-        [username]: userSecurityData[username]
-    };
+        if (!securityDoc || !securityDoc.security) {
+            console.log('Документ безпеки не знайдено');
+            return res.status(200).json({ success: true, security: [] });
+        }
 
-    res.status(200).json({ success: true, security });
+        // Пошук логів для username або повернення всіх логів
+        let userLogs = [];
+        for (const item of securityDoc.security) {
+            const key = Object.keys(item)[0];
+            if (key === username || key.trim() === '') {
+                userLogs = item[key];
+                break;
+            }
+        }
+
+        console.log('Знайдені логи:', userLogs);
+
+        return res.status(200).json({ success: true, security: userLogs });
+    } catch (error) {
+        console.error('Помилка при отриманні логів безпеки:', error);
+        return res.status(500).json({ success: false, message: 'Помилка сервера' });
+    }
 });
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {

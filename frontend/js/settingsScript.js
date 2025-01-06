@@ -440,42 +440,51 @@ async function loadAppeals() {
 }
 
 async function loadSecurityRecomendations() {
-  const securityDiv = document.getElementById("security-recomendations");
-  securityDiv.innerHTML = '';
-
-  const response = await fetch('/get-security', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  const data = await response.json();
-
-  if (data.success && data.security) {
-    const ol = document.createElement('ul');
-    const securityObj = data.security;
-
-    Object.keys(securityObj).forEach((username) => {
-      const messages = securityObj[username];
-      if (messages.length > 0) {
-        messages.forEach((message) => {
-          const li = document.createElement('li');
-          li.textContent = `${message.when}: ${message.message} (Клієнт: ${message.device}, Місцезнаходження: ${message.location})`;
-          ol.appendChild(li);
+    try {
+        const response = await fetch('/get-security', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
-      }
-    });
+        const data = await response.json();
 
-    if (ol.childNodes.length > 0) {
-      securityDiv.appendChild(ol);
-    } else {
-      securityDiv.textContent = 'Немає нових повідомлень безпеки.';
+        const securityDiv = document.getElementById("security-recomendations");
+        securityDiv.innerHTML = '';
+
+        if (data.success) {
+            const sortedLogs = data.security.sort((a, b) => {
+                const dateA = new Date(a.when.split(' ').reverse().join(' '));
+                const dateB = new Date(b.when.split(' ').reverse().join(' '));
+                return dateB - dateA;
+            });
+
+            const recentLogs = sortedLogs.slice(0, 10);
+
+            if (recentLogs.length > 0) {
+                const ul = document.createElement('ul');
+                recentLogs.forEach(log => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="log-time">${log.when}</span>: 
+                        <span class="log-message">${log.message}</span> 
+                        (Клієнт: <span class="log-device">${log.device}</span>, 
+                        Місцезнаходження: <span class="log-location">${log.location}</span>)
+                    `;
+                    ul.appendChild(li);
+                });
+                securityDiv.appendChild(ul);
+            } else {
+                securityDiv.textContent = 'Немає нових повідомлень безпеки.';
+            }
+        } else {
+            securityDiv.textContent = 'Не вдалося завантажити дані безпеки.';
+        }
+    } catch (error) {
+        console.error('Помилка при завантаженні логів безпеки:', error);
+        const securityDiv = document.getElementById("security-recomendations");
+        securityDiv.textContent = 'Помилка при завантаженні логів безпеки.';
     }
-  } else {
-    securityDiv.textContent = 'Не вдалося завантажити дані безпеки.';
-  }
 }
 
 async function openSecurityModal() {

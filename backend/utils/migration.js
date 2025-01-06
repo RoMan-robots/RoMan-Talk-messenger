@@ -13,8 +13,11 @@ const repo = process.env.NAME_REPO;
 
 async function migrateFromGitHub() {
     try {
+        // 1. Очищення бази даних
         await mongoose.connection.dropDatabase();
+        console.log('Database dropped');
 
+        // 2. Отримання даних з GitHub
         const channelsResponse = await octokit.repos.getContent({
             owner,
             repo,
@@ -24,18 +27,37 @@ async function migrateFromGitHub() {
             Buffer.from(channelsResponse.data.content, 'base64').toString()
         );
 
+        // 3. Міграція каналів з унікальною обробкою повідомлень
         for (const [channelIndex, channel] of channelsData.channels.entries()) {
             if (!channel.name || channel.name.trim() === '') {
                 console.warn('Пропускаємо канал без імені');
                 continue;
             }
 
-            const transformedMessages = channel.messages.map((message, messageIndex) => ({
-                ...message,
-                _id: new mongoose.Types.ObjectId(),
-                id: messageIndex + 1
-            }));
+            // Трансформація повідомлень
+            const transformedMessages = channel.messages.map((message, messageIndex) => {
+                const newMessage = {
+                    ...message,
+                    _id: new mongoose.Types.ObjectId(),
+                    id: messageIndex + 1
+                };
 
+                // Конвертація replyTo в ObjectId або null
+                if (message.replyTo) {
+                    const replyToMessage = channel.messages.find(m => m.id === message.replyTo);
+                    if (replyToMessage) {
+                        const replyToMessageIndex = channel.messages.findIndex(m => m.id === message.replyTo);
+                        newMessage.replyTo = new mongoose.Types.ObjectId();
+                        transformedMessages[replyToMessageIndex]._id = newMessage.replyTo;
+                    } else {
+                        newMessage.replyTo = null;
+                    }
+                }
+
+                return newMessage;
+            });
+
+            // Створення каналу з трансформованими повідомленнями
             const transformedChannel = {
                 ...channel,
                 id: channelIndex + 1,
@@ -72,6 +94,7 @@ async function migrateFromGitHub() {
             }
         }
 
+        // 5. Міграція даних безпеки
         const securityResponse = await octokit.repos.getContent({
             owner,
             repo,
@@ -82,7 +105,8 @@ async function migrateFromGitHub() {
         );
 
         try {
-            await Security.create({ data: securityData.security });
+            // Безпосереднє збереження даних безпеки
+            await Security.create({ security: securityData.security });
             console.log('Дані безпеки мігровано успішно');
         } catch (error) {
             console.error('Помилка міграції даних безпеки:', error);

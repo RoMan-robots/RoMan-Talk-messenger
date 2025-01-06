@@ -5,29 +5,27 @@ const securityLogSchema = new mongoose.Schema({
     device: String,
     location: String,
     when: String
-});
-
-const userSecuritySchema = new mongoose.Schema({
-    username: String,
-    logs: [securityLogSchema]
-});
+}, { _id: false });
 
 const securitySchema = new mongoose.Schema({
-    data: [userSecuritySchema]
+    security: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    }
+}, { 
+    strict: false 
 });
 
 securitySchema.methods.addLog = function(username, logData) {
-    const userSecurity = this.data.find(item => Object.keys(item)[0] === username);
-    if (!userSecurity) {
-        this.data.push({ [username]: [logData] });
-    } else {
-        userSecurity[username].push(logData);
+    if (!this.security[username]) {
+        this.security[username] = [];
     }
+    
+    this.security[username].push(logData);
 };
 
 securitySchema.methods.getUserLogs = function(username) {
-    const userSecurity = this.data.find(item => Object.keys(item)[0] === username);
-    return userSecurity ? userSecurity[username] : [];
+    return this.security[username] || [];
 };
 
-export default mongoose.model('Security', securitySchema); 
+export default mongoose.model('Security', securitySchema);

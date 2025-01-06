@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const messageSchema = new mongoose.Schema({
     _id: {
         type: mongoose.Schema.Types.ObjectId,
-        default: mongoose.Types.ObjectId
+        default: () => new mongoose.Types.ObjectId()
     },
     id: {
         type: Number,
@@ -19,6 +19,10 @@ const messageSchema = new mongoose.Schema({
     },
     date: {
         type: String,
+    },
+    replyTo: {
+        type: Number,
+        default: null
     }
 }, { 
     _id: true 
@@ -45,6 +49,10 @@ const channelSchema = new mongoose.Schema({
     subs: {
         type: [String],
         default: []
+    },
+    pinnedMessage: {
+        type: Number,
+        default: null
     }
 }, {
     autoIndex: false 
