@@ -1,5 +1,5 @@
 export function validateFile(file) {
-    const MAX_FILE_SIZE = parseInt(process.env.MAX_UPLOAD_SIZE || '10485760'); 
+    const MAX_FILE_SIZE = parseInt('5242880'); 
     const ALLOWED_TYPES = [
         'image/png', 
         'image/jpg', 
