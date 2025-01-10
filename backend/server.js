@@ -57,7 +57,7 @@ mongoose.connect(process.env.MONGO_URL)
         console.log('Connected to MongoDB');
 
         // await migrateFromGitHub();
-        
+
         // const channels = await Channel.find({});
         // const users = await User.find({});
         // const security = await Security.findOne({});
@@ -66,7 +66,7 @@ mongoose.connect(process.env.MONGO_URL)
         // console.log('Users:', JSON.stringify(users, null, 2));
         // console.log('Security:', JSON.stringify(security, null, 2));
     })
-    .catch (err => console.error('MongoDB connection error:', err));
+    .catch(err => console.error('MongoDB connection error:', err));
 
 const localDir = path.join(__dirname, 'images/message-images');
 
@@ -156,8 +156,8 @@ async function saveChannels(channels) {
         // Збереження каналів
         const updatedChannels = await Promise.all(
             channels.map(channel => Channel.findOneAndUpdate(
-                { name: channel.name }, 
-                channel, 
+                { name: channel.name },
+                channel,
                 { upsert: true, new: true }
             ))
         );
@@ -475,13 +475,13 @@ async function getSecurity() {
 async function saveSecurity(security) {
     try {
         let securityDoc = await Security.findOne();
-        
+
         if (!securityDoc) {
             securityDoc = new Security({ security });
         } else {
             securityDoc.security = security;
         }
-        
+
         await securityDoc.save();
         return securityDoc;
     } catch (error) {
@@ -939,8 +939,8 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         }
 
         const uploadResult = await uploadImageToCloudinary(
-            photo.buffer, 
-            photo.originalname, 
+            photo.buffer,
+            photo.originalname,
             channelName
         );
 
@@ -955,10 +955,10 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         const savedMessage = await saveMessages(channelName, messageObject, 'photo');
 
         io.emit('chat message', channelName, savedMessage);
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             message: 'Повідомлення з фото успішно збережено.',
-            savedMessage 
+            savedMessage
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
@@ -1305,8 +1305,7 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         }
 
         if (messageToDelete.photo) {
-            await fs.unlink(`${localDir}/${channelName}/${messageToDelete.photo}`);
-            await deletePhoto(channelName, messageToDelete.photo);
+            await deleteFromCloudinary(messageToDelete.photo);
         }
 
         await deleteMessage(channelName, messageId);
