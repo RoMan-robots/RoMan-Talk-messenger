@@ -31,7 +31,7 @@ import Request from './schemas/requests.js';
 import Security from './schemas/security.js';
 import migrateFromGitHub from './utils/migration.js';
 
-import { uploadToCloudinary, deleteFromCloudinary } from './cloudinary/cloudinaryUpload.js';
+import { uploadImageToCloudinary, deleteFromCloudinary } from './cloudinary/cloudinaryUpload.js';
 import { validateFile, sanitizeFileName } from './cloudinary/fileValidator.js';
 
 dotenv.config();
@@ -263,12 +263,16 @@ async function saveMessages(channelName, messageObject, messageType = "classic")
             date: messageObject.date
         };
 
-        if (messageType === 'photo' && messageObject.image) {
-            const originalFileName = messageObject.image.name;
-            const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
-            const imageFileName = `${newMessageId}--${sanitizedFileName}`;
-            newMessage.photo = imageFileName;
-            await uploadImage(messageObject.image, imageFileName, channelName);
+        if (messageType === 'photo') {
+            if (messageObject.photo) {
+                newMessage.photo = messageObject.photo;
+            } else if (messageObject.image) {
+                const originalFileName = messageObject.image.name;
+                const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
+                const imageFileName = `${newMessageId}--${sanitizedFileName}`;
+                newMessage.photo = imageFileName;
+                await uploadImage(messageObject.image, imageFileName, channelName);
+            }
         }
 
         if (messageObject.replyTo) {
@@ -384,7 +388,6 @@ async function uploadImage(imageFile, imageFileName, channelName) {
         const channel = await Channel.findOne({ name: channelName });
         if (!channel) throw new Error('Channel not found');
 
-        // Зберігаємо зображення в MongoDB
         if (!channel.images) channel.images = [];
         channel.images.push({
             name: imageFileName,
@@ -619,53 +622,6 @@ io.on('connection', (socket) => {
             io.emit('message edited', channelName, messageId, newContent);
         } catch (error) {
             console.error('Помилка при редагуванні повідомлення:', error);
-        }
-    });
-
-    socket.on('upload', async (file, callback) => {
-        try {
-            // Валідація файлу
-            validateFile(file);
-
-            // Санітаризація назви файлу
-            const sanitizedName = sanitizeFileName(file.name);
-
-            // Завантаження на Cloudinary
-            const uploadResult = await uploadToCloudinary(file.data);
-
-            // Створення повідомлення з посиланням на зображення
-            const newMessage = new Message({
-                author: socket.username,
-                context: '',
-                photo: uploadResult.url,
-                date: new Date().toISOString()
-            });
-
-            // Збереження повідомлення
-            await newMessage.save();
-
-            // Надсилання підтвердження
-            callback({ 
-                success: true, 
-                url: uploadResult.url,
-                size: uploadResult.size,
-                format: uploadResult.format
-            });
-
-            // Трансляція повідомлення в канал
-            io.to(selectedChannel).emit('chat message', {
-                author: socket.username,
-                context: '',
-                photo: uploadResult.url,
-                date: newMessage.date
-            });
-
-        } catch (error) {
-            console.error('Помилка завантаження файлу:', error);
-            callback({ 
-                success: false, 
-                error: error.message 
-            });
         }
     });
 });
@@ -982,46 +938,28 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
 
+        const uploadResult = await uploadImageToCloudinary(
+            photo.buffer, 
+            photo.originalname, 
+            channelName
+        );
+
         let messageObject = {
             author,
             context: filteredText,
             date,
             replyTo,
-            image: {
-                name: photo.originalname,
-                size: photo.size,
-                mimetype: photo.mimetype,
-                buffer: photo.buffer
-            }
+            photo: uploadResult.cloudinaryUrl
         };
 
-        await saveMessages(channelName, messageObject, 'photo');
-        const messages = await getMessages(channelName);
-        messageObject.id = messages.length;
-        messageObject.photo = `${messageObject.id}--${messageObject.image.name}`;
+        const savedMessage = await saveMessages(channelName, messageObject, 'photo');
 
-        await downloadImages(channelName);
-
-        const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
-        let responseSent = false;
-
-        const checkFileExistence = setInterval(() => {
-            if (fs.existsSync(filePath) && !responseSent) {
-                clearInterval(checkFileExistence);
-                responseSent = true;
-                io.emit('chat message', channelName, messageObject);
-                res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
-            }
-        }, 500);
-
-        setTimeout(() => {
-            if (!responseSent) {
-                clearInterval(checkFileExistence);
-                responseSent = true;
-                res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
-            }
-        }, 20000);
-
+        io.emit('chat message', channelName, savedMessage);
+        res.status(200).json({ 
+            success: true, 
+            message: 'Повідомлення з фото успішно збережено.',
+            savedMessage 
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
     }

@@ -1,5 +1,5 @@
 export function validateFile(file) {
-    const MAX_FILE_SIZE = parseInt('5242880'); 
+    const MAX_FILE_SIZE = parseInt('2') * 1024 * 1024; 
     const ALLOWED_TYPES = [
         'image/png', 
         'image/jpg', 
@@ -9,7 +9,7 @@ export function validateFile(file) {
     ];
 
     if (!file) {
-        throw new Error('Файл не надано');
+        throw new Error('Файл не надано'); 
     }
 
     if (file.size > MAX_FILE_SIZE) {

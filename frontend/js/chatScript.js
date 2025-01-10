@@ -227,7 +227,7 @@ function displayMessage(message, id) {
 
   if (message.photo) {
     const img = document.createElement('img');
-    img.src = `${baseURL}/photos/${selectedChannel}/${message.photo}`;
+    img.src = message.photo;
     img.alt = 'Фото повідомлення';
     img.classList.add('message-photo');
     messageContent.appendChild(img);
@@ -379,7 +379,6 @@ function updateChannelInfo(channelName, data) {
   const pinnedMessageDiv = document.querySelector('.pinned-message');
   
   if (channel && channel.pinnedMessage) {
-    // Знаходимо повідомлення з відповідним ID
     const pinnedMessage = channel.messages.find(m => m.id === channel.pinnedMessage);
     
     if (pinnedMessage) {
@@ -1187,17 +1186,24 @@ fileInput.addEventListener("change", function () {
 });
  
 socket.on('chat message', (channel, msg) => {
-  if (msg.author && msg.context && channel == selectedChannel) {
-    if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${ msg.date }` }, msg.id);
-    } else {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${ msg.date }` }, msg.id);
-    }
+  if (channel !== selectedChannel) return;
+  if (msg.photo) {
+    displayMessage({ 
+      context: `${msg.author}: ${msg.context}`, 
+      photo: msg.photo, 
+      date: `${msg.date}` 
+    }, msg.id);
+  } else {
+    displayMessage({ 
+      context: `${msg.author}: ${msg.context}`, 
+      date: `${msg.date}` 
+    }, msg.id);
   }
+  
   if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
     newMessageSound.play();
   } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
-    newUserSound.play();
+    newMessageSound.play();
   }
 
   if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {

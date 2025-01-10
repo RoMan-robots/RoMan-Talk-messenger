@@ -23,6 +23,10 @@ const messageSchema = new mongoose.Schema({
     replyTo: {
         type: Number,
         default: null
+    },
+    photo: {
+        type: String,
+        default: null
     }
 }, { 
     _id: true 
