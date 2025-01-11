@@ -51,30 +51,23 @@ export async function uploadImageToCloudinary(buffer, fileName, channelName) {
                     ]
                 },
                 (error, result) => {
-                    if (error) {
-                        console.log('X-Cld-Error:', error.response?.headers?.['x-cld-error']);
-                        reject(error);
-                    }
+                    if (error) reject(error);
                     else {
-                        const cleanUrl = result.secure_url;
-                        resolve({ 
-                            originalName: fileName,
-                            cloudinaryUrl: cleanUrl,
+                        resolve({
+                            cloudinaryUrl: result.secure_url,
                             publicId: result.public_id,
-                            versionId: result.version
+                            originalFileName: fileName
                         });
                     }
                 }
             );
 
-            const bufferStream = new Readable();
-            bufferStream.push(buffer);
-            bufferStream.push(null);
-            bufferStream.pipe(uploadStream);
+            const readableStream = Readable.from(buffer);
+            readableStream.pipe(uploadStream);
         });
-    } catch (validationError) {
-        console.error(`File validation failed for ${fileName}:`, validationError);
-        throw validationError;
+    } catch (error) {
+        console.error('Помилка завантаження зображення:', error);
+        throw error;
     }
 }
 
@@ -152,6 +145,20 @@ export async function deleteFromCloudinary(fileUrl) {
         return false;
     }
 }
+
+// async function clearAllCloudinaryStorage() {
+//     try {
+//         const result = await cloudinary.api.delete_all_resources({ 
+//             type: 'upload', 
+//             resource_type: 'image' 
+//         });
+//         console.log('All Cloudinary Storage Cleared:', result);
+//         return result;
+//     } catch (error) {
+//         console.error('Error clearing all Cloudinary storage:', error);
+//         throw error;
+//     }
+// }
 
 // (async () => {
 //     try {

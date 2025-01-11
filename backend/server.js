@@ -840,47 +840,47 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channelName);
 
-        if (channelIndex === -1) {
-            return res.status(404).json({
+        if (channelIndex !== -1) {
+            const channel = channels[channelIndex];
+            const messageToPin = channel.messages.find(m => m.id == messageId);
+            if (!messageToPin) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Повідомлення не знайдено'
+                });
+            }
+
+            // Перевірка та конвертація ID повідомлення
+            const pinnedMessageId = parseInt(messageId, 10);
+            if (isNaN(pinnedMessageId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Некоректний ідентифікатор повідомлення'
+                });
+            }
+
+            // Зберігаємо лише числовий ID повідомлення
+            channel.pinnedMessage = pinnedMessageId;
+
+            await saveChannels(channels);
+
+            io.emit('message pinned', {
+                channelName,
+                pinnedMessage: messageToPin
+            });
+
+            res.json({
+                success: true,
+                message: 'Повідомлення успішно закріплено',
+                pinnedMessage: messageToPin
+            });
+
+        } else {
+            res.status(404).json({
                 success: false,
                 message: 'Канал не знайдено'
             });
         }
-
-        const channel = channels[channelIndex];
-        const messageToPin = channel.messages.find(m => m.id == messageId);
-        if (!messageToPin) {
-            return res.status(404).json({
-                success: false,
-                message: 'Повідомлення не знайдено'
-            });
-        }
-
-        // Перевірка та конвертація ID повідомлення
-        const pinnedMessageId = parseInt(messageId, 10);
-        if (isNaN(pinnedMessageId)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Некоректний ідентифікатор повідомлення'
-            });
-        }
-
-        // Зберігаємо лише числовий ID повідомлення
-        channel.pinnedMessage = pinnedMessageId;
-
-        await saveChannels(channels);
-
-        io.emit('message pinned', {
-            channelName,
-            pinnedMessage: messageToPin
-        });
-
-        res.json({
-            success: true,
-            message: 'Повідомлення успішно закріплено',
-            pinnedMessage: messageToPin
-        });
-
     } catch (error) {
         console.error('Помилка при закріпленні повідомлення:', error);
         res.status(500).json({
@@ -897,28 +897,28 @@ app.post('/unpin-message', checkUserExists, async (req, res) => {
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channelName);
 
-        if (channelIndex === -1) {
-            return res.status(404).json({
+        if (channelIndex !== -1) {
+            const channel = channels[channelIndex];
+
+            channel.pinnedMessage = null;
+
+            await saveChannels(channels);
+
+            io.emit('message unpinned', {
+                channelName
+            });
+
+            res.json({
+                success: true,
+                message: 'Повідомлення відкріплено'
+            });
+
+        } else {
+            res.status(404).json({
                 success: false,
                 message: 'Канал не знайдено'
             });
         }
-
-        const channel = channels[channelIndex];
-
-        channel.pinnedMessage = null;
-
-        await saveChannels(channels);
-
-        io.emit('message unpinned', {
-            channelName
-        });
-
-        res.json({
-            success: true,
-            message: 'Повідомлення відкріплено'
-        });
-
     } catch (error) {
         console.error('Помилка при відкріпленні повідомлення:', error);
         res.status(500).json({
@@ -1034,7 +1034,6 @@ app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
                 message: `Канал "${channelName}" не знайдено.`
             });
         }
-
         res.json({
             success: true,
             channels: [{
