@@ -32,7 +32,6 @@ import Security from './schemas/security.js';
 import migrateFromGitHub from './utils/migration.js';
 
 import { uploadImageToCloudinary, deleteFromCloudinary } from './cloudinary/cloudinaryUpload.js';
-import { validateFile, sanitizeFileName } from './cloudinary/fileValidator.js';
 
 dotenv.config();
 
