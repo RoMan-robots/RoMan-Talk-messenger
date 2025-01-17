@@ -1286,17 +1286,6 @@ socket.on('message deleted', (channelName, messageId) => {
         photoElement.remove();
       }
     }
-    const messages = document.querySelectorAll('.message');
-    let currentIndex = 1;
-
-    messages.forEach((message) => {
-      if (message.classList.contains('message-photo')) {
-        message.dataset.index = currentIndex - 1;
-      } else {
-        message.dataset.index = currentIndex;
-        currentIndex++;
-      }
-    });
   }
 });
 

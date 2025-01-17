@@ -7,7 +7,11 @@ const messageSchema = new mongoose.Schema({
     },
     id: {
         type: Number,
-        required: true
+        required: true,
+        unique: true,
+        default: function() {
+            return this._id ? parseInt(this._id.toString().slice(-6), 16) : null;
+        }
     },
     author: {
         type: String,

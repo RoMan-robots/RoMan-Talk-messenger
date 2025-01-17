@@ -55,7 +55,7 @@ mongoose.connect(process.env.MONGO_URL)
     .then(async () => {
         console.log('Connected to MongoDB');
 
-        // await migrateFromGitHub();
+        await migrateFromGitHub();
 
         // const channels = await Channel.find({});
         // const users = await User.find({});
@@ -152,7 +152,6 @@ async function saveChannels(channels) {
             });
         });
 
-        // Збереження каналів
         const updatedChannels = await Promise.all(
             channels.map(channel => Channel.findOneAndUpdate(
                 { name: channel.name },
@@ -805,6 +804,13 @@ app.post('/messages', checkUserExists, async (req, res) => {
     const { author, context, channel, date, replyTo } = req.body;
 
     try {
+        if (context.length > 2000) {
+            return res.status(413).send({ 
+                success: false, 
+                message: 'Повідомлення перевищує максимальну довжину (2000 символів)' 
+            });
+        }
+
         const channels = await getChannels();
         const channelIndex = channels.findIndex(c => c.name === channel);
 
@@ -813,7 +819,6 @@ app.post('/messages', checkUserExists, async (req, res) => {
         }
 
         const newMessage = {
-            id: Number(channels[channelIndex].messages.length + 1),
             author,
             context: filterText(context),
             date,
@@ -849,7 +854,6 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
                 });
             }
 
-            // Перевірка та конвертація ID повідомлення
             const pinnedMessageId = parseInt(messageId, 10);
             if (isNaN(pinnedMessageId)) {
                 return res.status(400).json({
@@ -858,7 +862,6 @@ app.post('/pin-message', checkUserExists, async (req, res) => {
                 });
             }
 
-            // Зберігаємо лише числовий ID повідомлення
             channel.pinnedMessage = pinnedMessageId;
 
             await saveChannels(channels);
@@ -932,6 +935,13 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         const { channelName, author, context, date, replyTo } = req.body;
         const filteredText = filterText(context)
         const photo = req.file;
+
+        if (context.length > 2000) {
+            return res.status(413).send({ 
+                success: false, 
+                message: 'Повідомлення перевищує максимальну довжину (2000 символів)' 
+            });
+        }
 
         if (!photo) {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
@@ -1287,13 +1297,14 @@ app.post('/update-message/:id', checkUserExists, async (req, res) => {
 });
 
 app.post('/delete-message/:id', checkUserExists, async (req, res) => {
-    const messageId = parseInt(req.params.id, 10);
+    const messageId = req.params.id;
     const channelName = req.body.channelName;
 
     try {
         const messages = await getMessages(channelName);
         const messageToDelete = messages.find(message => message.id === messageId);
 
+        console.log(messageToDelete);
         if (!messageToDelete) {
             return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
         }
@@ -1307,17 +1318,6 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         }
 
         await deleteMessage(channelName, messageId);
-
-        const updatedMessages = messages
-            .filter(message => message.id > messageId)
-            .map(message => {
-                const newId = message.id - 1;
-                return { ...message, id: newId };
-            });
-
-        for (const updatedMessage of updatedMessages) {
-            await editMessage(channelName, updatedMessage.id + 1, { newId: updatedMessage.id });
-        }
 
         res.json({ success: true });
         io.emit('message deleted', channelName, messageId);
