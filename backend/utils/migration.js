@@ -1,4 +1,4 @@
-import Channel from '../schemas/messages.js';
+import { Message, Channel } from '../schemas/messages.js';
 import User from '../schemas/users.js';
 import Security from '../schemas/security.js';
 import { Octokit } from '@octokit/rest';

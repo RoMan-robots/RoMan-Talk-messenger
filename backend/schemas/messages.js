@@ -1,42 +1,25 @@
 import mongoose from 'mongoose';
 
-const messageSchema = new mongoose.Schema({
+const MessageSchema = new mongoose.Schema({
     _id: {
         type: mongoose.Schema.Types.ObjectId,
         default: () => new mongoose.Types.ObjectId()
     },
     id: {
-        type: Number,
-        required: true,
-        unique: true,
+        type: String,
         default: function() {
-            return this._id ? parseInt(this._id.toString().slice(-6), 16) : null;
-        }
+            return this._id.toString();
+        },
+        unique: true
     },
-    author: {
-        type: String,
-        required: true
-    },
-    context: {
-        type: String,
-        required: true
-    },
-    date: {
-        type: String,
-    },
-    replyTo: {
-        type: Number,
-        default: null
-    },
-    photo: {
-        type: String,
-        default: null
-    }
-}, { 
-    _id: true 
+    author: String,
+    context: String,
+    date: String,
+    replyTo: String,
+    photo: String
 });
 
-const channelSchema = new mongoose.Schema({
+const ChannelSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -51,7 +34,7 @@ const channelSchema = new mongoose.Schema({
         default: false
     },
     messages: {
-        type: [messageSchema],
+        type: [MessageSchema],
         default: []
     },
     subs: {
@@ -66,12 +49,19 @@ const channelSchema = new mongoose.Schema({
     autoIndex: false 
 });
 
-messageSchema.pre('save', function(next) {
-    if (this.date && typeof this.date === 'object') {
-        const d = new Date(this.date);
-        this.date = `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}, ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-    }
-    next();
-});
+ChannelSchema.methods.createMessage = function(messageObject) {
+    const newMessage = new Message({
+        author: messageObject.author,
+        context: messageObject.context,
+        date: messageObject.date || new Date(),
+        replyTo: messageObject.replyTo || null,
+        channelName: this.name
+    });
 
-export default mongoose.model('Channel', channelSchema);
+    return newMessage;
+};
+
+const Message = mongoose.model('Message', MessageSchema);
+const Channel = mongoose.model('Channel', ChannelSchema);
+
+export { Message, Channel };

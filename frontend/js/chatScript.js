@@ -1186,17 +1186,20 @@ fileInput.addEventListener("change", function () {
 });
  
 socket.on('chat message', (channel, msg) => {
+  console.log(channel, msg);
   if (channel !== selectedChannel) return;
   if (msg.photo) {
     displayMessage({ 
       context: `${msg.author}: ${msg.context}`, 
       photo: msg.photo, 
-      date: `${msg.date}` 
+      date: msg.date,
+      replyTo: msg.replyTo
     }, msg.id);
   } else {
     displayMessage({ 
       context: `${msg.author}: ${msg.context}`, 
-      date: `${msg.date}` 
+      date: msg.date,
+      replyTo: msg.replyTo
     }, msg.id);
   }
   

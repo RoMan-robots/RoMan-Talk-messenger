@@ -25,7 +25,7 @@ import {
     translateTextInParts
 } from './ai/ai.js';
 
-import Channel from './schemas/messages.js';
+import { Message, Channel } from './schemas/messages.js';
 import User from './schemas/users.js';
 import Request from './schemas/requests.js';
 import Security from './schemas/security.js';
@@ -55,7 +55,7 @@ mongoose.connect(process.env.MONGO_URL)
     .then(async () => {
         console.log('Connected to MongoDB');
 
-        await migrateFromGitHub();
+        // await migrateFromGitHub();
 
         // const channels = await Channel.find({});
         // const users = await User.find({});
@@ -248,18 +248,12 @@ async function getMessages(channelName) {
     }
 }
 
-async function saveMessages(channelName, messageObject, messageType = "classic") {
+async function saveMessages(channelName, messageObject, messageType = "text") {
     try {
         const channel = await Channel.findOne({ name: channelName });
         if (!channel) throw new Error(`Канал "${channelName}" не знайдено.`);
 
-        const newMessageId = channel.messages.length + 1;
-        let newMessage = {
-            id: newMessageId,
-            author: messageObject.author,
-            context: messageObject.context,
-            date: messageObject.date
-        };
+        const newMessage = channel.createMessage(messageObject, messageType);
 
         if (messageType === 'photo') {
             if (messageObject.photo) {
@@ -267,18 +261,23 @@ async function saveMessages(channelName, messageObject, messageType = "classic")
             } else if (messageObject.image) {
                 const originalFileName = messageObject.image.name;
                 const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
-                const imageFileName = `${newMessageId}--${sanitizedFileName}`;
+                const imageFileName = `${newMessage._id}--${sanitizedFileName}`;
                 newMessage.photo = imageFileName;
                 await uploadImage(messageObject.image, imageFileName, channelName);
             }
         }
 
         if (messageObject.replyTo) {
-            const parentMessage = channel.messages.find(m => m.id === messageObject.replyTo);
+            const parentMessage = await Message.findOne({ 
+                channelName: channelName, 
+                id: messageObject.replyTo 
+            });
             if (parentMessage) {
                 newMessage.replyTo = messageObject.replyTo;
             }
         }
+
+        await newMessage.save();
 
         channel.messages.push(newMessage);
         await channel.save();
@@ -335,22 +334,27 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
 }
 
 async function deleteMessage(channelName, messageId) {
-    try {
-        const channel = await Channel.findOneAndUpdate(
-            { name: channelName },
-            { $pull: { messages: { id: messageId } } },
-            { new: true }
-        );
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(c => c.name === channelName);
 
-        if (!channel) {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Помилка при видаленні повідомлення:', error);
-        throw error;
+    if (channelIndex === -1) {
+        throw new Error('Канал не знайдено');
     }
+
+    const messageIndex = channels[channelIndex].messages.findIndex(
+        message => 
+            message.id === messageId || 
+            message.id === parseInt(messageId, 10) 
+    );
+
+    if (messageIndex === -1) {
+        throw new Error('Повідомлення не знайдено');
+    }
+
+    channels[channelIndex].messages.splice(messageIndex, 1);
+    await saveChannels(channels);
+    
+    return true;
 }
 
 async function addedUserMessage(eventMessage) {
@@ -811,26 +815,21 @@ app.post('/messages', checkUserExists, async (req, res) => {
             });
         }
 
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channel);
-
-        if (channelIndex === -1) {
-            return res.status(404).send({ success: false, message: 'Канал не знайдено' });
-        }
-
-        const newMessage = {
+        const messageObject = {
             author,
             context: filterText(context),
             date,
             replyTo
         };
 
-        channels[channelIndex].messages.push(newMessage);
-        await saveChannels(channels);
+        const savedMessage = await saveMessages(channel, messageObject, 'text');
 
-        io.emit('chat message', channel, newMessage);
+        io.emit('chat message', channel, savedMessage);
 
-        res.send({ success: true, message: newMessage });
+        res.send({ 
+            success: true, 
+            message: savedMessage 
+        });
     } catch (error) {
         console.error('Помилка при збереженні повідомлення:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера' });
@@ -933,7 +932,6 @@ app.post('/unpin-message', checkUserExists, async (req, res) => {
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
         const { channelName, author, context, date, replyTo } = req.body;
-        const filteredText = filterText(context)
         const photo = req.file;
 
         if (context.length > 2000) {
@@ -947,13 +945,15 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
 
+        const filteredText = filterText(context);
+
         const uploadResult = await uploadImageToCloudinary(
             photo.buffer,
             photo.originalname,
             channelName
         );
 
-        let messageObject = {
+        const messageObject = {
             author,
             context: filteredText,
             date,
@@ -964,6 +964,7 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
         const savedMessage = await saveMessages(channelName, messageObject, 'photo');
 
         io.emit('chat message', channelName, savedMessage);
+        
         res.status(200).json({
             success: true,
             message: 'Повідомлення з фото успішно збережено.',
@@ -1302,11 +1303,27 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
 
     try {
         const messages = await getMessages(channelName);
-        const messageToDelete = messages.find(message => message.id === messageId);
+        
+        const messageToDelete = messages.find(
+            message => 
+                message.id === messageId || 
+                message.id === parseInt(messageId, 10) 
+        );
 
-        console.log(messageToDelete);
         if (!messageToDelete) {
-            return res.status(404).json({ success: false, message: 'Повідомлення не знайдено' });
+            console.log('Деталі запиту:', {
+                messageId,
+                channelName,
+                messages: messages.map(m => m.id)
+            });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Повідомлення не знайдено',
+                details: {
+                    messageId,
+                    channelName
+                }
+            });
         }
 
         if (messageToDelete.author !== req.username) {
@@ -1317,12 +1334,12 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
             await deleteFromCloudinary(messageToDelete.photo);
         }
 
-        await deleteMessage(channelName, messageId);
+        await deleteMessage(channelName, messageToDelete.id);
 
         res.json({ success: true });
-        io.emit('message deleted', channelName, messageId);
+        io.emit('message deleted', channelName, messageToDelete.id);
     } catch (error) {
-        console.log(error);
+        console.error('Помилка при видаленні повідомлення:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
