@@ -38,7 +38,7 @@ export async function uploadImageToCloudinary(buffer, fileName, channelName) {
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 { 
-                    folder: `/${channelName}`,
+                    folder: `message-images/${channelName}`,
                     resource_type: 'image',
                     public_id: fileName.split('.')[0],
                     overwrite: true,

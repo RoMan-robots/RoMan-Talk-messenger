@@ -947,18 +947,20 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
 
         const filteredText = filterText(context);
 
-        const uploadResult = await uploadImageToCloudinary(
-            photo.buffer,
-            photo.originalname,
-            channelName
-        );
+        const characters = 'abcdefghijklmnopqrstuvwxyz';
+        let generatedImageName = '';
+        for (let i = 0; i < 10; i++) {
+            generatedImageName += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+
+        await uploadImageToCloudinary(photo.buffer, generatedImageName, channelName);
 
         const messageObject = {
             author,
             context: filteredText,
             date,
             replyTo,
-            photo: uploadResult.cloudinaryUrl
+            photo: generatedImageName
         };
 
         const savedMessage = await saveMessages(channelName, messageObject, 'photo');

@@ -227,7 +227,7 @@ function displayMessage(message, id) {
 
   if (message.photo) {
     const img = document.createElement('img');
-    img.src = `https://res.cloudinary.com/dboferw1s/image/upload/v1736521508/${selectedChannel}/${message.photo}`;
+    img.src = `https://res.cloudinary.com/dboferw1s/image/upload/message-images/${selectedChannel}/${message.photo}`;
     img.alt = 'Фото повідомлення';
     img.classList.add('message-photo');
     messageContent.appendChild(img);
