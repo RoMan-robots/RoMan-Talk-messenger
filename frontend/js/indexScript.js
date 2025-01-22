@@ -15,7 +15,7 @@ const loginScreenButton = document.getElementById('login-screen-button');
 const registerScreenButton = document.getElementById('register-screen-button');
 const helloScreen = document.getElementById('hello-screen');
 
-const version = "2.2"
+const version = "2.3"
 
 function changeUrlToLogin(url) {
   window.location.href = url;
@@ -94,16 +94,7 @@ animate()
 
 async function checkSessionStatus() {
   try {
-    let response = await fetch('/set-bg');
-    if (response.ok) {
-      const imageBlob = await response.blob();
-      const imageURL = URL.createObjectURL(imageBlob);
-      document.body.style.backgroundImage = `url(${imageURL})`;
-    } else {
-      console.error('Error fetching the random image:', response.statusText);
-    }
-
-    response = await fetch('/session-status', {
+    const response = await fetch('/session-status', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -113,14 +104,32 @@ async function checkSessionStatus() {
         ver: version
       })
     });
+
     const data = await response.json();
-    if (response.status == "426") {
+
+    if (response.status === 426) {
       alertify.alert("Ця версія RoMan Talk застаріла. Спробуйте оновити месенжер.", function () {
         checkSessionStatus();
       });
+      return;
     }
+
     if (data.loggedIn) {
       window.location.href = 'chat.html';
+      return;
+    }
+
+    try {
+      const bgResponse = await fetch('/set-bg');
+      if (bgResponse.ok) {
+        const imageBlob = await bgResponse.blob();
+        const imageURL = URL.createObjectURL(imageBlob);
+        document.body.style.backgroundImage = `url(${imageURL})`;
+      } else {
+        console.error('Error fetching the random image:', bgResponse.statusText);
+      }
+    } catch (bgError) {
+      console.error('Помилка при завантаженні фону:', bgError);
     }
   } catch (error) {
     console.error('Помилка при перевірці статусу сесії:', error);
@@ -132,6 +141,7 @@ async function checkSessionStatus() {
     }
   }
 }
+
 function showDownloadMenu() {
   if(isElectron){
     alertify.error("А нащо завантажувати програму коли ти ітак в програмі?")
