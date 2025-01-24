@@ -949,18 +949,21 @@ app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
 
         const characters = 'abcdefghijklmnopqrstuvwxyz';
         let generatedImageName = '';
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 8; i++) {
             generatedImageName += characters.charAt(Math.floor(Math.random() * characters.length));
         }
 
-        await uploadImageToCloudinary(photo.buffer, generatedImageName, channelName);
+        const fileExtension = photo.originalname.split('.').pop();
+        const fullImageName = `${generatedImageName}.${fileExtension}`;
+
+        await uploadImageToCloudinary(photo, fullImageName, channelName);
 
         const messageObject = {
             author,
             context: filteredText,
             date,
             replyTo,
-            photo: generatedImageName
+            photo: fullImageName
         };
 
         const savedMessage = await saveMessages(channelName, messageObject, 'photo');
@@ -1333,7 +1336,7 @@ app.post('/delete-message/:id', checkUserExists, async (req, res) => {
         }
 
         if (messageToDelete.photo) {
-            await deleteFromCloudinary(messageToDelete.photo);
+            await deleteFromCloudinary(messageToDelete.photo, channelName);
         }
 
         await deleteMessage(channelName, messageToDelete.id);

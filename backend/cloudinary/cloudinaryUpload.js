@@ -20,20 +20,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-export async function uploadImageToCloudinary(buffer, fileName, channelName) {
-    const fileForValidation = {
-        buffer: buffer,
-        size: buffer.byteLength,
-        mimetype: 
-            fileName.endsWith('.png') ? 'image/png' : 
-            fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ? 'image/jpeg' : 
-            fileName.endsWith('.webp') ? 'image/webp' : 
-            fileName.endsWith('.svg') ? 'image/svg+xml' : 
-            'application/octet-stream'
-    };
-
+export async function uploadImageToCloudinary(file, fileName, channelName) {
     try {
-        validateFile(fileForValidation);
+        validateFile(file, fileName);
 
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
@@ -41,32 +30,18 @@ export async function uploadImageToCloudinary(buffer, fileName, channelName) {
                     folder: `message-images/${channelName}`,
                     resource_type: 'image',
                     public_id: fileName.split('.')[0],
-                    overwrite: true,
-                    use_filename: true,
-                    unique_filename: false,
-                    transformation: [
-                        {width: 1000, crop: "scale"},
-                        {quality: "auto:best"},
-                        {fetch_format: "auto"}
-                    ]
+                    overwrite: true
                 },
                 (error, result) => {
                     if (error) reject(error);
-                    else {
-                        resolve({
-                            cloudinaryUrl: result.secure_url,
-                            publicId: result.public_id,
-                            originalFileName: fileName
-                        });
-                    }
+                    else resolve(result);
                 }
             );
 
-            const readableStream = Readable.from(buffer);
-            readableStream.pipe(uploadStream);
+            uploadStream.end(file.buffer);
         });
     } catch (error) {
-        console.error('Помилка завантаження зображення:', error);
+        console.error('Помилка завантаження в Cloudinary:', error);
         throw error;
     }
 }
@@ -134,15 +109,18 @@ export async function generateTempUrl(publicId, expiresIn = 24) {
     }
 }
 
-export async function deleteFromCloudinary(fileUrl) {
+export async function deleteFromCloudinary(fileName, channelName) {
     try {
-        const publicId = fileUrl.split('/').pop().split('.')[0];
-        const result = await cloudinary.uploader.destroy(publicId);
-        return result.result === 'ok';
+        const publicId = `message-images/${channelName}/${fileName.split('.')[0]}`;
+
+        const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: 'image'
+        });
+
+        return result;
     } catch (error) {
-        console.error('Cloudinary Delete Error:', error);
-        console.log('X-Cld-Error:', error.response?.headers?.['x-cld-error']);
-        return false;
+        console.error('Помилка видалення зображення з Cloudinary:', error);
+        return null;
     }
 }
 
