@@ -1,6 +1,6 @@
 {
   "name": "roman_talk",
-  "version": "2.0",
+  "version": "2.3",
   "description": "My messenger, called RoMan Talk, here is code from it",
   "main": "server.js",
   "type": "module",
