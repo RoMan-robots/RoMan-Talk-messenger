@@ -28,7 +28,8 @@ const newUserSound = new Audio("/newUserSound.mp3");
 
 const token = localStorage.getItem('token');
 
-let isDropdownActive = true;
+let isDropdownActive = false;
+let isChannelInfoActive = false;
 let currentUsername;
 
 let editMode = false;
@@ -43,6 +44,8 @@ let isTyping = false;
 const typingCheckDelay = 100;
 let typingTimeout;
 
+const scrollButton = document.getElementById('scroll-to-bottom');
+
 function updateVh() {
   const vh = window.innerHeight * 0.3;
   document.documentElement.style.setProperty('--real-vh', `${vh}px`);
@@ -50,74 +53,6 @@ function updateVh() {
 
 window.addEventListener('resize', updateVh);
 window.addEventListener('load', updateVh);
-
-const NUMBER_OF_SNOWFLAKES = 100;
-const MAX_SNOWFLAKE_SIZE = 4;
-const MAX_SNOWFLAKE_SPEED = 1.5;
-const SNOWFLAKE_COLOUR = '#ddd';
-const snowflakes = [];
-
-const canvas = document.createElement('canvas');
-canvas.style.position = 'absolute';
-canvas.style.pointerEvents = 'none';
-canvas.style.top = '0px';
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-document.body.appendChild(canvas);
-
-const ctx = canvas.getContext('2d');
-
-
-const createSnowflake = () => ({
-  x: Math.random() * canvas.width,
-  y: Math.random() * canvas.height,
-  radius: Math.floor(Math.random() * MAX_SNOWFLAKE_SIZE) + 1,
-  color: SNOWFLAKE_COLOUR,
-  speed: Math.random() * MAX_SNOWFLAKE_SPEED + 1,
-  sway: Math.random() - 0.5 // next
-});
-
-const drawSnowflake = snowflake => {
-  ctx.beginPath();
-  ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
-  ctx.fillStyle = snowflake.color;
-  ctx.fill();
-  ctx.closePath();
-}
-
-const updateSnowflake = snowflake => {
-  snowflake.y += snowflake.speed;
-  snowflake.x += snowflake.sway; // next
-  if (snowflake.y > canvas.height) {
-    Object.assign(snowflake, createSnowflake());
-  }
-}
-
-const animate = () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  snowflakes.forEach(snowflake => {
-    updateSnowflake(snowflake);
-    drawSnowflake(snowflake);
-  });
-
-  requestAnimationFrame(animate);
-}
-
-for (let i = 0; i < NUMBER_OF_SNOWFLAKES; i++) {
-  snowflakes.push(createSnowflake());
-}
-
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-});
-
-window.addEventListener('scroll', () => {
-  canvas.style.top = `${window.scrollY}px`;
-});
-
-animate()
 
 async function getCurrentUsername() {
   try {
@@ -137,16 +72,44 @@ async function getCurrentUsername() {
 
     if (data.username) {
       currentUsername = data.username;
-      applyTheme(data.theme);
-      loadMessages(selectedChannel)
-      loadUserChannels();
-      loadChannelButtons();
-      messageInput.focus()
+      
+      try {
+        await applyTheme(data.theme);
+      } catch (error) {
+        console.error('Error applying theme:', error);
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+
+      try {
+        await Promise.allSettled([
+          loadMessages(selectedChannel).catch(error => {
+            console.error('Error loading messages:', error);
+            alertify.error('Помилка при завантаженні повідомлень');
+            return { messages: [] };
+          }),
+          loadUserChannels().catch(error => {
+            console.error('Error loading user channels:', error);
+            alertify.error('Помилка при завантаженні каналів');
+            return { channels: [] };
+          }),
+          loadChannelButtons().catch(error => {
+            console.error('Error loading channel buttons:', error);
+            alertify.error('Помилка при завантаженні кнопок каналів');
+            return [];
+          })
+        ]);
+      } catch (error) {
+        console.error('Error loading UI components:', error);
+        alertify.error('Деякі компоненти не вдалося завантажити');
+      }
+      
+      messageInput.focus();
     } else {
       window.location.href = '/';
     }
   } catch (error) {
     console.error('Помилка при отриманні імені користувача:', error);
+    alertify.error('Помилка при завантаженні даних');
     window.location.href = '/';
   }
 }
@@ -157,76 +120,138 @@ function displayMessage(message, id) {
   messageElement.dataset.index = id;
   messageElement.dataset.date = message.date;
 
+  const messageContent = document.createElement('div');
+  messageContent.classList.add('message-content');
+
+  if (message.replyTo) {
+    const replyElement = document.createElement('div');
+    replyElement.classList.add('reply-to');
+
+    const originalMessage = document.querySelector(`.message[data-index='${message.replyTo}']`);
+    if (originalMessage) {
+      const originalText = originalMessage.querySelector('p').textContent;
+      const originalAuthor = originalText.split(':')[0];
+      replyElement.innerHTML = `
+        <span class="reply-author"><i class="fa-solid fa-pen-to-square"></i>  ${originalAuthor}</span>
+        <span class="reply-text">   ${originalText.split(':')[1]}</span>
+      `;
+
+      replyElement.addEventListener('click', () => {
+        originalMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        originalMessage.classList.add('highlight-message');
+
+        setTimeout(() => {
+          originalMessage.classList.remove('highlight-message');
+        }, 1500);
+      });
+
+      messageContent.appendChild(replyElement);
+    }
+  }
+
   const messageP = document.createElement('p');
-  messageP.textContent = message.context;
+  messageP.textContent = message.context.includes(':') ?
+    message.context :
+    `${message.author}: ${message.context}`;
+  messageContent.appendChild(messageP);
+
+  if (message.photo) {
+    const img = document.createElement('img');
+    img.src = `https://res.cloudinary.com/dboferw1s/image/upload/message-images/${selectedChannel}/${message.photo}`;
+    img.alt = 'Фото повідомлення';
+    img.classList.add('message-photo');
+    messageContent.appendChild(img);
+  }
+
+  messageElement.appendChild(messageContent);
 
   const messageOptions = document.createElement('button');
   messageOptions.classList.add('message-options');
   messageOptions.textContent = '...';
   messageOptions.onclick = () => {
-    openMessageOptionsMenu(id)
-    setTimeout(() => {
-      openMessageOptionsMenu(id)
-    }, 10);
+    openMessageOptionsMenu(id);
   };
 
-  messageElement.appendChild(messageP);
   messageElement.appendChild(messageOptions);
   messageList.appendChild(messageElement);
 
-  let photoURL;
-
-  if (message.photo) {
-    photoURL = `${baseURL}/photos/${selectedChannel}/${message.photo}`;
-
-    const img = document.createElement('img');
-    img.src = photoURL;
-    img.alt = `Фото повідомлення ID ${id}`;
-    img.classList.add('message-photo');
-    img.dataset.index = id
-    img.classList.add('message');
-    messageList.appendChild(img);
-    img.dataset.date = message.date;
-  }
   setTimeout(() => {
     messageList.scrollTop = messageList.scrollHeight;
-  })
+  });
 }
 
-async function openMessageOptionsMenu(id) {
-  const menu = document.getElementById("message-options-menu");
-  let messageElement = null;
+async function openMessageOptionsMenu(messageId, count = 0) {
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
 
-  document.querySelectorAll('.message').forEach((element) => {
-    if (element.dataset.index == id) {
-      messageElement = element;
-    }
-  });
+  const menu = document.getElementById('message-options-menu');
+  menu.dataset.messageId = messageId;
+  
+  let date = "Невідома дата відправлення";
+  if (messageElement.dataset.date != "undefined") {
+    date = messageElement.dataset.date + "(Київ)";
+  }
+  document.getElementById("kyiv-time-input").textContent = date;
 
-  if (messageElement) {
-    let date = "Невідома дата відправлення";
-    if(messageElement.dataset.date != "undefined"){
-        date = messageElement.dataset.date + "(Київ)";
-    }
-    document.getElementById("kyiv-time-input").textContent = date;
-    const rect = messageElement.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight;
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  const messageText = messageElement.querySelector('p').textContent;
+  const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+    button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+  );
+  
+  if (pinnedMessageDiv.textContent.includes(messageText)) {
+    pinButton.textContent = 'Відкріпити';
+    pinButton.onclick = () => unpinMessage(messageId);
+  } else {
+    pinButton.textContent = 'Закріпити';
+    pinButton.onclick = () => pinMessage(messageId);
+  }
 
-    let top = rect.top - menuHeight;
-    let left = rect.left;
+  const messageRect = messageElement.getBoundingClientRect();
+  const menuHeight = menu.offsetHeight;
+  const menuWidth = menu.offsetWidth;
+  const messageListRect = messageList.getBoundingClientRect();
 
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
+  const positions = {
+    top: messageRect.top - menuHeight,
+    bottom: messageRect.bottom,
+    left: messageRect.left,
+    right: messageRect.right - menuWidth
+  };
 
+  const fitsTop = positions.top >= messageListRect.top;
+  const fitsBottom = (positions.bottom + menuHeight) <= messageListRect.bottom;
+  const fitsLeft = positions.left >= messageListRect.left;
+  const fitsRight = (positions.left + menuWidth) <= messageListRect.right;
+
+  let top, left;
+
+  if (fitsBottom) {
+    top = positions.bottom;
+  } else if (fitsTop) {
+    top = positions.top;
+  } else {
+    top = messageRect.top + (messageRect.height / 2) - (menuHeight / 2);
+  }
+
+  if (fitsLeft) {
+    left = positions.left;
+  } else if (fitsRight) {
+    left = positions.right;
+  } else {
+    left = messageRect.left + (messageRect.width / 2) - (menuWidth / 2);
+  }
+
+  menu.style.top = `${top}px`;
+  menu.style.left = `${left}px`;
+
+  if (count < 1) {
     setTimeout(() => {
       menu.classList.remove('message-options-menu-hide');
       menu.classList.add('message-options-menu-visible');
+      openMessageOptionsMenu(messageId, count + 1);
     }, 0);
-
-
-    menu.dataset.messageId = id;
-  } else {
-    console.error(`Message element with ID ${id} not found.`);
   }
 }
 
@@ -252,13 +277,14 @@ async function loadMessages(channelName) {
     const data = await response.json();
 
     messageList.innerHTML = '';
+    updateChannelInfo(channelName, data); 
 
     if (data.channels && Array.isArray(data.channels)) {
       const channel = data.channels.find(c => c.name === channelName);
 
       if (channel && Array.isArray(channel.messages)) {
         channel.messages.forEach(message => {
-          displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo, date: message.date }, message.id);
+          displayMessage({ context: `${message.author}: ${message.context}`, photo: message.photo, date: message.date, replyTo: message.replyTo }, message.id);
         });
 
         typingUsers = new Set(channel.typingUsers);
@@ -277,13 +303,59 @@ async function loadMessages(channelName) {
   }
 }
 
-async function sendMessage() {
-  const message = messageInput.value.trim()
-  const messageId = messageInput.dataset.editId;
+function updateChannelInfo(channelName, data) {
+  document.getElementById("channel-name").textContent = channelName;
+  
+  const channel = data.channels.find(c => c.name === channelName);
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  
+  if (channel && channel.pinnedMessage) {
+    const pinnedMessage = channel.messages.find(m => m.id === channel.pinnedMessage);
+    
+    if (pinnedMessage) {
+      pinnedMessageDiv.textContent = `${pinnedMessage.author}: ${pinnedMessage.context}`;
+    } else {
+      pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+    }
+  } else {
+    pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+  }
 
-  if (message) {
-    try {
-      if (editMode) {
+  const searchInput = document.querySelector('.search-input');
+  searchInput.addEventListener('input', (e) => {
+    const searchText = e.target.value.toLowerCase();
+    const messages = document.querySelectorAll('.message p');
+    
+    messages.forEach(message => {
+      const messageText = message.textContent.toLowerCase();
+      message.closest('.message').style.display = messageText.includes(searchText) ? '' : 'none';
+    });
+  });
+}
+
+
+async function sendMessage() {
+  const message = messageInput.value.trim();
+  const messageId = messageInput.dataset.editId;
+  const replyToId = messageInput.dataset.replyToId;
+
+  if (!message) {
+    return alertify.error("Не можна відправляти пусті повідомлення!");
+  }
+
+  const date = new Date().toLocaleString('uk-UA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const actions = [
+    {
+      condition: () => editMode,
+      action: async () => {
         const response = await fetch(`/update-message/${messageId}`, {
           method: 'POST',
           headers: {
@@ -294,106 +366,42 @@ async function sendMessage() {
           body: JSON.stringify({ channelName: selectedChannel, newContent: message })
         });
         const data = await response.json();
-        const editMessage = document.getElementById("edit-message");
-
         if (data.success) {
-          alertify.success('Повідомлення відредаговано!');
           editMode = false;
-
-          messageInput.value = '';
-
-          let messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-
-          const currentText = messageElement.textContent;
-          const colonIndex = currentText.indexOf(':');
-
-          if (colonIndex !== -1) {
-            const textBeforeColon = currentText.substring(0, colonIndex + 1);
-            messageElement.textContent = textBeforeColon + ' ' + message;
-
-            editMessage.classList.add("edit-message-invisible");
-            editMessage.classList.remove("edit-message-visible");
-
-            messageInput.value = '';
-            messageInput.placeholder = 'Напишіть повідомлення';
-          } else {
-            messageElement.textContent = message;
-
-            editMessage.classList.add("edit-message-invisible");
-            editMessage.classList.remove("edit-message-visible");
-
-            messageInput.value = '';
-            messageInput.placeholder = 'Напишіть повідомлення';
-          }
-        } else {
-          alertify.error(data.message);
-
-          editMessage.classList.add("edit-message-invisible");
-          editMessage.classList.remove("edit-message-visible");
-
-          messageInput.value = '';
-          messageInput.placeholder = 'Напишіть повідомлення';
+          document.querySelector(`.message[data-index='${messageId}'] p`).textContent =
+            `${currentUsername}: ${message}`;
+          document.getElementById("edit-message").className = "edit-message-invisible";
         }
-      } else if (selectedPhotoFiles.length > 0) {
-        const date = new Date().toLocaleString('uk-UA', { 
-          timeZone: 'Europe/Kyiv', 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit', 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
+        return data;
+      }
+    },
+    {
+      condition: () => selectedPhotoFiles.length > 0,
+      action: async () => {
         const formData = new FormData();
-
-        formData.append('channelName', selectedChannel);
-        formData.append('author', currentUsername);
-        formData.append('context', message);
-        formData.append('date', date);
+        Object.entries({
+          channelName: selectedChannel,
+          author: currentUsername,
+          context: message,
+          date,
+          ...(replyToId && { replyTo: replyToId })
+        }).forEach(([key, value]) => formData.append(key, value));
 
         selectedPhotoFiles.forEach(file => {
-          const trimmedPhotoName = file.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_');
-          formData.append('photo', file, trimmedPhotoName);
+          formData.append('photo', file, file.name.replace(/[^\x00-\x7F]/g, '').trim().replace(/\s+/g, '_'));
         });
 
         const response = await fetch('/upload-photo-message', {
           method: 'POST',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          },
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+          body: formData
         });
-
-        const data = await response.json();
-        if (data.success) {
-          messageInput.value = '';
-        } else {
-          alertify.error(data.message || 'Не вдалося відправити фото!');
-        }
-
-        selectedPhotoFiles = [];
-        const uploadFilesDiv = document.getElementById("upload-files");
-        const fileList = uploadFilesDiv.querySelector("ul");
-        fileList.innerHTML = '';
-
-        uploadFilesDiv.classList.remove("upload-files-visible");
-        uploadFilesDiv.classList.add("upload-files-invisible");
-      } else {
-        const date = new Date().toLocaleString('uk-UA', { 
-          timeZone: 'Europe/Kyiv', 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit', 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
-
-        const messageObject = {
-          author: currentUsername,
-          context: message,
-          channel: selectedChannel,
-          date: date
-        };
+        return response.json();
+      }
+    },
+    {
+      condition: () => true,
+      action: async () => {
         const response = await fetch('/messages', {
           method: 'POST',
           headers: {
@@ -401,22 +409,48 @@ async function sendMessage() {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(messageObject)
+          body: JSON.stringify({
+            author: currentUsername,
+            context: message,
+            channel: selectedChannel,
+            date,
+            ...(replyToId && { replyTo: replyToId })
+          })
         });
-
-        const data = await response.json();
-        if (data.success) {
-          messageInput.value = '';
-        } else {
-          alertify.error(data.message || 'Не вдалося відправити повідомлення!');
-        }
+        return response.json();
       }
-    } catch (error) {
-      console.error('Error:', error);
-      alertify.error('Виникла помилка під час обробки вашого запиту.');
     }
-  } else {
-    alertify.error("Не можна відправляти пусті повідомлення!");
+  ];
+
+  try {
+    const { action } = actions.find(({ condition }) => condition());
+    const data = await action();
+
+    if (data.success) {
+      messageInput.value = '';
+
+      if (editMode) {
+        alertify.success('Повідомлення відредаговано!');
+        editMode = false;
+      }
+
+      if (replyToId) {
+        messageInput.dataset.replyToId = '';
+        document.getElementById("message-answer").className = "message-answer-invisible";
+      }
+
+      if (selectedPhotoFiles.length > 0) {
+        selectedPhotoFiles = [];
+        const uploadFilesDiv = document.getElementById("upload-files");
+        uploadFilesDiv.querySelector("ul").innerHTML = '';
+        uploadFilesDiv.className = "upload-files-invisible";
+      }
+    } else {
+      alertify.error(data.message || 'Не вдалося виконати дію!');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alertify.error('Виникла помилка під час обробки вашого запиту.');
   }
 }
 
@@ -459,25 +493,32 @@ function toggleDropdown() {
   channelList.classList.toggle('active', isDropdownActive);
 }
 
+function toggleChannelInfo() {
+  isChannelInfoActive = !isChannelInfoActive;
+  document.getElementById('channel-info').classList.toggle('active', isChannelInfoActive);
+}
+
+document.getElementById('channel-info-button').onclick = toggleChannelInfo;
+
 function loadChannelManagementButtons() {
   const channelListElement = document.getElementById('management-buttons');
   channelListElement.innerHTML = '';
 
   const createChannelButton = document.createElement('button');
   createChannelButton.id = 'create-channel-button';
-  createChannelButton.textContent = 'Створити канал';
+  createChannelButton.innerHTML = '<i class="fas fa-plus"></i> Створити канал';
   createChannelButton.onclick = createChannelModal;
   channelListElement.appendChild(createChannelButton);
 
   const exploreChannelButton = document.createElement('button');
   exploreChannelButton.id = 'explore-channels-button';
-  exploreChannelButton.textContent = 'Досліджувати канали';
+  exploreChannelButton.innerHTML = '<i class="fa-solid fa-compass"></i> Досліджувати канали';
   exploreChannelButton.onclick = openExploreChannelsModal;
   channelListElement.appendChild(exploreChannelButton);
 
   const sortChannelsButton = document.createElement('button');
   sortChannelsButton.id = 'sort-channels-button';
-  sortChannelsButton.textContent = 'Сортувати канали';
+  sortChannelsButton.innerHTML = '<i class="fa-solid fa-arrow-up-short-wide"></i> Сортувати канали';
   channelListElement.appendChild(sortChannelsButton);
 
   sortChannelsButton.addEventListener('click', () => {
@@ -507,6 +548,7 @@ async function loadUserChannels() {
           messageInput.value = '';
           loadMessages(channel);
           selectedChannel = channel;
+          document.getElementById("channel-name").textContent = channel;
         };
         channelListElement.appendChild(channelButton);
       });
@@ -565,15 +607,36 @@ function createChannelModal() {
 }
 
 function closeModal(element) {
-  if (element === 'edit-message') {
-    document.getElementById(element).classList.remove("edit-message-visible")
-    document.getElementById(element).classList.add("edit-message-invisible")
-
-    messageInput.value = '';
-    messageInput.placeholder = 'Напишіть повідомлення';
-    editMode = false;
-  } else {
-    document.getElementById(element).style.display = "none";
+  if (typeof element === 'string') {
+    const modalElement = document.getElementById(element);
+    if (modalElement) {
+      if (element === 'edit-message') {
+        modalElement.classList.remove("edit-message-visible");
+        modalElement.classList.add("edit-message-invisible");
+        messageInput.value = '';
+        messageInput.placeholder = 'Напишіть повідомлення';
+        editMode = false;
+      } else if (element === "message-answer") {
+        modalElement.classList.remove("message-answer-visible");
+        modalElement.classList.add("message-answer-invisible");
+      } else {
+        modalElement.style.display = "none";
+      }
+    }
+  } 
+  else if (element instanceof HTMLElement) {
+    if (element.id === 'edit-message') {
+      element.classList.remove("edit-message-visible");
+      element.classList.add("edit-message-invisible");
+      messageInput.value = '';
+      messageInput.placeholder = 'Напишіть повідомлення';
+      editMode = false;
+    } else if (element.id === "message-answer") {
+      element.classList.remove("message-answer-visible");
+      element.classList.add("message-answer-invisible");
+    } else {
+      element.style.display = "none";
+    }
   }
 }
 
@@ -690,6 +753,26 @@ function applyTheme(theme) {
 
 function changeUrlToSettings(url) {
   window.location.href = url;
+}
+
+function searchMessageElement(messageId) {
+  if (!messageId) {
+    alertify.error('Необхідно вказати ID повідомлення');
+    return null;
+  }
+
+  let messageElement = null;
+  document.querySelectorAll('.message').forEach((element) => {
+    if (element.dataset.index == messageId) {
+      messageElement = element;
+    }
+  });
+  
+  if (!messageElement) {
+    alertify.error('Повідомлення не знайдено');
+  }
+  
+  return messageElement;
 }
 
 async function translateMessage(messageId) {
@@ -844,22 +927,111 @@ function getOriginalMessage() {
   }
 }
 
+function answerToMessage(messageId) {
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
+  const answerMessage = document.getElementById("message-answer");
+  const answerMessageSpan = document.getElementById("message-answer-span");
+  const originalMessage = messageElement.querySelector('p').textContent;
+  
+  answerMessageSpan.textContent = originalMessage;
+  messageInput.dataset.replyToId = messageId;
+
+  answerMessage.classList.remove("message-answer-invisible");
+  answerMessage.classList.add("message-answer-visible");
+
+  messageInput.focus();
+}
+
+async function pinMessage(messageId) {
+  try {
+    const response = await fetch('/pin-message', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        channelName: selectedChannel
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
+      const menu = document.getElementById("message-options-menu");
+      const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+        button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+      );
+      pinButton.textContent = 'Відкріпити';
+      pinButton.onclick = () => unpinMessage(messageId);
+
+      document.querySelector('.pinned-message').textContent = messageElement.textContent;
+      alertify.success('Повідомлення закріплено!');
+    } else {
+      alertify.error(data.message || 'Не вдалося закріпити повідомлення');
+    }
+  } catch (error) {
+    console.error('Помилка при закріпленні повідомлення:', error);
+    alertify.error('Помилка при закріпленні повідомлення');
+  }
+}
+
+async function unpinMessage(messageId) {
+  try {
+    const response = await fetch('/unpin-message', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        channelName: selectedChannel
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      document.querySelector('.pinned-message').textContent = 'Немає прикріплених повідомлень';
+
+      const menu = document.getElementById("message-options-menu");
+      const pinButton = Array.from(menu.querySelectorAll('button')).find(button => 
+        button.textContent === 'Закріпити' || button.textContent === 'Відкріпити'
+      );
+      pinButton.textContent = 'Закріпити';
+      pinButton.onclick = () => pinMessage(messageId);
+
+      alertify.success('Повідомлення відкріплено!');
+    } else {
+      alertify.error(data.message || 'Не вдалося відкріпити повідомлення');
+    }
+  } catch (error) {
+    console.error('Помилка при відкріпленні повідомлення:', error);
+    alertify.error('Помилка при відкріпленні повідомлення');
+  }
+}
+
 function editMessage(messageId) {
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
   editMode = true;
+  const editMessage = document.getElementById("edit-message");
+  const editMessageSpan = document.getElementById("edit-message-span");
+  const oldContent = messageElement.querySelector('p').textContent.split(': ')[1];
 
-  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  const editMessage = document.getElementById("edit-message")
-  const editMessageSpan = document.getElementById("edit-message-span")
-  const oldContent = messageElement.textContent.split(': ')[1];
-
-  editMessageSpan.textContent = oldContent
+  editMessageSpan.textContent = oldContent;
   messageInput.value = oldContent;
-
   messageInput.placeholder = 'Редагування повідомлення';
   messageInput.dataset.editId = messageId;
 
-  editMessage.classList.remove("edit-message-invisible")
-  editMessage.classList.add("edit-message-visible")
+  editMessage.classList.remove("edit-message-invisible");
+  editMessage.classList.add("edit-message-visible");
 }
 
 function deleteMessage(messageId) {
@@ -889,19 +1061,18 @@ function deleteMessage(messageId) {
 function copyText(buttonElement) {
   const menu = buttonElement.closest('#message-options-menu');
   const messageId = menu.dataset.messageId;
-  const messageElement = document.querySelector(`.message[data-index='${messageId}'] p`);
-  if (messageElement) {
-    let text = messageElement.textContent;
-    const colonIndex = text.indexOf(':');
-    if (colonIndex !== -1) {
-      text = text.substring(colonIndex + 1).trim();
-    }
-    navigator.clipboard.writeText(text)
-      .then(() => alertify.success('Текст скопійовано!'))
-      .catch(error => alertify.error('Помилка при копіюванні тексту: ' + error));
-  } else {
-    alertify.error('Повідомлення не знайдено');
+  const messageElement = searchMessageElement(messageId);
+  if (!messageElement) return;
+
+  let text = messageElement.querySelector('p').textContent;
+  const colonIndex = text.indexOf(':');
+  if (colonIndex !== -1) {
+    text = text.substring(colonIndex + 1).trim();
   }
+  
+  navigator.clipboard.writeText(text)
+    .then(() => alertify.success('Текст скопійовано!'))
+    .catch(error => alertify.error('Помилка при копіюванні тексту: ' + error));
 }
 
 function copyMessageId(buttonElement) {
@@ -944,19 +1115,29 @@ fileInput.addEventListener("change", function () {
     fileInput.value = '';
   }
 });
-
+ 
 socket.on('chat message', (channel, msg) => {
-  if (msg.author && msg.context && channel == selectedChannel) {
-    if (msg.photo) {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, photo: `${msg.photo}`, date: `${ msg.date }` }, msg.id);
-    } else {
-      displayMessage({ context: `${msg.author}: ${msg.context}`, date: `${ msg.date }` }, msg.id);
-    }
+  console.log(channel, msg);
+  if (channel !== selectedChannel) return;
+  if (msg.photo) {
+    displayMessage({ 
+      context: `${msg.author}: ${msg.context}`, 
+      photo: msg.photo, 
+      date: msg.date,
+      replyTo: msg.replyTo
+    }, msg.id);
+  } else {
+    displayMessage({ 
+      context: `${msg.author}: ${msg.context}`, 
+      date: msg.date,
+      replyTo: msg.replyTo
+    }, msg.id);
   }
+  
   if (!msg.author.includes("Привітання:") && !msg.context.includes(currentUsername)) {
     newMessageSound.play();
   } else if (!msg.context.includes(currentUsername) && !msg.author.includes(currentUsername)) {
-    newUserSound.play();
+    newMessageSound.play();
   }
 
   if (msg.author.includes("Привітання") && msg.context.includes(currentUsername)) {
@@ -1001,6 +1182,34 @@ window.addEventListener('beforeunload', () => {
   }
 });
 
+socket.on('message pinned', (data) => {
+  const pinnedMessageDiv = document.querySelector('.pinned-message');
+  if (pinnedMessageDiv) {
+    const channel = data.channels.find(c => c.name === data.channelName);
+    
+    if (channel && data.pinnedMessage) {
+      const pinnedMessage = channel.messages.find(m => m.id === data.pinnedMessage.id);
+      
+      if (pinnedMessage) {
+        pinnedMessageDiv.textContent = `${pinnedMessage.author}: ${pinnedMessage.context}`;
+      } else {
+        pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+      }
+    } else {
+      pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+    }
+  }
+});
+
+socket.on('message unpinned', (data) => {
+  if (data.channelName === selectedChannel) {
+      const pinnedMessageDiv = document.querySelector('.pinned-message');
+      if (pinnedMessageDiv) {
+          pinnedMessageDiv.textContent = 'Немає прикріплених повідомлень';
+      }
+  }
+});
+
 socket.on('message deleted', (channelName, messageId) => {
   if (channelName === selectedChannel) {
     const messageElement = document.querySelector(`.message[data-index='${messageId}']`);
@@ -1011,17 +1220,6 @@ socket.on('message deleted', (channelName, messageId) => {
         photoElement.remove();
       }
     }
-    const messages = document.querySelectorAll('.message');
-    let currentIndex = 1;
-
-    messages.forEach((message) => {
-      if (message.classList.contains('message-photo')) {
-        message.dataset.index = currentIndex - 1;
-      } else {
-        message.dataset.index = currentIndex;
-        currentIndex++;
-      }
-    });
   }
 });
 
@@ -1043,30 +1241,51 @@ socket.on('message edited', (channelName, messageId, newContent) => {
 });
 
 document.getElementById("message-options-menu").addEventListener("click", function (event) {
-  const messageId = event.currentTarget.dataset.messageId;
   if (event.target.tagName === "BUTTON") {
+    const messageId = this.dataset.messageId;
     const action = event.target.textContent;
-    switch (action) {
-      case "Перекласти текст":
-        translateMessage(messageId);
-        break;
-      case "Стиснути текст":
-        compressMessage(messageId);
-        break;
-      case "Що нового":
-        compressAllMessages(messageId);
-        break;
-      case "Показати оригінал":
-        getOriginalMessage();
-        break;
-      case "Редагувати повідомення":
-        editMessage(messageId);
-        break;
-      case "Видалити повідомлення":
-        deleteMessage(messageId);
-        break;
-      default:
-        console.warn("Невідома дія:", action);
+
+    const actions = {
+      'Перекласти': () => translateMessage(messageId),
+      'Стиснути': () => compressMessage(messageId),
+      'Що нового': () => compressAllMessages(messageId),
+      'Показати оригінал': () => getOriginalMessage(),
+      'Відповісти': () => answerToMessage(messageId),
+      'Редагувати': () => editMessage(messageId),
+      'Видалити': () => deleteMessage(messageId),
+      'Копіювати текст': () => copyText(event.target),
+      'Копіювати ID': () => copyMessageId(event.target)
+    };
+
+    const actionFn = actions[action];
+    if (actionFn) {
+      actionFn();
+      this.classList.remove('message-options-menu-visible');
+      this.classList.add('message-options-menu-hide');
+    } else {
+      console.warn("Невідома дія:", action);
     }
   }
+});
+
+messageList.addEventListener('scroll', () => {
+  const messages = document.querySelectorAll('.message');
+  const scrollTop = messageList.scrollTop;
+  const scrollHeight = messageList.scrollHeight;
+  const clientHeight = messageList.clientHeight;
+  
+  if (messages.length > 50 && scrollHeight - scrollTop - clientHeight > 1000) {
+    scrollButton.classList.remove('scroll-button-hidden');
+    scrollButton.classList.add('scroll-button-visible');
+  } else {
+    scrollButton.classList.remove('scroll-button-visible');
+    scrollButton.classList.add('scroll-button-hidden');
+  }
+});
+
+scrollButton.addEventListener('click', () => {
+  messageList.scrollTo({
+    top: messageList.scrollHeight,
+    behavior: 'smooth'
+  });
 });

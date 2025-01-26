@@ -1,12 +1,12 @@
 import fs from 'fs';
-import nlp from "compromise";
-import fetch from 'node-fetch';
-import Sentiment from 'sentiment';
-import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const apiKey = process.env.HUGGING_FACE_TOKEN
-const badWordsFilePath = 'bad-words.txt';
+const badWordsFilePath = path.join(__dirname, 'bad-words.txt');
 let badWords = [];
 
 fs.readFile(badWordsFilePath, 'utf8', (err, data) => {
@@ -17,7 +17,7 @@ fs.readFile(badWordsFilePath, 'utf8', (err, data) => {
     }
 });
 
-function normalizeText(text, mode = 'toCyrillic') {
+export function normalizeText(text, mode = 'toCyrillic') {
     const latinToCyrillicMap = {
         'A': 'А', 'a': 'а',
         'E': 'Е', 'e': 'е',
@@ -54,7 +54,8 @@ function normalizeText(text, mode = 'toCyrillic') {
 
     throw new Error('Invalid mode for normalizeText');
 }
-function generateMixedRegex(word) {
+
+export function generateMixedRegex(word) {
     const latinToCyrillicMap = {
         'A': 'А', 'a': 'а',
         'E': 'Е', 'e': 'е',
@@ -86,20 +87,21 @@ function generateMixedRegex(word) {
     return new RegExp(regexParts.join(''), 'gi');
 }
 
-function removeSpacesAndSymbols(text) {
+export function removeSpacesAndSymbols(text) {
     return text.replace(/[\s\u200B-\u200D\uFEFF]/g, '').replace(/[^\wА-Яа-яІіЄєҐґ0-9]/g, '');
 }
 
 export function filterText(text) {
+    if (typeof text !== 'string') return text;
 
-    const originalClean = removeSpacesAndSymbols(text.toLowerCase());
-    const normalizedToCyrillic = removeSpacesAndSymbols(normalizeText(text, 'toCyrillic').toLowerCase());
-    const normalizedToLatin = removeSpacesAndSymbols(normalizeText(text, 'toLatin').toLowerCase());
+    const originalText = text.toLowerCase();
+    const normalizedToCyrillic = normalizeText(text, 'toCyrillic').toLowerCase();
+    const normalizedToLatin = normalizeText(text, 'toLatin').toLowerCase();
 
     badWords.forEach(badWord => {
         const regex = generateMixedRegex(badWord.toLowerCase());
         if (
-            regex.test(originalClean) ||
+            regex.test(originalText) ||
             regex.test(normalizedToCyrillic) ||
             regex.test(normalizedToLatin)
         ) {
@@ -300,4 +302,60 @@ export async function translateTextInParts(text, translator, parts) {
     const textParts = splitText(text, parts);
     const translatedParts = await Promise.all(textParts.map(part => translator(part)));
     return translatedParts.join(' ');
+}
+
+export function normalizeTextSimple(text) {
+    return text
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+export function generateMixedRegexSimple(word) {
+    const cyrToLatMap = {
+        'а': 'a', 'в': 'b', 'е': 'e', 'к': 'k', 'м': 'm', 
+        'н': 'h', 'о': 'o', 'р': 'p', 'с': 'c', 'т': 't', 
+        'у': 'y', 'х': 'x'
+    };
+
+    let regexPattern = word.split('').map(char => {
+        const latChar = cyrToLatMap[char] || char;
+        return `[${char}${latChar}]`;
+    }).join('\\s*');
+
+    return new RegExp(regexPattern, 'i');
+}
+
+export function filterTextSimple(text) {
+    if (typeof text !== 'string') return text;
+
+    const badWordsPath = path.resolve(__dirname, 'bad-words.txt');
+    const badWords = fs.readFileSync(badWordsPath, 'utf-8')
+        .split(',')
+        .map(word => word.trim());
+
+    const normalizedText = normalizeTextSimple(text);
+    const mixedRegexWords = badWords.map(generateMixedRegexSimple);
+
+    const hasBadWords = mixedRegexWords.some(regex => 
+        regex.test(normalizedText)
+    );
+
+    return hasBadWords ? '[Цензура]' : text;
+}
+
+export function rephraseTextSimple(text) {
+    // Placeholder for text rephrasing logic
+    return text;
+}
+
+export async function loadModelsSimple() {
+    // Placeholder for model loading logic
+    return true;
+}
+
+export async function translateTextInPartsSimple(text, targetLang) {
+    // Placeholder for translation logic
+    return text;
 }

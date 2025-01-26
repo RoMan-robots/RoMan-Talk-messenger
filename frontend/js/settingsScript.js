@@ -30,75 +30,6 @@ let display = false;
 let currentChannelName;
 let userId;
 
-
-const NUMBER_OF_SNOWFLAKES = 100;
-const MAX_SNOWFLAKE_SIZE = 4;
-const MAX_SNOWFLAKE_SPEED = 1.5;
-const SNOWFLAKE_COLOUR = '#ddd';
-const snowflakes = [];
-
-const canvas = document.createElement('canvas');
-canvas.style.position = 'absolute';
-canvas.style.pointerEvents = 'none';
-canvas.style.top = '0px';
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-document.body.appendChild(canvas);
-
-const ctx = canvas.getContext('2d');
-
-
-const createSnowflake = () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    radius: Math.floor(Math.random() * MAX_SNOWFLAKE_SIZE) + 1,
-    color: SNOWFLAKE_COLOUR,
-    speed: Math.random() * MAX_SNOWFLAKE_SPEED + 1,
-    sway: Math.random() - 0.5 // next
-});
-
-const drawSnowflake = snowflake => {
-    ctx.beginPath();
-    ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
-    ctx.fillStyle = snowflake.color;
-    ctx.fill();
-    ctx.closePath();
-}
-
-const updateSnowflake = snowflake => {
-    snowflake.y += snowflake.speed;
-    snowflake.x += snowflake.sway; // next
-    if (snowflake.y > canvas.height) {
-        Object.assign(snowflake, createSnowflake());
-    }
-}
-
-const animate = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    snowflakes.forEach(snowflake => {
-        updateSnowflake(snowflake);
-        drawSnowflake(snowflake);
-    });
-
-    requestAnimationFrame(animate);
-}
-
-for (let i = 0; i < NUMBER_OF_SNOWFLAKES; i++) {
-    snowflakes.push(createSnowflake());
-}
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
-
-window.addEventListener('scroll', () => {
-    canvas.style.top = `${window.scrollY}px`;
-});
-
-animate()
-
 console.log("Привіт! Це консоль для розробників, де виводяться різні помилки. Якщо ти звичайний користувач, який не розуміє, що це таке, краще вимкни це вікно та нічого не крути.")
 
 fetch('/set-bg')
@@ -440,42 +371,51 @@ async function loadAppeals() {
 }
 
 async function loadSecurityRecomendations() {
-  const securityDiv = document.getElementById("security-recomendations");
-  securityDiv.innerHTML = '';
-
-  const response = await fetch('/get-security', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  const data = await response.json();
-
-  if (data.success && data.security) {
-    const ol = document.createElement('ul');
-    const securityObj = data.security;
-
-    Object.keys(securityObj).forEach((username) => {
-      const messages = securityObj[username];
-      if (messages.length > 0) {
-        messages.forEach((message) => {
-          const li = document.createElement('li');
-          li.textContent = `${message.when}: ${message.message} (Клієнт: ${message.device}, Місцезнаходження: ${message.location})`;
-          ol.appendChild(li);
+    try {
+        const response = await fetch('/get-security', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
-      }
-    });
+        const data = await response.json();
 
-    if (ol.childNodes.length > 0) {
-      securityDiv.appendChild(ol);
-    } else {
-      securityDiv.textContent = 'Немає нових повідомлень безпеки.';
+        const securityDiv = document.getElementById("security-recomendations");
+        securityDiv.innerHTML = '';
+
+        if (data.success) {
+            const sortedLogs = data.security.sort((a, b) => {
+                const dateA = new Date(a.when.split(' ').reverse().join(' '));
+                const dateB = new Date(b.when.split(' ').reverse().join(' '));
+                return dateB - dateA;
+            });
+
+            const recentLogs = sortedLogs.slice(0, 10);
+
+            if (recentLogs.length > 0) {
+                const ul = document.createElement('ul');
+                recentLogs.forEach(log => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="log-time">${log.when}</span>: 
+                        <span class="log-message">${log.message}</span> 
+                        (Клієнт: <span class="log-device">${log.device}</span>, 
+                        Місцезнаходження: <span class="log-location">${log.location}</span>)
+                    `;
+                    ul.appendChild(li);
+                });
+                securityDiv.appendChild(ul);
+            } else {
+                securityDiv.textContent = 'Немає нових повідомлень безпеки.';
+            }
+        } else {
+            securityDiv.textContent = 'Не вдалося завантажити дані безпеки.';
+        }
+    } catch (error) {
+        console.error('Помилка при завантаженні логів безпеки:', error);
+        const securityDiv = document.getElementById("security-recomendations");
+        securityDiv.textContent = 'Помилка при завантаженні логів безпеки.';
     }
-  } else {
-    securityDiv.textContent = 'Не вдалося завантажити дані безпеки.';
-  }
 }
 
 async function openSecurityModal() {

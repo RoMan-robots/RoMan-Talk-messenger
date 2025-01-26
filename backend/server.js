@@ -14,6 +14,7 @@ import fs from "fs-extra";
 import bcrypt from 'bcryptjs';
 import webpush from 'web-push'
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 import {
     filterText,
@@ -22,7 +23,15 @@ import {
     rephraseText,
     loadModels,
     translateTextInParts
-} from './ai.js';
+} from './ai/ai.js';
+
+import { Message, Channel } from './schemas/messages.js';
+import User from './schemas/users.js';
+import Request from './schemas/requests.js';
+import Security from './schemas/security.js';
+import migrateFromGitHub from './utils/migration.js';
+
+import { uploadImageToCloudinary, deleteFromCloudinary } from './cloudinary/cloudinaryUpload.js';
 
 dotenv.config();
 
@@ -38,10 +47,27 @@ const io = new SocketIO(httpServer, {
 });
 
 const octokit = new Octokit({ auth: process.env.TOKEN_REPO });
-const localDir = path.join(__dirname, 'images/message-images');
 
 const owner = process.env.OWNER_REPO;
 const repo = process.env.NAME_REPO;
+
+mongoose.connect(process.env.MONGO_URL)
+    .then(async () => {
+        console.log('Connected to MongoDB');
+
+        // await migrateFromGitHub();
+
+        // const channels = await Channel.find({});
+        // const users = await User.find({});
+        // const security = await Security.findOne({});
+
+        // console.log('Channels:', JSON.stringify(channels.slice(0, 1), null, 2));
+        // console.log('Users:', JSON.stringify(users, null, 2));
+        // console.log('Security:', JSON.stringify(security, null, 2));
+    })
+    .catch(err => console.error('MongoDB connection error:', err));
+
+const localDir = path.join(__dirname, 'images/message-images');
 
 let loginAttempts = {};
 
@@ -85,19 +111,12 @@ function shuffleArray(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
-    console.log("Shuffled array")
     return array;
 }
 
 async function getUsers() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'users.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        const users = JSON.parse(data).users;
+        const users = await User.find({});
         return users;
     } catch (error) {
         throw new Error('Error getting users: ' + error.message);
@@ -106,21 +125,8 @@ async function getUsers() {
 
 async function saveUsers(users) {
     try {
-        const content = Buffer.from(JSON.stringify({ users }, null, 2)).toString('base64');
-        const getUsersResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'users.json',
-        });
-        const sha = getUsersResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'users.json',
-            message: 'Update users.json',
-            content,
-            sha,
-        });
+        await User.deleteMany({});
+        await User.insertMany(users);
     } catch (error) {
         throw new Error('Error saving users: ' + error.message);
     }
@@ -128,13 +134,8 @@ async function saveUsers(users) {
 
 async function getChannels() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'messages.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        return JSON.parse(data).channels;
+        const channels = await Channel.find({});
+        return channels;
     } catch (error) {
         throw new Error('Error getting channels: ' + error.message);
     }
@@ -142,23 +143,27 @@ async function getChannels() {
 
 async function saveChannels(channels) {
     try {
-        const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-        const getChannelsResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'messages.json',
+        channels.forEach(channel => {
+            channel.messages = channel.messages.map(message => {
+                if (!message._id) {
+                    message._id = new mongoose.Types.ObjectId();
+                }
+                return message;
+            });
         });
-        const sha = getChannelsResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'messages.json',
-            message: 'Update messages.json',
-            content,
-            sha,
-        });
+
+        const updatedChannels = await Promise.all(
+            channels.map(channel => Channel.findOneAndUpdate(
+                { name: channel.name },
+                channel,
+                { upsert: true, new: true }
+            ))
+        );
+
+        return updatedChannels;
     } catch (error) {
-        throw new Error('Error saving channels: ' + error.message);
+        console.error('Помилка при збереженні каналів:', error);
+        throw error;
     }
 }
 
@@ -211,12 +216,20 @@ async function ensureModelsLoaded() {
         console.log('Models loaded successfully');
     }
 }
+
 async function rephormatMessagesID(channelName) {
     try {
         let messages = await getMessages(channelName);
 
         const reformattedMessages = messages.map((message, index) => {
-            return { ...message, id: index + 1 };
+            const newId = index + 1;
+            return {
+                ...message,
+                id: newId,
+                replyTo: message.replyTo ?
+                    messages.findIndex(m => m.id === message.replyTo) + 1 :
+                    null
+            };
         });
 
         await saveAllMessages(channelName, reformattedMessages);
@@ -228,122 +241,67 @@ async function rephormatMessagesID(channelName) {
 
 async function getMessages(channelName) {
     try {
-        const channels = await getChannels();
-        const channelData = channels.find(c => c.name === channelName);
-
-        if (!channelData) {
-            throw new Error('Канал не знайдено.');
-        } else {
-            return channelData.messages;
-        }
+        const channel = await Channel.findOne({ name: channelName }).select('messages -_id');
+        return channel ? channel.messages : [];
     } catch (error) {
         throw new Error('Помилка при отриманні повідомлень: ' + error.message);
     }
 }
 
-async function saveMessages(channelName, messageObject, messageType = "classic", retries = 3) {
+async function saveMessages(channelName, messageObject, messageType = "text") {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error(`Канал "${channelName}" не знайдено.`);
 
-        if (channelIndex !== -1) {
-            const channel = channels[channelIndex];
-            const newMessageId = channel.messages.length + 1;
+        const newMessage = channel.createMessage(messageObject, messageType);
 
-            let newMessage = {
-                id: newMessageId,
-                author: messageObject.author,
-                context: messageObject.context,
-                date: messageObject.date
-            };
-
-            if (messageType === 'photo' && messageObject.image) {
+        if (messageType === 'photo') {
+            if (messageObject.photo) {
+                newMessage.photo = messageObject.photo;
+            } else if (messageObject.image) {
                 const originalFileName = messageObject.image.name;
-
                 const sanitizedFileName = originalFileName.replace(/\s+/g, '_');
-
-                const imageFileName = `${newMessageId}--${sanitizedFileName}`;
+                const imageFileName = `${newMessage._id}--${sanitizedFileName}`;
                 newMessage.photo = imageFileName;
                 await uploadImage(messageObject.image, imageFileName, channelName);
-
-                newMessage.photo = `${imageFileName}`;
             }
-
-            channel.messages.push(newMessage);
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-
-            try {
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `New message from ${channelName}`,
-                    content,
-                    sha,
-                });
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Retrying saveMessages due to conflict... Attempts left: ${retries}`);
-                    return saveMessages(channelName, messageObject, messageType, retries - 1);
-                } else {
-                    throw new Error('Error saving channels: ' + error.message);
-                }
-            }
-        } else {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
         }
+
+        if (messageObject.replyTo) {
+            const parentMessage = await Message.findOne({ 
+                channelName: channelName, 
+                id: messageObject.replyTo 
+            });
+            if (parentMessage) {
+                newMessage.replyTo = messageObject.replyTo;
+            }
+        }
+
+        await newMessage.save();
+
+        channel.messages.push(newMessage);
+        await channel.save();
+
+        return newMessage;
     } catch (error) {
         console.error('Помилка при збереженні повідомлень:', error);
         throw error;
     }
 }
 
-async function saveAllMessages(channelName, reformattedMessages, retries = 3) {
+async function saveAllMessages(channelName, reformattedMessages) {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOneAndUpdate(
+            { name: channelName },
+            { $set: { messages: reformattedMessages } },
+            { new: true }
+        );
 
-        if (channelIndex !== -1) {
-            const channel = channels[channelIndex];
-            channel.messages = reformattedMessages;
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-
-            try {
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `Reformatted messages in ${channelName}`,
-                    content,
-                    sha,
-                });
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Retrying saveAllMessages due to conflict... Attempts left: ${retries}`);
-                    return saveAllMessages(channelName, reformattedMessages, retries - 1);
-                } else {
-                    throw new Error('Error saving channels: ' + error.message);
-                }
-            }
-        } else {
+        if (!channel) {
             throw new Error(`Канал "${channelName}" не знайдено.`);
         }
+
+        return channel.messages;
     } catch (error) {
         console.error('Помилка при збереженні переформатованих повідомлень:', error);
         throw error;
@@ -352,47 +310,23 @@ async function saveAllMessages(channelName, reformattedMessages, retries = 3) {
 
 async function editMessage(channelName, messageId, { newContent, newId }) {
     try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error(`Канал "${channelName}" не знайдено.`);
 
-        if (channelIndex !== -1) {
-            let messageFound = false;
-
-            channels[channelIndex].messages.forEach(message => {
-                if (message.id === messageId) {
-                    if (newContent !== undefined) {
-                        message.context = newContent;
-                    }
-                    if (newId !== undefined) {
-                        message.id = newId;
-                    }
-                    messageFound = true;
-                }
-            });
-
-            if (messageFound) {
-                const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-                const getChannelsResponse = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                });
-                const sha = getChannelsResponse.data.sha;
-
-                await octokit.repos.createOrUpdateFileContents({
-                    owner,
-                    repo,
-                    path: 'messages.json',
-                    message: `Updated message ${messageId} in channel ${channelName}`,
-                    content,
-                    sha,
-                });
-            } else {
-                throw new Error(`Повідомлення з ID ${messageId} не знайдено у каналі "${channelName}".`);
-            }
-        } else {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
+        const messageIndex = channel.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            throw new Error(`Повідомлення з ID ${messageId} не знайдено.`);
         }
+
+        if (newContent !== undefined) {
+            channel.messages[messageIndex].context = newContent;
+        }
+        if (newId !== undefined) {
+            channel.messages[messageIndex].id = newId;
+        }
+
+        await channel.save();
+        return channel.messages[messageIndex];
     } catch (error) {
         console.error('Помилка при редагуванні повідомлення:', error);
         throw error;
@@ -400,54 +334,50 @@ async function editMessage(channelName, messageId, { newContent, newId }) {
 }
 
 async function deleteMessage(channelName, messageId) {
-    try {
-        const channels = await getChannels();
-        const channelIndex = channels.findIndex(c => c.name === channelName);
+    const channels = await getChannels();
+    const channelIndex = channels.findIndex(c => c.name === channelName);
 
-        if (channelIndex !== -1) {
-            const messages = channels[channelIndex].messages;
-            const messageToDelete = messages.find(message => message.id === messageId);
-
-            if (!messageToDelete) {
-                throw new Error('Повідомлення не знайдено.');
-            }
-
-            channels[channelIndex].messages = messages.filter(message => message.id !== messageId);
-
-            const content = Buffer.from(JSON.stringify({ channels }, null, 2)).toString('base64');
-            const getChannelsResponse = await octokit.repos.getContent({
-                owner,
-                repo,
-                path: 'messages.json',
-            });
-            const sha = getChannelsResponse.data.sha;
-            await octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo,
-                path: 'messages.json',
-                message: `Deleted message with ID ${messageId} from ${channelName}`,
-                content,
-                sha,
-            });
-
-            return true;
-        } else {
-            throw new Error(`Канал "${channelName}" не знайдено.`);
-        }
-    } catch (error) {
-        console.error('Помилка при видаленні повідомлення:', error);
-        throw error;
+    if (channelIndex === -1) {
+        throw new Error('Канал не знайдено');
     }
+
+    const messageIndex = channels[channelIndex].messages.findIndex(
+        message => 
+            message.id === messageId || 
+            message.id === parseInt(messageId, 10) 
+    );
+
+    if (messageIndex === -1) {
+        throw new Error('Повідомлення не знайдено');
+    }
+
+    channels[channelIndex].messages.splice(messageIndex, 1);
+    await saveChannels(channels);
+    
+    return true;
 }
 
 async function addedUserMessage(eventMessage) {
     try {
-        const newMessageId = await getMessages("RoMan_World_Official")
-            .then(messages => messages.length)
-            .catch(error => { throw error; });
-        const newMessage = { id: newMessageId, author: 'Привітання', context: eventMessage };
+        const channel = await Channel.findOne({ name: "RoMan_World_Official" });
+        if (!channel) throw new Error('Канал не знайдено');
 
-        await saveMessages("RoMan_World_Official", newMessage).catch(error => { throw error; });
+        const newMessageId = channel.messages.length + 1;
+        const newMessage = {
+            id: newMessageId,
+            author: 'Привітання',
+            context: eventMessage,
+            date: new Date().toLocaleString('uk-UA', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(',', '')
+        };
+
+        channel.messages.push(newMessage);
+        await channel.save();
 
         io.emit('chat message', "RoMan_World_Official", newMessage);
     } catch (error) {
@@ -456,43 +386,32 @@ async function addedUserMessage(eventMessage) {
 }
 
 async function uploadImage(imageFile, imageFileName, channelName) {
-    console.log(imageFile)
-    const base64Image = imageFile.buffer.toString('base64');
-    const imagePath = `images/${channelName}/${imageFileName}`;
-
     try {
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: imagePath,
-            message: `Upload image ${imageFileName} for channel ${channelName}`,
-            content: base64Image,
+        const channel = await Channel.findOne({ name: channelName });
+        if (!channel) throw new Error('Channel not found');
+
+        if (!channel.images) channel.images = [];
+        channel.images.push({
+            name: imageFileName,
+            data: imageFile.buffer,
+            contentType: imageFile.mimetype
         });
+
+        await channel.save();
     } catch (error) {
-        console.error('Error uploading image to GitHub:', error);
+        console.error('Error uploading image:', error);
         throw error;
     }
 }
 
 async function deletePhoto(channelName, fileName) {
-    const filePath = `images/${channelName}/${fileName}`;
-
     try {
-        const { data: fileInfo } = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: filePath,
-        });
-
-        await octokit.repos.deleteFile({
-            owner,
-            repo,
-            path: filePath,
-            message: `Delete image ${fileName}`,
-            sha: fileInfo.sha,
-        });
+        await Channel.findOneAndUpdate(
+            { name: channelName },
+            { $pull: { images: { name: fileName } } }
+        );
     } catch (error) {
-        console.error('Error deleting file from GitHub:', error);
+        console.error('Error deleting photo:', error);
         throw error;
     }
 }
@@ -517,7 +436,6 @@ async function downloadImages(channelName) {
                     const response = await fetch(file.download_url);
                     const buffer = await response.arrayBuffer();
                     await fs.writeFile(localFilePath, Buffer.from(buffer));
-                    console.log("Збережено файл:", localFilePath);
                 } else {
                     console.error("Не вдалося отримати download_url для файлу:", file.path);
                 }
@@ -530,13 +448,7 @@ async function downloadImages(channelName) {
 
 async function getRequests() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'requests.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        const requests = JSON.parse(data).requests;
+        const requests = await Request.find({});
         return requests;
     } catch (error) {
         throw new Error('Error getting requests: ' + error.message);
@@ -545,21 +457,8 @@ async function getRequests() {
 
 async function saveRequests(requests) {
     try {
-        const content = Buffer.from(JSON.stringify({ requests }, null, 2)).toString('base64');
-        const getRequestsResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'requests.json',
-        });
-        const sha = getRequestsResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'requests.json',
-            message: 'Update requests.json',
-            content,
-            sha,
-        });
+        await Request.deleteMany({});
+        await Request.insertMany(requests);
     } catch (error) {
         throw new Error('Error saving requests: ' + error.message);
     }
@@ -567,35 +466,26 @@ async function saveRequests(requests) {
 
 async function getSecurity() {
     try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'security.json',
-        });
-        const data = Buffer.from(response.data.content, 'base64').toString();
-        return JSON.parse(data).security;
+        const securityData = await Security.findOne();
+        return securityData ? securityData.security : {};
     } catch (error) {
-        throw new Error('Error getting security data: ' + error.message);
+        console.error('Помилка отримання даних безпеки:', error);
+        return {};
     }
 }
 
 async function saveSecurity(security) {
     try {
-        const content = Buffer.from(JSON.stringify({ security }, null, 2)).toString('base64');
-        const getSecurityResponse = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: 'security.json',
-        });
-        const sha = getSecurityResponse.data.sha;
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: 'security.json',
-            message: 'Update security.json',
-            content,
-            sha,
-        });
+        let securityDoc = await Security.findOne();
+
+        if (!securityDoc) {
+            securityDoc = new Security({ security });
+        } else {
+            securityDoc.security = security;
+        }
+
+        await securityDoc.save();
+        return securityDoc;
     } catch (error) {
         throw new Error('Error saving security data: ' + error.message);
     }
@@ -607,14 +497,14 @@ async function alertSecurity(req, ip, username, messageText) {
     const parser = uaParser(userAgent);
     const deviceInfo = parser.os.name;
 
-    const now = new Date();
+    const loginTimestamp = Date.now();
+    const loginDate = new Date();
+    const day = String(loginDate.getDate()).padStart(2, '0');
+    const month = String(loginDate.getMonth() + 1).padStart(2, '0');
+    const year = loginDate.getFullYear();
 
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const hours = String(loginDate.getHours()).padStart(2, '0');
+    const minutes = String(loginDate.getMinutes()).padStart(2, '0');
 
     const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
 
@@ -642,12 +532,11 @@ async function alertSecurity(req, ip, username, messageText) {
         when: formattedDateTime
     };
 
-    const oneWeekAgo = new Date(now);
+    const oneWeekAgo = new Date(loginDate);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const userSecurityLogs = security.find(entry => Object.keys(entry)[0] === username);
     if (userSecurityLogs) {
-
         userSecurityLogs[username] = userSecurityLogs[username].filter(log => {
             const logDate = log.when.split(' ')[0].split('.');
             const logDateTime = new Date(logDate[2], logDate[1] - 1, logDate[0]);
@@ -760,53 +649,100 @@ app.get('/set-bg', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password, checked, ip } = req.body;
+    const { username, password, ip } = req.body;
+    const loginTimestamp = Date.now();
+    const userAgent = req.headers['user-agent'];
+    const parser = uaParser(userAgent);
+    const deviceInfo = parser.os.name;
+
+    const geo = geoip.lookup(ip);
+    let location;
+    if (geo) {
+        const { city, country, timezone } = geo;
+
+        if (city) {
+            location = `${city}, ${country}`;
+        } else if (timezone) {
+            const tzParts = timezone.split('/');
+            location = tzParts.length === 2 ? `${tzParts[1].replace('_', ' ')}, ${country}` : country;
+        } else {
+            location = 'невідоме';
+        }
+    } else {
+        location = 'невідоме';
+    }
+
+    const loginDate = new Date();
+    const day = String(loginDate.getDate()).padStart(2, '0');
+    const month = String(loginDate.getMonth() + 1).padStart(2, '0');
+    const year = loginDate.getFullYear();
+
+    const hours = String(loginDate.getHours()).padStart(2, '0');
+    const minutes = String(loginDate.getMinutes()).padStart(2, '0');
+
+    const formattedDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+    if (!loginAttempts[username]) {
+        loginAttempts[username] = [];
+    }
+
+    const userAttempts = loginAttempts[username];
+    const recentAttempts = userAttempts.filter(attemptTime => loginTimestamp - attemptTime < 60000);
+
+    if (recentAttempts.length >= 5) {
+        const message = {
+            message: "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.",
+            device: deviceInfo,
+            location: location,
+            when: formattedDateTime
+        };
+
+        await alertSecurity(req, ip, username, message.message);
+
+        return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
+    }
 
     try {
-        const users = await getUsers();
-        const foundUser = users.find(user => user.username === username);
+        const user = await User.findOne({ username });
 
-        if (!foundUser) {
+        if (!user) {
             return res.status(401).send({ success: false, message: 'Користувача не знайдено' });
         }
 
-        const now = Date.now();
-        const userAttempts = loginAttempts[username] || [];
-        const recentAttempts = userAttempts.filter(attemptTime => now - attemptTime < 60000);
+        const isMatch = await bcrypt.compare(password, user.password);
 
-        if (recentAttempts.length >= 5) {
-            await alertSecurity(req, ip, username, "Хтось намагається зайти на ваш акаунт. Введено 5 невірних паролів на ваше ім'я.");
+        if (isMatch) {
+            loginAttempts[username] = [];
 
-            return res.status(401).send({ message: "Перевищено максимальну кількість спроб входу. Будь ласка, спробуйте пізніше." });
-        }
+            const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
-        const isPasswordMatch = await bcrypt.compare(password, foundUser.password);
-
-        if (isPasswordMatch) {
-            if (foundUser.rank === 'banned') {
-                return res.status(423).send({ success: false, message: 'Користувач заблокований' });
-            }
-
-            const token = jwt.sign(
-                { userId: foundUser.id, username: foundUser.username },
-                process.env.JWT_SECRET,
-                { expiresIn: '30d' }
-            );
-
-            res.send({ success: true, redirectUrl: 'chat.html', token: token });
-
-            if (!checked) {
+            if (user.firstLogin) {
+                await User.findByIdAndUpdate(user.id, { firstLogin: false });
                 await addedUserMessage(`${username} залогінився в RoMan Talk. Вітаємо!`);
             }
 
-            await alertSecurity(req, ip, username, "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...");
+            const message = {
+                message: "Хтось зайшов в акаунт. Пильнуємо далі за активністю акаунту...",
+                device: deviceInfo,
+                location: location,
+                when: formattedDateTime
+            };
+
+            await alertSecurity(req, ip, username, message.message);
+
+            return res.status(200).send({
+                success: true,
+                token,
+                username: user.username,
+                rank: user.rank,
+                firstLogin: user.firstLogin
+            });
         } else {
-            loginAttempts[username] = [...userAttempts, now];
+            loginAttempts[username] = [...userAttempts, loginTimestamp];
             res.status(401).send({ success: false, message: 'Неправильний пароль' });
         }
-
     } catch (error) {
-        console.error(error);
+        console.error('Помилка входу:', error);
         res.status(500).send({ success: false, message: 'Помилка сервера' });
     }
 });
@@ -860,7 +796,7 @@ app.post('/register', async (req, res) => {
 
     const security = await getSecurity();
     security.push({ [username]: [] });
-    await saveSecurity(security);
+    await alertSecurity(req, req.ip, username, "Зареєструвався новий користувач з ім'ям " + username);
 
     const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
@@ -869,77 +805,176 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/messages', checkUserExists, async (req, res) => {
+    const { author, context, channel, date, replyTo } = req.body;
+
     try {
-        const messageObject = req.body;
-        const channelName = messageObject.channel;
+        if (context.length > 2000) {
+            return res.status(413).send({ 
+                success: false, 
+                message: 'Повідомлення перевищує максимальну довжину (2000 символів)' 
+            });
+        }
 
-        const filteredText = filterText(messageObject.context);
-        messageObject.context = filteredText;
+        const messageObject = {
+            author,
+            context: filterText(context),
+            date,
+            replyTo
+        };
 
-        const messages = await getMessages(channelName);
-        const id = messages.length ? messages.length : 0;
-        messageObject.id = id + 1;
+        const savedMessage = await saveMessages(channel, messageObject, 'text');
 
-        await saveMessages(channelName, messageObject);
+        io.emit('chat message', channel, savedMessage);
 
-        io.emit('chat message', channelName, messageObject);
-
-        res.status(200).send({ success: true, message: 'Повідомлення відправлено.' });
+        res.send({ 
+            success: true, 
+            message: savedMessage 
+        });
     } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).send({ success: false, message: 'Сталася помилка під час відправки повідомлення.' });
+        console.error('Помилка при збереженні повідомлення:', error);
+        res.status(500).send({ success: false, message: 'Помилка сервера' });
+    }
+});
+
+app.post('/pin-message', checkUserExists, async (req, res) => {
+    const { messageId, channelName } = req.body;
+
+    try {
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channelName);
+
+        if (channelIndex !== -1) {
+            const channel = channels[channelIndex];
+            const messageToPin = channel.messages.find(m => m.id == messageId);
+            if (!messageToPin) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Повідомлення не знайдено'
+                });
+            }
+
+            const pinnedMessageId = parseInt(messageId, 10);
+            if (isNaN(pinnedMessageId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Некоректний ідентифікатор повідомлення'
+                });
+            }
+
+            channel.pinnedMessage = pinnedMessageId;
+
+            await saveChannels(channels);
+
+            io.emit('message pinned', {
+                channelName,
+                pinnedMessage: messageToPin
+            });
+
+            res.json({
+                success: true,
+                message: 'Повідомлення успішно закріплено',
+                pinnedMessage: messageToPin
+            });
+
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Канал не знайдено'
+            });
+        }
+    } catch (error) {
+        console.error('Помилка при закріпленні повідомлення:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Помилка при закріпленні повідомлення'
+        });
+    }
+});
+
+app.post('/unpin-message', checkUserExists, async (req, res) => {
+    const { channelName } = req.body;
+
+    try {
+        const channels = await getChannels();
+        const channelIndex = channels.findIndex(c => c.name === channelName);
+
+        if (channelIndex !== -1) {
+            const channel = channels[channelIndex];
+
+            channel.pinnedMessage = null;
+
+            await saveChannels(channels);
+
+            io.emit('message unpinned', {
+                channelName
+            });
+
+            res.json({
+                success: true,
+                message: 'Повідомлення відкріплено'
+            });
+
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Канал не знайдено'
+            });
+        }
+    } catch (error) {
+        console.error('Помилка при відкріпленні повідомлення:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Помилка при відкріпленні повідомлення'
+        });
     }
 });
 
 app.post('/upload-photo-message', upload.single('photo'), async (req, res) => {
     try {
-        const { channelName, author, context, date } = req.body;
-        const filteredText = filterText(context)
+        const { channelName, author, context, date, replyTo } = req.body;
         const photo = req.file;
+
+        if (context.length > 2000) {
+            return res.status(413).send({ 
+                success: false, 
+                message: 'Повідомлення перевищує максимальну довжину (2000 символів)' 
+            });
+        }
 
         if (!photo) {
             return res.status(400).json({ success: false, message: 'Файл не завантажено!' });
         }
-        
-        let messageObject = {
+
+        const filteredText = filterText(context);
+
+        const characters = 'abcdefghijklmnopqrstuvwxyz';
+        let generatedImageName = '';
+        for (let i = 0; i < 8; i++) {
+            generatedImageName += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+
+        const fileExtension = photo.originalname.split('.').pop();
+        const fullImageName = `${generatedImageName}.${fileExtension}`;
+
+        await uploadImageToCloudinary(photo, fullImageName, channelName);
+
+        const messageObject = {
             author,
             context: filteredText,
             date,
-            image: {
-                name: photo.originalname,
-                size: photo.size,
-                mimetype: photo.mimetype,
-                buffer: photo.buffer
-            }
+            replyTo,
+            photo: fullImageName
         };
 
-        await saveMessages(channelName, messageObject, 'photo');
-        const messages = await getMessages(channelName);
-        messageObject.id = messages.length;
-        messageObject.photo = `${messageObject.id}--${messageObject.image.name}`;
+        const savedMessage = await saveMessages(channelName, messageObject, 'photo');
 
-        await downloadImages(channelName);
-
-        const filePath = path.join(__dirname, 'images', 'message-images', channelName, messageObject.photo);
-        let responseSent = false;
-
-        const checkFileExistence = setInterval(() => {
-            if (fs.existsSync(filePath) && !responseSent) {
-                clearInterval(checkFileExistence);
-                responseSent = true;
-                io.emit('chat message', channelName, messageObject);
-                res.status(200).json({ success: true, message: 'Повідомлення з фото успішно збережено.' });
-            }
-        }, 500);
-
-        setTimeout(() => {
-            if (!responseSent) {
-                clearInterval(checkFileExistence);
-                responseSent = true;
-                res.status(500).json({ success: false, message: 'Файл не знайдено після завантаження.' });
-            }
-        }, 20000);
-
+        io.emit('chat message', channelName, savedMessage);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Повідомлення з фото успішно збережено.',
+            savedMessage
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || 'Помилка сервера.' });
     }
@@ -950,10 +985,9 @@ app.post("/session-status", async (req, res) => {
     const version = req.body.ver;
 
     const supportedVersions = {
-        "1.2.1": false,
-        "2.0": true,
         "2.1": true,
-        "2.2": true
+        "2.2": true,
+        "2.3": true
     };
 
     if (!supportedVersions[version]) {
@@ -1004,20 +1038,33 @@ app.get('/my-channels', checkUserExists, async (req, res) => {
 });
 
 app.get('/channel-messages/:channelName', checkUserExists, async (req, res) => {
-    const { channelName } = req.params;
     try {
-        const messages = await getMessages(channelName);
-        await downloadImages(channelName);
+        const { channelName } = req.params;
+        const channels = await getChannels();
 
-        const typingUsers = typingUsersByChannel[channelName] ? Array.from(typingUsersByChannel[channelName]) : [];
-        res.send({ channels: [{ name: channelName, messages, typingUsers }] });
-    } catch (error) {
-        if (error.message === 'Канал не знайдено.') {
-            res.status(404).send({ success: false, message: 'Канал не знайдено.' });
-        } else {
-            console.error('Помилка при отриманні повідомлень:', error);
-            res.status(500).send({ success: false, message: 'Помилка сервера.' });
+        const channel = channels.find(c => c.name === channelName);
+        if (!channel) {
+            return res.status(404).json({
+                success: false,
+                message: `Канал "${channelName}" не знайдено.`
+            });
         }
+        res.json({
+            success: true,
+            channels: [{
+                name: channel.name,
+                messages: channel.messages,
+                pinnedMessage: channel.pinnedMessage,
+                typingUsers: channel.typingUsers || []
+            }]
+        });
+
+    } catch (error) {
+        console.error('Помилка при отриманні повідомлень:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Помилка сервера при отриманні повідомлень'
+        });
     }
 });
 
@@ -1107,7 +1154,6 @@ app.post('/channel/set-privacy', checkUserExists, async (req, res) => {
         res.status(500).send({ success: false, message: 'Помилка сервера.' });
     }
 });
-
 app.post('/check-grammar', async (req, res) => {
     const { text } = req.body;
     const correctedText = await checkGrammar(text, language);
@@ -1257,41 +1303,48 @@ app.post('/update-message/:id', checkUserExists, async (req, res) => {
 });
 
 app.post('/delete-message/:id', checkUserExists, async (req, res) => {
-    const messageId = parseInt(req.params.id, 10);
+    const messageId = req.params.id;
     const channelName = req.body.channelName;
 
     try {
         const messages = await getMessages(channelName);
-        const messageToDelete = messages.find(message => message.id === messageId);
+        
+        const messageToDelete = messages.find(
+            message => 
+                message.id === messageId || 
+                message.id === parseInt(messageId, 10) 
+        );
+
+        if (!messageToDelete) {
+            console.log('Деталі запиту:', {
+                messageId,
+                channelName,
+                messages: messages.map(m => m.id)
+            });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Повідомлення не знайдено',
+                details: {
+                    messageId,
+                    channelName
+                }
+            });
+        }
 
         if (messageToDelete.author !== req.username) {
             return res.status(403).json({ success: false, message: 'Лише автор повідомлення може його видалити!' });
         }
 
         if (messageToDelete.photo) {
-            await fs.unlink(`${localDir}/${channelName}/${messageToDelete.photo}`);
-
-            await deletePhoto(channelName, messageToDelete.photo);
+            await deleteFromCloudinary(messageToDelete.photo, channelName);
         }
 
-        await deleteMessage(channelName, messageId);
-
-        const updatedMessages = messages
-            .filter(message => message.id > messageId)
-            .map(message => {
-                const newId = message.id - 1;
-                return { ...message, id: newId };
-            });
-
-        for (const updatedMessage of updatedMessages) {
-            await editMessage(channelName, updatedMessage.id + 1, { newId: updatedMessage.id });
-        }
+        await deleteMessage(channelName, messageToDelete.id);
 
         res.json({ success: true });
-
-        io.emit('message deleted', channelName, messageId);
+        io.emit('message deleted', channelName, messageToDelete.id);
     } catch (error) {
-        console.log(error)
+        console.error('Помилка при видаленні повідомлення:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
@@ -1421,16 +1474,35 @@ app.post('/delete-appeal', async (req, res) => {
 });
 
 app.get("/get-security", checkUserExists, async (req, res) => {
-    const securityData = await getSecurity();
-    const username = req.username;
+    try {
+        const username = req.username;
+        console.log('Шукаємо логи для користувача:', username);
 
-    const userSecurityData = securityData.find(obj => Object.keys(obj)[0] === username);
+        const securityDoc = await Security.findOne();
+        console.log('Знайдений документ безпеки:', JSON.stringify(securityDoc, null, 2));
 
-    const security = {
-        [username]: userSecurityData[username]
-    };
+        if (!securityDoc || !securityDoc.security) {
+            console.log('Документ безпеки не знайдено');
+            return res.status(200).json({ success: true, security: [] });
+        }
 
-    res.status(200).json({ success: true, security });
+        // Пошук логів для username або повернення всіх логів
+        let userLogs = [];
+        for (const item of securityDoc.security) {
+            const key = Object.keys(item)[0];
+            if (key === username || key.trim() === '') {
+                userLogs = item[key];
+                break;
+            }
+        }
+
+        console.log('Знайдені логи:', userLogs);
+
+        return res.status(200).json({ success: true, security: userLogs });
+    } catch (error) {
+        console.error('Помилка при отриманні логів безпеки:', error);
+        return res.status(500).json({ success: false, message: 'Помилка сервера' });
+    }
 });
 
 app.post('/add-subscriber', checkUserExists, async (req, res) => {

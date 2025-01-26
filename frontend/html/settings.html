@@ -7,6 +7,11 @@
     <title>Налаштування RoMan Talk</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        .btn-secondary, .btn-danger, .btn-success {
+          color: #fff !important;
+        }
+      </style>
     <script>
         window.nodeRequire = require;
         delete window.require;
@@ -21,7 +26,7 @@
 </head>
 
 <body id="settings-screen">
-    <div class="container-fluid h-100 d-flex flex-column align-items-center justify-content-center">
+    <div id="settings-text">
         <h2 id="settings-title" class="text-center">Налаштування</h2>
         <h3 class="text-center">Оберіть категорію</h3>
         <div class="settings-buttons w-100 text-center">
@@ -53,7 +58,7 @@
 
             <details>
                 <summary>Кастомізація</summary>
-                <button class="btn btn-secondary" onclick="locked()">Мій профіль</button> <br>
+                <button class="btn btn-secondary" onclick="locked()" disabled>Мій профіль</button> <br>
                 <label for="theme-select">Виберіть тему:</label>
                 <select id="theme-select" class="form-control mb-4">
                     <option value="light">Світла</option>
@@ -138,14 +143,16 @@
             <div id="security-recomendations"></div>
         </div>
     </div>
-    <p class="footer">
-        <a href="tutorial.html" class="footer-a">Туторіал</a>|
-        <a href="whats-new.html" class="footer-a">Що нового</a> |
-        <a href="tos.html" class="footer-a">Умови користування</a>
-      </p>
-    <p class="footer">Підпишіться на <a href="https://t.me/roman_talk" class="footer-a"> телеграм канал</a> для зв'язку
-        та актуальних новин</p>
-    <p class="footer">RoMan Talk 2.2 Official Release. Від RoMan. 2024-2024. Усі права захищені</p>
+    <div class="footer2">
+        <p>
+            <a href="tutorial.html" class="footer-a">Туторіал</a>|
+            <a href="whats-new.html" class="footer-a">Що нового</a> |
+            <a href="tos.html" class="footer-a">Умови користування</a>
+        </p>
+        <p>Підпишіться на <a href="https://t.me/roman_talk" class="footer-a"> телеграм канал</a>
+            для зв'язку та актуальних новин</p>
+        <p>RoMan Talk 2.3 Official Release. Від RoMan. 2024-2025. Усі права захищені</p>
+    </div>
 </body>
 
 </html>
