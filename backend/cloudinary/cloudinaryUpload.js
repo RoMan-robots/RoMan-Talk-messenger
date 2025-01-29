@@ -4,7 +4,6 @@ import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 import { Octokit } from '@octokit/rest';
 import { validateFile  } from './fileValidator.js';
-import { v2 as cloudinary } from 'cloudinary';
 
 dotenv.config({ path: './.env' });
 
