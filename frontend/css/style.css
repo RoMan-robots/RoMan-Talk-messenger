@@ -4,39 +4,95 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #000000;
+  background-color: #000000 !important;
   background-size: cover;
 }
 
 #hello-screen {
-  flex-grow: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100vh; 
+  width: 100%;
+  background: #0B3954; 
+  color: #FFEECF;
+  border: none;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in forwards;
 }
 
-#hello-screen-container {
-  padding: 20px;
-  max-width: 650px;
-  border-radius: 10px;
+#hello-screen-text {
+  width: 50%;
+  padding: 40px;
   text-align: center;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  backdrop-filter: blur(10.5px);
-  -webkit-backdrop-filter: blur(10.5px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+}
 
-  opacity: 0;
-  animation: fadeIn 0.3s ease-in forwards;
+#hello-screen-text h1 {
+  color: #F7C59F;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+}
+
+#hello-screen-img {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #8EA4D2; 
+}
+
+#hello-screen-img img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+  filter: brightness(1.1) contrast(1.05);
+}
+
+#hello-screen-text .btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#hello-screen-text button {
+  background: #F7C59F;
+  color: #0B3954;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 7px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+#hello-screen-text button:hover {
+  background: #d5a683; 
+  transform: translateY(-2px);
+}
+
+#hello-screen-text button:active {
+  transform: translateY(1px);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  #hello-screen {
+    flex-direction: column;
+  }
+  
+  #hello-screen-text, 
+  #hello-screen-img {
+    width: 100%;
   }
 }
 
@@ -956,7 +1012,6 @@ button,
 }
 
 :root {
-  --real-vh: 100vh;
   --background-color: #fff;
   --text-color: #000;
   --additional-text-color: #fff;
@@ -1107,7 +1162,6 @@ button,
 }
 
 [data-theme="ruby"] {
-  --real-vh: 100vh;
   --background-color: #6c0000;
   --text-color: #f4a7a7;
   --button-bg-color: #b93030;

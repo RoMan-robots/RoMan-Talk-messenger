@@ -15,7 +15,28 @@ const loginScreenButton = document.getElementById('login-screen-button');
 const registerScreenButton = document.getElementById('register-screen-button');
 const helloScreen = document.getElementById('hello-screen');
 
-const version = "2.3"
+const version = "3.0"
+
+const availableThemes = [
+  'dark', 
+  'dark-blue', 
+  'military', 
+  'ruby', 
+  'light-blue', 
+  'coffee', 
+  'mint', 
+  'neon', 
+  'amethyst'
+];
+
+const theme = localStorage.getItem('theme');
+if (theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+} else {
+  const randomTheme = availableThemes[Math.floor(Math.random() * availableThemes.length)];
+  document.documentElement.setAttribute('data-theme', randomTheme);
+
+}
 
 function changeUrlToLogin(url) {
   window.location.href = url;
@@ -49,19 +70,6 @@ async function checkSessionStatus() {
     if (data.loggedIn) {
       window.location.href = 'chat.html';
       return;
-    }
-
-    try {
-      const bgResponse = await fetch('/set-bg');
-      if (bgResponse.ok) {
-        const imageBlob = await bgResponse.blob();
-        const imageURL = URL.createObjectURL(imageBlob);
-        document.body.style.backgroundImage = `url(${imageURL})`;
-      } else {
-        console.error('Error fetching the random image:', bgResponse.statusText);
-      }
-    } catch (bgError) {
-      console.error('Помилка при завантаженні фону:', bgError);
     }
   } catch (error) {
     console.error('Помилка при перевірці статусу сесії:', error);

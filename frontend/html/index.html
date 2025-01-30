@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk" data-theme="uwu">
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Головна сторінка RoMan Talk</title>
   <link rel="stylesheet" type="text/css" href="../css/style.css">
   <style>
-    .btn-secondary, .btn-danger, .btn-success {
+    .btn-secondary,
+    .btn-danger,
+    .btn-success {
       color: #fff !important;
     }
   </style>
@@ -26,17 +28,20 @@
 </head>
 
 <body>
-  <div class="text-center" id="hello-screen">
-    <div id="hello-screen-container">
-      <h1 class="classic">Вітаємо в RoMan Talk 2.3!</h1>
+  <div id="hello-screen">
+    <div id="hello-screen-text">
+      <h1 class="classic">Вітаємо в RoMan Talk 3.0!</h1>
       <div class="btn-group" role="group">
-        <button class="btn btn-light" id="login-screen-button" onclick="changeUrlToLogin('login.html')">Увійти</button>
-        <button class="btn btn-secondary" id="download-button" onclick="showDownloadMenu()">Завантажити як
+        <button  id="login-screen-button" onclick="changeUrlToLogin('login.html')">Увійти</button>
+        <button id="download-button" onclick="showDownloadMenu()">Завантажити як
           програму</button>
-        <button class="btn btn-light" id="register-screen-button"
+        <button id="register-screen-button"
           onclick="changeUrlToRegister('register.html')">Зареєструватись</button>
       </div>
     </div>
+    <div id="hello-screen-img">
+      <img src="/favicon.png" alt="RoMan Talk">
+    </div>   
   </div>
   <div id="download-screen">
     <div id="download">
@@ -48,11 +53,11 @@
       </div>
     </div>
   </div>
-  <p class="footer">
+  <!-- <p class="footer">
     <a href="tutorial.html" class="footer-a">Туторіал</a>|
     <a href="whats-new.html" class="footer-a">Що нового</a> |
     <a href="tos.html" class="footer-a">Умови користування</a>
-  </p>
+  </p> -->
 </body>
 
 </html>

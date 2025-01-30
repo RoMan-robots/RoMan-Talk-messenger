@@ -95,6 +95,7 @@ let shuffledImages = [];
 let currentIndex = 0;
 
 app.use('/favicon.ico', express.static(path.join(__dirname, '/images/favicon.ico')));
+app.use('/favicon.png', express.static(path.join(__dirname, '/images/favicon.png')));
 
 app.use('/tutorial1.png', express.static(path.join(__dirname, '/images/tutorial1.png')));
 app.use('/tutorial2.png', express.static(path.join(__dirname, '/images/tutorial2.png')));
@@ -985,9 +986,8 @@ app.post("/session-status", async (req, res) => {
     const version = req.body.ver;
 
     const supportedVersions = {
-        "2.1": true,
-        "2.2": true,
-        "2.3": true
+        "2.3": true,
+        "3.0": true
     };
 
     if (!supportedVersions[version]) {
